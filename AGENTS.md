@@ -48,7 +48,7 @@ If something is not documented, ask before inventing it.
 | `services/api/` | The single binary that wires kernel, platform and distributions | Go |
 | `services/ai/` | Analysis and AI agents; read replica, actions through MCP | Python |
 | `apps/console`, `apps/web`, `apps/mobile`, `apps/desktop` | User-facing apps | TypeScript + React |
-| `packages/ui`, `app`, `sdk`, `i18n`, `config` | Shared TypeScript packages | TypeScript |
+| `packages/brand`, `ui`, `app`, `sdk`, `i18n`, `config` | Shared TypeScript packages | TypeScript |
 | `contracts/` | Protobuf operations and JSON Schema events; single source of truth | Protobuf, JSON Schema |
 | `integrations/n8n/` | n8n node and versioned workflows | n8n |
 | `infra/`, `tools/` | Local infrastructure and repository tooling | YAML, Node |
@@ -85,13 +85,13 @@ Product names (NexusThrive, Thrive Business) are never translated. Full policy: 
 
 - Comments explain purpose, constraints and reasons, placed right above the element. Go doc comments start with the element name. No narration of obvious code.
 - Go 1.24, `go.work`, `sqlc` + `pgx`, Connect-RPC, typed contract errors, `fmt.Errorf("context: %w", err)`.
-- TypeScript strict mode, pnpm workspaces, Turborepo, React + Vite, Tailwind; every component starts in Storybook and covers loading, empty, data and error states.
+- TypeScript strict mode, pnpm workspaces, Turborepo, React + Vite, Tailwind; every component starts in Storybook and covers loading, empty, data and error states. Components use only the tokens from `packages/brand`; never raw colors, shadows, z-index values or durations. Design rules: `docs/06-reglas/sistema-de-diseno`.
 - Money uses exact decimals (`numeric` in PostgreSQL, a decimal type in Go). Never `float`.
 - IDs are UUID v7. Timestamps are `timestamptz` in UTC. Default locale `es-CO`, timezone `America/Bogota`, currency `COP`.
 
 ## Git
 
-- Branches: `<type>/HU-<slug>-<nn>` in English, e.g. `feat/HU-kernel-ledger-01`. Never commit to `main`.
+- Branches must match `^(feature|fix|chore|hotfix)/HU-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{2}$`, in English, e.g. `feature/HU-kernel-ledger-01`. Sprint integration branches are `sprint/S<nn>`. `feat/`, `docs/` or any other prefix is rejected (`feat/HU-kernel-ledger-01` is invalid). The branch prefix is not the commit type: a `feature/` branch has `feat`, `docs` or `test` commits. Never commit to `main`.
 - Commits: Conventional Commits in English, e.g. `feat(kernel): enforce ledger conservation per resource`.
 - Commit author: **santy401** (`santy401@users.noreply.github.com`).
 - **Never add `Co-Authored-By` trailers, signatures, links or mentions of tools or assistants** in commits, pull requests or files.

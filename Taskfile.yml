@@ -84,6 +84,11 @@ tasks:
       - cmd: if [ -n "$(find contracts/proto -name '*.proto')" ]; then go run {{.BUF}} lint contracts; fi
         silent: true
 
+  tokens:check:
+    desc: Verify tokens.json mirrors tokens.css and the radius scale is consistent
+    cmds:
+      - node tools/tokens-check.mjs
+
   docs:check:
     desc: Render every Mermaid diagram in docs to catch syntax errors
     cmds:

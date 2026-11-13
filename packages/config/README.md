@@ -1,3 +1,3 @@
 # @nexusthrive/config
 
-Shared configuration presets: `tsconfig` bases, ESLint rules and the Tailwind preset with NexusThrive design tokens.
+Shared configuration presets: `tsconfig` bases and ESLint rules. Design tokens and the Tailwind theme live in [`@nexusthrive/brand`](../brand/README.md).

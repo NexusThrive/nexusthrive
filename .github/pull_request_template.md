@@ -23,6 +23,7 @@
 
 ## Checklist
 
+- [ ] Branch matches `^(feature|fix|chore|hotfix)/HU-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{2}$` (or `sprint/S<nn>`); valid: `feature/HU-kernel-ledger-01`, invalid: `feat/HU-kernel-ledger-01`
 - [ ] Code, comments, commits and this PR are in English
 - [ ] Documentation in `docs/` is updated in Spanish
 - [ ] User-facing strings use `@nexusthrive/i18n` keys

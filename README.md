@@ -16,7 +16,7 @@ NexusThrive registra lo que pasa, cuida lo que se promete y actúa con IA dentro
 | [`distributions/`](distributions/) | Los mundos sobre el kernel. Primero: `business` | Go + YAML |
 | [`services/`](services/) | `api` (el binario) y `ai` (análisis) | Go, Python |
 | [`apps/`](apps/) | `console`, `web`, `mobile`, `desktop` | TypeScript + React |
-| [`packages/`](packages/) | `ui`, `app`, `sdk`, `i18n`, `config` | TypeScript |
+| [`packages/`](packages/) | `brand`, `ui`, `app`, `sdk`, `i18n`, `config` | TypeScript |
 | [`contracts/`](contracts/) | El idioma común entre todas las piezas | Protobuf + JSON Schema |
 | [`integrations/`](integrations/) | Avisos y conexiones con n8n | n8n |
 | [`infra/`](infra/) · [`tools/`](tools/) | Infraestructura local y utilidades | YAML, Node |
