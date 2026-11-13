@@ -220,3 +220,30 @@ func TestSweepRemovesOnlyStaleObjects(t *testing.T) {
 		t.Errorf("fresh schema %s was removed by the sweep", fresh)
 	}
 }
+
+func TestAPIPoolRunsAsAPIRole(t *testing.T) {
+	t.Parallel()
+	admin := Database(t)
+	pool := APIPool(t, admin)
+
+	if got := countRows(t, pool, "SELECT count(*) FROM pg_roles WHERE rolname = current_user AND rolname = 'nexusthrive_api' AND NOT rolsuper AND NOT rolbypassrls"); got != 1 {
+		t.Errorf("pool must run as the limited role nexusthrive_api")
+	}
+	// Every pooled connection must carry the role, not only the first one.
+	first, err := pool.Conn(t.Context())
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer first.Close()
+	second, err := pool.Conn(t.Context())
+	if err != nil {
+		t.Fatalf("second conn: %v", err)
+	}
+	defer second.Close()
+	for _, c := range []*sql.Conn{first, second} {
+		var user string
+		if err := c.QueryRowContext(t.Context(), "SELECT current_user").Scan(&user); err != nil || user != "nexusthrive_api" {
+			t.Errorf("current_user = %q (%v), want nexusthrive_api", user, err)
+		}
+	}
+}

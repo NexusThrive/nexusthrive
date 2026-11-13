@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/nexusthrive/nexusthrive/kernel/db"
 )
@@ -241,4 +241,37 @@ func DatabaseWith(t testing.TB, files fs.FS) *sql.DB {
 		t.Fatalf("migrate %s: %v", name, err)
 	}
 	return conn
+}
+
+// APIPool returns a pool on the database of admin whose every connection runs
+// as the limited API role, so row level security applies to it as it does in
+// production. admin stays the superuser used only to prepare and inspect
+// data: it sees every space because superusers bypass RLS. Cleanup closes the
+// pool before the database is dropped.
+func APIPool(t testing.TB, admin *sql.DB) *sql.DB {
+	t.Helper()
+	var name string
+	if err := admin.QueryRow("SELECT current_database()").Scan(&name); err != nil {
+		t.Fatalf("current database: %v", err)
+	}
+	target, err := url.Parse(URL())
+	if err != nil {
+		t.Fatalf("parse database URL: %v", err)
+	}
+	target.Path = "/" + name
+	config, err := pgx.ParseConfig(target.String())
+	if err != nil {
+		t.Fatalf("parse connection config: %v", err)
+	}
+	// SET ROLE needs no login of the limited role, only membership of it, which
+	// the administrator has as a superuser. B6 tests a real login.
+	connector := stdlib.GetConnector(*config, stdlib.OptionAfterConnect(func(ctx context.Context, conn *pgx.Conn) error {
+		_, err := conn.Exec(ctx, "SET ROLE "+pgx.Identifier{db.APIRole}.Sanitize())
+		return err
+	}))
+	pool := sql.OpenDB(connector)
+	pool.SetMaxOpenConns(4)
+	// Registered after the database drop of Database, so it runs before it.
+	t.Cleanup(func() { pool.Close() })
+	return pool
 }
