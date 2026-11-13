@@ -10,7 +10,10 @@ Thank you for contributing. This guide summarizes how work is done in this repos
 
 ## Workflow
 
-1. Create a branch from `main`: `<type>/HU-<slug>-<nn>` (for example `feat/HU-kernel-ledger-01`).
+1. Create a branch from `main` that matches `^(feature|fix|chore|hotfix)/HU-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{2}$`.
+   - Valid: `feature/HU-kernel-ledger-01`, `fix/HU-outbox-retry-02`, `chore/HU-scaffolding-01`. Sprint integration branches are `sprint/S<nn>`.
+   - Invalid: `feat/HU-kernel-ledger-01`, `docs/HU-platform-console-01`, `feature/kernel-ledger`, `feature/HU-kernel-ledger-1`.
+   - The branch prefix is not the commit type: a `feature/` branch can hold `feat`, `fix`, `docs` or `chore` commits.
 2. Write tests first, then the implementation.
 3. Commit with Conventional Commits in English: `type(scope): summary`.
 4. Update `docs/` (Spanish) in the same change.

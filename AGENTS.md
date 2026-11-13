@@ -91,7 +91,7 @@ Product names (NexusThrive, Thrive Business) are never translated. Full policy: 
 
 ## Git
 
-- Branches: `<type>/HU-<slug>-<nn>` in English, e.g. `feat/HU-kernel-ledger-01`. Never commit to `main`.
+- Branches must match `^(feature|fix|chore|hotfix)/HU-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{2}$`, in English, e.g. `feature/HU-kernel-ledger-01`. Sprint integration branches are `sprint/S<nn>`. `feat/`, `docs/` or any other prefix is rejected (`feat/HU-kernel-ledger-01` is invalid). The branch prefix is not the commit type: a `feature/` branch has `feat`, `docs` or `test` commits. Never commit to `main`.
 - Commits: Conventional Commits in English, e.g. `feat(kernel): enforce ledger conservation per resource`.
 - Commit author: **santy401** (`santy401@users.noreply.github.com`).
 - **Never add `Co-Authored-By` trailers, signatures, links or mentions of tools or assistants** in commits, pull requests or files.
