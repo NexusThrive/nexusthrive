@@ -37,7 +37,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0016](0016-sistema-de-diseno.md) | Sistema de diseño en un paquete de marca y licencia de fuentes registrada | Aceptada |
 | [0017](0017-mvp-web-tienda-primero.md) | MVP web: Tienda primero | Aceptada |
 | [0018](0018-recorte-de-la-etapa-1.md) | Recorte de la etapa 1 | Aceptada |
-| [0019](0019-alojamiento-y-entornos.md) | Alojamiento y entornos | Propuesta |
+| [0019](0019-alojamiento-y-entornos.md) | Alojamiento y entornos | Aceptada |
 | [0020](0020-control-externo.md) | Control externo: API, MCP, webhooks y n8n | Aceptada |
 | [0021](0021-auri.md) | AURI, la IA de NexusThrive | Aceptada |
 | [0022](0022-cobro-con-wompi.md) | Cobro de NexusThrive con Wompi | Aceptada |
@@ -47,6 +47,6 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | Tema | Bloquea |
 |---|---|
 | Licencia comercial de n8n para usar credenciales de clientes | Fase N3 |
-| Aceptar el proveedor de alojamiento propuesto en ADR-0019 (costo mensual) | Despliegue de staging (M2) |
+| Crear las cuentas de Render, Supabase, Vercel y DNS del dominio (ADR-0019) | Despliegue de staging (M2) |
 | Confirmar precios y límites provisionales de los planes (ADR-0022) | Wompi en producción |
 | Lista de tiendas piloto | Piloto |
