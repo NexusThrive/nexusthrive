@@ -8,6 +8,15 @@ import { join } from "node:path";
 const root = new URL("../docs/", import.meta.url).pathname;
 const out = mkdtempSync(join(tmpdir(), "docs-check-"));
 
+// GitHub-hosted runners disable the unprivileged user namespaces Chromium
+// needs for its sandbox, so CI renders without it. Local runs keep it.
+const puppeteerArgs = [];
+if (process.env.CI) {
+  const config = join(out, "puppeteer.json");
+  writeFileSync(config, JSON.stringify({ args: ["--no-sandbox"] }));
+  puppeteerArgs.push("-p", config);
+}
+
 function markdownFiles(dir) {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
@@ -24,7 +33,7 @@ for (const file of markdownFiles(root)) {
     const input = join(out, `${count}.mmd`);
     writeFileSync(input, source);
     try {
-      execFileSync("npx", ["-y", "@mermaid-js/mermaid-cli", "-i", input, "-o", `${input}.svg`], { stdio: "pipe" });
+      execFileSync("npx", ["-y", "@mermaid-js/mermaid-cli", ...puppeteerArgs, "-i", input, "-o", `${input}.svg`], { stdio: "pipe" });
     } catch (error) {
       console.error(`Invalid diagram in ${file}`);
       console.error(String(error.stderr));
