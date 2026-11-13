@@ -1,15 +1,17 @@
 # distributions/business
 
-Thrive Business. Estructura prevista:
+Thrive Business. Built in stage 2, on top of the kernel and the platform layer.
 
 ```
 business/
-├── translator/      idioma de negocio → piezas del kernel
-├── base/            clientes, catálogo, ventas, cartera, caja, facturas, reportes, equipo
-├── capabilities/    inventario, compras, POS, tienda en línea, agenda, cotizaciones, contabilidad, sedes
-├── patterns/        membresía, productos, preparación, servicio con agenda, proyecto
-├── skins/           pieles en YAML: gimnasio.yaml, tienda.yaml, restaurante.yaml…
-└── adapters/        pasarelas de pago y facturación electrónica
+├── translator/     business vocabulary to kernel primitives
+├── base/           customers, catalog, sales, receivables, cash, documents, reports, team
+├── capabilities/   inventory, POS, scheduling, quotes, accounting, branches
+├── patterns/       membership, products, preparation, service, project
+├── skins/          YAML skins: gym.yaml, store.yaml, restaurant.yaml
+├── adapters/       payment gateways and e-invoicing
+├── ai/             business AI flows
+└── db/             migrations for the `business` schema
 ```
 
-Ver [docs/03-distribuciones/business/](../../docs/03-distribuciones/business/README.md).
+Documentation (Spanish): `docs/03-distribuciones/business/`.

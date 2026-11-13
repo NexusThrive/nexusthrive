@@ -1,65 +1,76 @@
 # Visión general
 
-NexusThrive tiene cuatro pisos y dos costados. Cada piso solo habla con el de abajo, y siempre por el contrato.
+## Propósito
+
+Mostrar las capas de NexusThrive y cómo se comunican.
+
+## Alcance
+
+Vista de alto nivel. El detalle de cada capa está en su propia página.
+
+## Conceptos principales
+
+NexusThrive tiene una capa por encima de todo (la plataforma), un núcleo (el kernel), mundos encima del núcleo (las distribuciones) y las caras que usa la gente.
 
 ```mermaid
 flowchart TB
+    subgraph TOP["Plataforma NexusThrive · por encima de todo"]
+        CON["Consola NexusThrive"]
+        PLT["platform/"]
+    end
+
     subgraph CARAS["Caras · TypeScript + React"]
         WEB["Web"]
-        MOV["Móvil iOS / Android"]
-        ESC["Escritorio Win / Mac / Linux"]
-        REP["App de reportes"]
-        IAC["Asistente IA"]
+        MOB["Móvil"]
+        DSK["Escritorio"]
     end
 
     SDK["contracts/ · SDK generado"]
 
+    subgraph K["Kernel · Go · no conoce ningún mundo"]
+        GW["Puertas: API · MCP · webhooks"]
+        CORE["Capacidades · Ejecución · Estado<br/>Coordinación · Modelo · Extensiones"]
+    end
+
     subgraph DIST["Distribuciones · saben de su mundo"]
         BUS["Thrive Business"]
-        COM["Comunidad (futuro)"]
-        PER["Personal (futuro)"]
+        FUT["Futuras"]
     end
 
-    TR["Traductor de cada distribución"]
+    PG[("PostgreSQL<br/>kernel · platform · business")]
+    N8N["n8n · avisos e integraciones"]
+    AI["Python · análisis e IA"]
+    ADP["Adaptadores directos · pagos y facturación"]
 
-    subgraph KERNEL["Kernel · Go · no sabe de ningún mundo"]
-        PUE["Puertas: API · MCP · webhooks"]
-        MOD["Modelo · Estado · Capacidades"]
-        COO["Coordinación · Ejecución · Extensiones"]
-    end
-
-    PG[("PostgreSQL")]
-
-    PAY["Adaptadores directos: pagos, facturación"]
-    N8N["n8n: avisos e integraciones"]
-    PY["Python: análisis e IA"]
-
-    CARAS --> SDK --> PUE
-    PUE --> DIST
-    DIST --> TR --> MOD
-    MOD --> COO
-    COO --> PG
-    PAY <--> BUS
-    COO -->|"señales"| N8N
-    N8N -.->|"pide acciones"| PUE
-    PY -.->|"MCP"| PUE
+    CON --> SDK
+    CARAS --> SDK
+    SDK --> GW
+    GW --> CORE
+    PLT -->|"extensión privilegiada"| CORE
+    DIST -->|"extensiones"| CORE
+    CORE --> PG
+    CORE -->|"señales"| N8N
+    N8N -.->|"pide acciones"| GW
+    AI -.->|"MCP"| GW
+    ADP <--> BUS
 ```
 
-## Los pisos
+## Funcionamiento
 
-1. **Caras.** Lo que ve la gente. Solo muestran y piden; no tienen lógica. Todas usan el mismo SDK.
-2. **Distribuciones.** Los mundos. Saben qué es un cliente, una factura, una membresía. Se cargan dentro del kernel como extensiones.
-3. **Traductor.** Convierte el idioma del mundo en las siete piezas del kernel.
-4. **Kernel.** Estructura, valida, guarda y emite señales. Cumple las cinco leyes.
+1. **Caras y consola** muestran y piden. No tienen lógica. Todas usan el mismo SDK.
+2. **Puertas** reciben cada petición y la entregan al motor de operaciones.
+3. **Kernel** verifica permisos, ejecuta en una sola transacción, guarda y emite señales.
+4. **Plataforma** y **distribuciones** son extensiones que corren dentro del mismo proceso que el kernel. Registran sus operaciones y traducen su idioma a las piezas del kernel.
+5. **n8n** escucha señales y conecta con el mundo exterior. **Python** analiza y actúa por MCP.
 
-## Los costados
+## Reglas e invariantes
 
-- **Adaptadores directos:** lo que mueve plata o cambia la verdad (pasarelas de pago, facturación electrónica). Se conectan a la distribución sin intermediarios.
-- **Orquestación externa:** lo que comunica o conecta (WhatsApp, correo, push, Google, marketplaces). Lo hace n8n escuchando señales y pidiendo acciones por la API.
-- **Análisis:** Python lee, predice y propone. Para actuar, entra por MCP con permisos como cualquier participante.
+1. Nadie toca la base de datos sino el kernel y sus extensiones.
+2. Ninguna pieza importa código de otra: todo cruza por `contracts/`.
+3. El kernel no conoce ningún mundo; si aparece la palabra "factura" en `kernel/`, algo está mal.
+4. La plataforma actúa sobre varios espacios solo con permisos propios y auditoría.
 
-## Tres reglas que sostienen todo
+## Decisiones relacionadas
 
-1. **Nadie toca la base de datos sino el kernel.**
-2. **Ninguna pieza importa código de otra:** todo pasa por `contracts/`.
-3. **El kernel no conoce ningún mundo:** si aparece la palabra "factura" en `kernel/`, algo está mal.
+- [ADR-0001 · El kernel no conoce ningún mundo](../05-decisiones/0001-kernel-sin-mundo.md)
+- [ADR-0011 · La plataforma por encima de los espacios](../05-decisiones/0011-plataforma-por-encima.md)

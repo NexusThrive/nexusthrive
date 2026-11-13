@@ -1,0 +1,19 @@
+{
+  "name": "nexusthrive",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "storybook": "pnpm --filter @nexusthrive/ui storybook"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  }
+}

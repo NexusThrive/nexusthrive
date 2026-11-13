@@ -1,8 +1,18 @@
 # Distribuciones
 
+## Propósito
+
+Explicar cómo se aplica el kernel a un mundo concreto y cuándo algo es una distribución, un patrón o una piel.
+
+## Alcance
+
+Los niveles, la regla para decidir y los mundos previstos. Cada distribución tiene su carpeta.
+
+## Conceptos principales
+
 Una distribución es un **mundo** con su propio idioma que corre sobre el kernel. Se nombran por mundo, nunca por industria.
 
-## Los cuatro niveles
+### Los cuatro niveles
 
 ```mermaid
 flowchart TB
@@ -19,7 +29,9 @@ flowchart TB
 | **Piel** | Un rubro sobre un patrón | Muchos | Solo configuración (YAML) |
 | **Negocio** | Un cliente real | Miles | Se registra |
 
-## ¿Perfil o distribución nueva?
+## Reglas e invariantes
+
+### ¿Perfil o distribución nueva?
 
 Va **dentro de Business** si responde "sí" a las tres:
 
@@ -29,15 +41,22 @@ Va **dentro de Business** si responde "sí" a las tres:
 
 Es una **distribución nueva** si su forma de pensar es otra: no vende, el valor no se mueve por ventas, o su idioma es completamente distinto.
 
-## Los mundos
+## Funcionamiento
+
+### Los mundos
 
 | Distribución | Su mundo | Estado |
 |---|---|---|
-| [**Thrive Business**](business/README.md) | Vender y cobrar | Primera; en construcción |
+| [**Thrive Business**](business/README.md) | Vender y cobrar | Etapa 2, sobre la base terminada |
 | **Thrive Comunidad** | Miembros que aportan y deciden juntos: ONG, propiedad horizontal, cooperativas | Visión |
 | **Thrive Personal** | La vida de una persona: finanzas, hogar, metas | Visión |
 | **Thrive Code y Agentes** | El trabajo técnico y los agentes de IA | Visión |
 
-## Una entidad, varios mundos
+### Una entidad, varios mundos
 
 Una cooperativa que vende y además gobierna a sus asociados es **un solo participante** con dos distribuciones instaladas: Business para sus ventas y Comunidad para sus asambleas. Comparten personas y valor sin duplicar nada, porque hablan con el mismo kernel.
+
+## Decisiones relacionadas
+
+- [ADR-0001 · El kernel no conoce ningún mundo](../05-decisiones/0001-kernel-sin-mundo.md)
+- [ADR-0008 · Patrones con código, pieles con configuración](../05-decisiones/0008-patrones-y-pieles.md)

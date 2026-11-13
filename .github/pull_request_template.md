@@ -1,0 +1,31 @@
+## Summary
+
+<!-- What does this change do? One or two sentences. -->
+
+## Motivation
+
+<!-- Why is this change needed? Link the issue or user story. -->
+
+## Changes
+
+-
+
+## Testing
+
+- [ ] Unit tests
+- [ ] Kernel law tests (`kernel/laws`) still pass
+- [ ] Static analysis (`task lint`)
+- [ ] Diagrams render (`task docs:check`)
+
+## Architecture impact
+
+<!-- Contracts, database schemas, permissions or ADRs affected. Write "None" if not applicable. -->
+
+## Checklist
+
+- [ ] Code, comments, commits and this PR are in English
+- [ ] Documentation in `docs/` is updated in Spanish
+- [ ] User-facing strings use `@nexusthrive/i18n` keys
+- [ ] No business vocabulary added to `kernel/`
+
+Related issue: Closes #

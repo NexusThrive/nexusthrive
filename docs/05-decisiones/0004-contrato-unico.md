@@ -1,11 +1,43 @@
-# 0004 · Un contrato único
+# ADR-0004 · Un contrato único del que se genera todo
 
-**Estado:** aceptada
+- **Estado:** Aceptada
+- **Fecha:** 2026-11-13
+- **Responsables:** santy401
+
+## Contexto
+
+Sin una fuente única, la API, el SDK, las herramientas MCP y los eventos se desincronizan.
 
 ## Decisión
-Las operaciones se definen en Protobuf (Connect-RPC) y los eventos en JSON Schema, dentro de `contracts/`. De ahí se generan el servidor Go, los SDK de TypeScript y Python y las herramientas MCP.
+
+Las operaciones se definen en Protobuf con Connect-RPC y los eventos en JSON Schema, dentro de `contracts/`. De ahí se genera el código de Go, TypeScript y Python, y se exponen las herramientas MCP.
+
+## Alternativas consideradas
+
+| Alternativa | Por qué no se eligió |
+|---|---|
+| OpenAPI escrito a mano | Más fácil de empezar, pero se aleja del código con el tiempo. |
+| GraphQL | No encaja con operaciones con riesgo, permiso e idempotencia declarados. |
 
 ## Consecuencias
+
+### Positivas
+
 - Nada se escribe a mano en los extremos.
-- Un cambio que rompe compatibilidad se detecta antes de integrarse.
-- Toda operación declara permiso, capacidad, riesgo e idempotencia.
+- Los cambios incompatibles se detectan en el CI.
+
+### Negativas
+
+- Cada operación nueva pasa primero por el contrato.
+
+### Riesgos
+
+- Saltarse el contrato con endpoints ad hoc.
+
+## Cumplimiento
+
+`buf lint` y `buf breaking` en el CI. Las apps no pueden llamar al backend sin el SDK generado.
+
+## Referencias
+
+- [Contrato](../02-arquitectura/contrato.md)

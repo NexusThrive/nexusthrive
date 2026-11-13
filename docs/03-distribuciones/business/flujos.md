@@ -1,6 +1,16 @@
 # Flujos de Thrive Business
 
-## 1. Del registro al uso
+## Propósito
+
+Mostrar los recorridos principales de un negocio en Thrive Business.
+
+## Alcance
+
+Registro, cobro de una membresía, venta y solicitud de funciones. El onboarding detallado está en [experiencia/onboarding.md](experiencia/onboarding.md).
+
+## Funcionamiento
+
+### 1. Del registro al uso
 
 ```mermaid
 flowchart LR
@@ -18,7 +28,7 @@ flowchart LR
 5. **Uso diario.** Desde cualquier cara: web, móvil o escritorio.
 6. **Reportes y finanzas.** Caja, cartera y resultados, también desde cualquier cara.
 
-## 2. Cobrar una membresía, de punta a punta
+### 2. Cobrar una membresía, de punta a punta
 
 ```mermaid
 sequenceDiagram
@@ -41,7 +51,7 @@ sequenceDiagram
 
 Si n8n falla, el cobro ya quedó guardado: solo se atrasa el aviso. **La plata nunca depende de n8n.**
 
-## 3. Una venta en tienda
+### 3. Una venta en tienda
 
 ```mermaid
 flowchart LR
@@ -56,7 +66,7 @@ flowchart LR
 
 No importa por dónde entre la venta: siempre termina en la misma operación de la base.
 
-## 4. El dueño necesita algo nuevo
+### 4. El dueño necesita algo nuevo
 
 ```mermaid
 flowchart LR

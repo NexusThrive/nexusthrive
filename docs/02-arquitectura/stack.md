@@ -1,40 +1,35 @@
 # Stack
 
-> **Go decide, Postgres recuerda, Python analiza, n8n conecta y React muestra.**
+## Propósito
 
-## Kernel
-- **Go:** operaciones, reglas, permisos, orquestación. Un solo binario, concurrencia nativa.
-- **PostgreSQL:** la verdad. Intercambios, compromisos y eventos.
-- **sqlc:** SQL tipado desde Go, sin ORM.
-- **Redis:** caché y sesiones.
-- **Outbox en Postgres:** señales en la misma transacción. **NATS JetStream** cuando el volumen lo pida.
+Listar la tecnología oficial de cada capa.
 
-## Contrato
-- **Protobuf + Connect-RPC:** operaciones.
-- **JSON Schema:** eventos.
-- **Buf:** generación de código y control de cambios incompatibles.
+## Alcance
 
-## Análisis e IA
-- **Python:** reportes, predicciones, agentes. Lee de una réplica; actúa por MCP.
+Lenguajes, librerías principales y herramientas del monorepo. Cambiar algo de esta lista exige un ADR.
 
-## Caras
-- **TypeScript + React.**
-- **Tailwind:** estilos.
-- **Storybook:** biblioteca de componentes documentada y probada aparte.
-- **Web:** React + Vite.
-- **Móvil:** Expo (React Native) con SQLite local y sincronización. Funciona sin internet.
-- **Escritorio:** Tauri (Windows, macOS, Linux).
+## Conceptos principales
 
-## Integraciones
-- **n8n:** WhatsApp, correo, SMS, push, Telegram, Google, Shopify, marketplaces.
-- **Correo transaccional:** Resend, Postmark o Amazon SES.
+> **Go decide, PostgreSQL recuerda, Python analiza, n8n conecta y React muestra.**
 
-## Identidad
-- **Clerk:** prueba quién eres y emite el token. El kernel decide qué puedes hacer.
+| Capa | Tecnología |
+|---|---|
+| Kernel, plataforma y distribuciones | Go 1.24, Connect-RPC, `sqlc`, `pgx`, decimales exactos |
+| Datos | PostgreSQL 17 (esquemas `kernel`, `platform`, `business`), Redis 7 |
+| Señales | Outbox en PostgreSQL; NATS JetStream cuando el volumen lo pida |
+| Contrato | Protobuf, JSON Schema, Buf |
+| Análisis e IA | Python 3.12, solo lectura sobre réplica; acciones por MCP |
+| Caras | TypeScript, React, Tailwind, Storybook |
+| Web y consola | React + Vite |
+| Móvil | Expo (React Native) con SQLite local |
+| Escritorio | Tauri |
+| Textos de la interfaz | `@nexusthrive/i18n` con español e inglés |
+| Integraciones | n8n; correo transaccional con Resend, Postmark o Amazon SES |
+| Identidad | Clerk para autenticar; el kernel autoriza |
+| Monorepo | `go.work`, pnpm workspaces, Turborepo, Taskfile |
+| Calidad | GitHub Actions, `go vet`, `staticcheck`, ESLint, Prettier |
+| Local | Docker Compose (`infra/docker/compose.yaml`) |
 
-## Herramientas del monorepo
-- **Go workspaces** para el kernel y las extensiones.
-- **pnpm workspaces** para las caras y los SDK.
-- **Docker** para correr todo igual en local y en producción.
-- **Taskfile:** un solo comando para levantar todo (`task dev`).
-- **GitHub Actions:** CI que solo corre lo que cambió.
+## Decisiones relacionadas
+
+- [ADR-0002 · Lenguajes por capa](../05-decisiones/0002-lenguajes-por-capa.md)

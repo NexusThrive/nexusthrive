@@ -1,5 +1,9 @@
 # Manifiesto
 
+## Propósito
+
+Explicar qué es NexusThrive, por qué existe y para quién.
+
 ## En una frase
 
 **NexusThrive es el núcleo que entiende un ecosistema y lo hace funcionar solo: registra lo que pasa, cuida lo que se promete y actúa con IA dentro de reglas claras.**
@@ -43,6 +47,6 @@ NexusThrive no reemplaza lo que ya funciona: se conecta con ello.
 
 ## Para quién primero
 
-El dueño de un negocio pequeño o mediano que hoy opera con cuaderno, Excel, Nequi y WhatsApp. Empezamos con la distribución **Thrive Business**.
+El dueño de un negocio pequeño o mediano que hoy opera con cuaderno, Excel, Nequi y WhatsApp. Primero construimos la base (kernel y plataforma); encima, la distribución **Thrive Business**.
 
 La visión es más amplia; la primera persona que paga es esa.

@@ -1,6 +1,22 @@
 # Thrive Business
 
-**El mundo de todo lo que vende y cobra.** Es la primera distribución de NexusThrive.
+## Propósito
+
+Describir la primera distribución de NexusThrive: **el mundo de todo lo que vende y cobra.**
+
+## Alcance
+
+Se construye en la **etapa 2**, encima del kernel y la plataforma terminados. Esta carpeta contiene:
+
+| Página | Contenido |
+|---|---|
+| [patrones.md](patrones.md) | Patrones y pieles |
+| [flujos.md](flujos.md) | Recorridos principales |
+| [mvp/](mvp/README.md) | Alcance, fases, operaciones y Business completo |
+| [experiencia/](experiencia/README.md) | Onboarding y mapa de pantallas |
+| [Modelo de datos](../../02-arquitectura/modelo-de-datos/business.md) | Esquema `business` |
+
+## Conceptos principales
 
 ```mermaid
 flowchart TB
@@ -26,7 +42,9 @@ flowchart TB
     IA -.-> BASE
 ```
 
-## La base
+## Funcionamiento
+
+### La base
 
 Todo negocio la tiene, sin importar el rubro:
 
@@ -39,17 +57,17 @@ Todo negocio la tiene, sin importar el rubro:
 - **Reportes:** cómo va el negocio.
 - **Equipo y roles:** quién trabaja y qué puede hacer.
 
-## La IA de negocio
+### La IA de negocio
 
 Cobra a los morosos, resume el día, alerta stock bajo, predice ventas y configura el negocio desde las respuestas del registro. Actúa con permisos propios y deja rastro.
 
-## Capacidades
+### Capacidades
 
 Se suman cuando el negocio las necesita: inventario y bodegas, compras y proveedores, punto de venta, tienda en línea y pedidos, agenda y citas, cotizaciones, contabilidad completa y varias sedes.
 
 **El dueño no las activa.** NexusThrive y su IA configuran; el dueño solicita lo que necesite.
 
-## El traductor
+### El traductor
 
 | Idioma Business | Pieza del kernel |
 |---|---|
@@ -60,4 +78,7 @@ Se suman cuando el negocio las necesita: inventario y bodegas, compras y proveed
 | Vencimiento, turno, cierre de caja | Tiempo |
 | Rol, permiso, política de precios | Regla |
 
-Detalle de cada patrón en [patrones/](patrones/README.md) y los flujos en [flujos.md](flujos.md).
+## Decisiones relacionadas
+
+- [ADR-0007 · El dueño no activa funciones](../../05-decisiones/0007-configura-nexusthrive.md)
+- [ADR-0008 · Patrones con código, pieles con configuración](../../05-decisiones/0008-patrones-y-pieles.md)

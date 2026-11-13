@@ -1,7 +1,7 @@
 # distributions
 
-Los mundos que corren sobre el kernel. Cada uno trae su traductor, sus operaciones, sus patrones y sus pieles.
+Worlds that run on top of the kernel. Each distribution brings its translator, operations, patterns and skins, and owns its own database schema.
 
-- [`business/`](business/): Thrive Business, el mundo de vender y cobrar.
+- `business/`: Thrive Business (stage 2, built after the platform base).
 
-Ver [docs/03-distribuciones/](../docs/03-distribuciones/README.md).
+Documentation (Spanish): `docs/03-distribuciones/`.
