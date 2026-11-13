@@ -1,0 +1,21 @@
+/* NexusThrive font faces.
+   Public Stunt ships with this package under a commercial license (see fonts/public-stunt/LICENSE.md).
+   It is for brand pieces only, never interface text.
+   Montserrat, Inter and JetBrains Mono are open fonts (SIL OFL 1.1). Each app self-hosts them
+   when it is created; tokens.css already names them with system fallbacks. */
+
+@font-face {
+  font-family: "Public Stunt";
+  src: url("../fonts/public-stunt/PublicStunt-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Public Stunt";
+  src: url("../fonts/public-stunt/PublicStunt-Italic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}

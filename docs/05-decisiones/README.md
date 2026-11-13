@@ -34,6 +34,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0013](0013-internacionalizacion.md) | Interfaz internacionalizada | Aceptada |
 | [0014](0014-estandar-de-documentacion.md) | Estándar de documentación y ADR | Aceptada |
 | [0015](0015-pieles-versionadas.md) | Pieles versionadas con despliegue controlado | Aceptada |
+| [0016](0016-sistema-de-diseno.md) | Sistema de diseño en un paquete de marca y licencia de fuentes registrada | Aceptada |
 
 ## Pendientes
 

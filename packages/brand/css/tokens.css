@@ -1,0 +1,316 @@
+/* ==========================================================================
+   NexusThrive design tokens
+   Identity comes from the logo: black and gold, the N with its -24deg cut.
+   The interface is calm: warm light background, white surfaces, subtle
+   borders, soft radii, barely visible depth, and gold as the action accent,
+   never as a dominant background.
+   Single source of values: the `--nx-*` primitives. `theme-v4.css` and the
+   semantic tokens below point to them; no value is repeated.
+   Mirror: `tokens/tokens.json`. Change both in the same commit.
+   ========================================================================== */
+
+:root {
+  /* --- Brand primitives --- */
+  --nx-ink: #000000;
+  --nx-ink-soft: #1c1c20; /* interface text: near black, softer than the logo ink */
+  --nx-white: #ffffff;
+  --nx-paper: #f7f6f3;
+
+  --nx-gold-100: #f6ebc4;
+  --nx-gold-300: #e6cb74;
+  --nx-gold-500: #d4af37;
+  --nx-gold-600: #b8921f;
+  --nx-gold-700: #7f6210;
+
+  --nx-graphite-950: #0a0a0b;
+  --nx-graphite-900: #141416;
+  --nx-graphite-800: #1e1e21;
+  --nx-graphite-700: #2a2a2e;
+  --nx-graphite-550: #5f5f67; /* secondary text in light mode: 5.9:1 on paper (AA needs 4.5) */
+  --nx-graphite-500: #6b6b73;
+  --nx-graphite-400: #a1a1a8;
+  --nx-graphite-350: #b0b0b6; /* secondary text in dark mode: 8.5:1 on the surface */
+  --nx-graphite-200: #e8e6e1;
+  --nx-graphite-100: #f2f1ee;
+
+  /* Status colors: functional only, never decorative */
+  --nx-success: #2e7d5b;
+  --nx-danger: #b3261e;
+
+  /* --- Typography. Apps load the font files; see README.md --- */
+  --font-display: "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+  /* Brand pieces only (covers, campaign art). Never interface text. */
+  --font-stunt: "Public Stunt", var(--font-display);
+
+  --text-2xs: 0.6875rem; --lh-2xs: 1rem;      /* 11 px: metadata only */
+  --text-xs: 0.75rem;   --lh-xs: 1rem;
+  --text-ui: 0.8125rem; --lh-ui: 1.25rem;    /* 13 px: operational text in dense screens */
+  --text-sm: 0.875rem;  --lh-sm: 1.25rem;
+  --text-base: 1rem;    --lh-base: 1.5rem;
+  --text-lg: 1.125rem;  --lh-lg: 1.75rem;
+  --text-xl: 1.25rem;   --lh-xl: 1.75rem;
+  --text-2xl: 1.5rem;   --lh-2xl: 2rem;
+  --text-3xl: 1.875rem; --lh-3xl: 2.25rem;
+  --text-4xl: 2.5rem;   --lh-4xl: 2.75rem;
+  --text-5xl: 3.25rem;  --lh-5xl: 3.5rem;
+
+  /* --- Shape primitives: a soft scale with three levels of use:
+     controls (md), containers (lg to 3xl) and status (full). --- */
+  --nx-radius-xs: 6px;    /* small marks, kbd, highlights */
+  --nx-radius-sm: 8px;    /* square chips, thumbnails, menu options */
+  --nx-radius-md: 10px;   /* controls: button, field, avatar */
+  --nx-radius-lg: 12px;   /* cards, floating windows */
+  --nx-radius-xl: 14px;   /* settings blocks, inner panels */
+  --nx-radius-2xl: 16px;  /* menus, notices, featured blocks */
+  --nx-radius-3xl: 24px;  /* dashboard widgets, floating lists */
+  --nx-radius-sheet: 28px; /* dialogs, bottom sheets, home greeting */
+
+  --radius-none: 0;
+  --radius-xs: var(--nx-radius-xs);
+  --radius-sm: var(--nx-radius-sm);
+  --radius-md: var(--nx-radius-md);
+  --radius-lg: var(--nx-radius-lg);
+  --radius-xl: var(--nx-radius-xl);
+  --radius-2xl: var(--nx-radius-2xl);
+  --radius-3xl: var(--nx-radius-3xl);
+  --radius-widget: var(--nx-radius-3xl);
+  --radius-sheet: var(--nx-radius-sheet);
+
+  /* --- Depth primitives: warm, diffuse shadows from least to most.
+     xs: quiet separation · sm: card on hover · md: menus and help ·
+     lg: dialogs and panels. --- */
+  --nx-shadow-xs: 0 1px 2px rgba(28, 24, 14, 0.04);
+  --nx-shadow-sm: 0 1px 2px rgba(28, 24, 14, 0.04), 0 4px 12px rgba(28, 24, 14, 0.05);
+  --nx-shadow-md: 0 2px 6px rgba(28, 24, 14, 0.05), 0 12px 32px rgba(28, 24, 14, 0.09);
+  --nx-shadow-lg: 0 4px 12px rgba(28, 24, 14, 0.06), 0 24px 64px rgba(28, 24, 14, 0.14);
+  /* Gold halo on a focused field. It complements the `--ring` border, never replaces it. */
+  --nx-shadow-focus: 0 0 0 3px rgba(212, 175, 55, 0.22);
+
+  /* --- Spacing, 4px base --- */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px; --space-20: 80px;
+
+  /* --- Motion --- */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  /* App scale: d1 micro, d2 hover and color, d3 panels, d4 entrances. */
+  --d1: 120ms;
+  --d2: 200ms;
+  --d3: 320ms;
+  --d4: 600ms;
+  --nx-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --nx-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --nx-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Short bounce for sliding indicators (segmented controls, tabs). */
+  --nx-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --nx-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* The angle of the N: cuts, progress bars and highlights. */
+  --nx-angle: -24deg;
+
+  /* --- Documents and print: receipts and invoices look the same in any theme --- */
+  --doc-ink: #0a0a0b;
+  --doc-muted: #5e5d63;
+  --doc-soft: #6b6b73;
+  --doc-faint: #8a8990;
+  --doc-rule: #a1a1a8;
+  --doc-line: #e4e1da;
+  --doc-bg: #f7f6f3;
+  --doc-gold: #d4af37;
+  --doc-edge: #2a2a2e;
+  --doc-edge-strong: #3a3a40;
+
+  /* --- Density (data-density="compact" on <html>) --- */
+  --control-h: 40px;
+  --row-h: 56px;
+
+  /* --- App layout --- */
+  --sidebar-width: 248px;
+  --sidebar-width-collapsed: 76px;
+  --scrollbar-size: 10px; /* scrollbar hit area; the visible thumb is 6 px */
+  --topbar-height: 60px;  /* 72 px from 768 px up (see below) so the full lockup fits */
+  --content-max: 1280px;
+  /* Reading width: running text, help, single-column forms. */
+  --content-prose: 72ch;
+
+  /* --- Floating surfaces (docs/06-reglas/sistema-de-diseno/interaccion.md) --- */
+  --dialog-w-sm: 440px;   /* confirmations */
+  --dialog-w-md: 520px;   /* short form (default) */
+  --dialog-w-lg: 640px;   /* two-column form */
+  --dialog-w-xl: 768px;   /* editors and tables */
+  --drawer-w: 440px;      /* record with context */
+  --drawer-w-lg: 560px;   /* record with many sections */
+  --popover-w: 320px;     /* contextual help and quick actions */
+
+  /* --- Layers (z-index). Components never use a raw number. --- */
+  --z-raised: 10;     /* items above their card (badges) */
+  --z-sticky: 40;     /* sticky headers inside content */
+  --z-tabbar: 45;     /* mobile bottom bar */
+  --z-sidebar: 50;    /* sidebar (drawer on mobile) */
+  --z-topbar: 55;     /* global top bar, above the sidebar */
+  --z-ghost-overlay: 68; /* backdrop of a closing copy (exit animation), always below what opens */
+  --z-ghost: 69;      /* closing copy of a modal or panel, below the next one */
+  --z-overlay: 70;    /* dialog and panel backdrop */
+  --z-modal: 71;      /* dialog, side panel, bottom sheet */
+  --z-alert-overlay: 72; /* backdrop of an alert ABOVE a panel (save changes?) */
+  --z-alert: 73;      /* the alert itself */
+  --z-popover: 80;    /* tooltip, menu, help: ALWAYS above the modal that holds them */
+  --z-banner: 85;     /* connection banner */
+  --z-toast: 90;      /* toasts */
+  --z-takeover: 120;  /* command palette, scanner, full-screen takeovers */
+
+  /* --- Visible focus (WCAG 2.4.7 / 2.4.11): 2 px, offset 2 px from the control --- */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* --- Motion by intent (aliases of the d1 to d4 scale) --- */
+  --motion-feedback: var(--d1);        /* press, check */
+  --motion-hover: var(--d2);           /* hover, color, border */
+  --motion-overlay-in: 360ms;          /* dialog and panel enter */
+  --motion-overlay-out: 200ms;         /* and leave without making anyone wait */
+  --motion-popover: 160ms;             /* tooltip, menu, help */
+  --motion-view: 360ms;                /* view entrance */
+
+  /* --- Breakpoints (reference; Tailwind uses sm/md/lg/xl) --- */
+  /* sm 640 · md 768 (centered modal, side drawer) · lg 1024 (fixed sidebar) · xl 1280 */
+
+  /* --- Semantic tokens: LIGHT MODE (default) --- */
+  --background: var(--nx-paper);
+  --surface: var(--nx-white);
+  --surface-muted: var(--nx-graphite-100);
+  --surface-inverse: var(--nx-ink);
+  --border: var(--nx-graphite-200);
+  --border-strong: #d9d7d1;
+  --scrollbar-thumb: rgba(20, 20, 23, 0.22);
+  --scrollbar-thumb-hover: rgba(20, 20, 23, 0.42);
+  /* Border of editable controls (inputs, selects, checkboxes): soft gray at
+     rest, stronger on hover, gold halo on focus. */
+  --border-input: #d2d0ca;
+  --border-input-hover: #a9a7a1;
+  --surface-hover: #eae8e2;
+
+  --foreground: var(--nx-ink-soft);
+  --foreground-muted: var(--nx-graphite-550);
+  --foreground-inverse: var(--nx-paper);
+
+  /* `primary` is the brand ink: strong text, logo and identity fills. The main interface action is gold
+     (`accent` with ink on top, 9.6:1) through the button variant, not by changing this token: many texts
+     use `text-primary` and would lose contrast in gold. */
+  --primary: var(--nx-ink);
+  --primary-foreground: var(--nx-paper);
+  --primary-hover: var(--nx-graphite-800);
+  --accent: var(--nx-gold-500);
+  --accent-hover: var(--nx-gold-600);
+  --accent-foreground: var(--nx-ink);
+  --accent-text: var(--nx-gold-700);
+  --accent-subtle: var(--nx-gold-100);
+
+  --ring: #8f6f12;
+  --success: var(--nx-success);
+  --success-subtle: #e3f0e9;
+  --danger: var(--nx-danger);
+  --danger-subtle: #f7e3e1;
+  --warning-bg: var(--nx-gold-100);
+  --warning-fg: var(--nx-gold-700);
+
+  --shadow-popover: var(--nx-shadow-md);
+  --nx-shadow-overlay: var(--nx-shadow-lg);
+  /* Blurred bars (top bar, tab bar) and modal backdrops. */
+  --glass: rgba(247, 246, 243, 0.82);
+  --overlay: rgba(10, 10, 11, 0.32);
+  --overlay-strong: rgba(10, 10, 11, 0.55); /* alert above another panel */
+
+  /* --- Sidebar navigation: white in light mode, ink in dark mode --- */
+  --sidebar-bg: var(--nx-white);
+  --sidebar-fg: var(--nx-graphite-950);
+  --sidebar-fg-muted: var(--nx-graphite-550);
+  --sidebar-border: var(--nx-graphite-200);
+  --sidebar-hover: rgba(0, 0, 0, 0.05);
+  --sidebar-active: rgba(0, 0, 0, 0.06);
+  --sidebar-accent: var(--nx-gold-600);
+}
+
+/* --- DARK MODE --- */
+.dark,
+[data-theme="dark"] {
+  --background: var(--nx-graphite-950);
+  --surface: var(--nx-graphite-900);
+  --surface-muted: var(--nx-graphite-800);
+  --surface-inverse: var(--nx-ink);
+  --border: var(--nx-graphite-700);
+  --border-strong: #3a3a40;
+  --scrollbar-thumb: rgba(247, 246, 243, 0.2);
+  --scrollbar-thumb-hover: rgba(247, 246, 243, 0.4);
+  --border-input: #3a3a40;
+  --border-input-hover: #55555c;
+  --surface-hover: #26262a;
+
+  --foreground: var(--nx-paper);
+  --foreground-muted: var(--nx-graphite-350);
+  --foreground-inverse: var(--nx-paper);
+
+  --primary: var(--nx-gold-500);
+  --primary-foreground: var(--nx-ink);
+  --primary-hover: var(--nx-gold-300);
+  --accent: var(--nx-gold-500);
+  --accent-hover: var(--nx-gold-300);
+  --accent-foreground: var(--nx-ink);
+  --accent-text: var(--nx-gold-500);
+  --accent-subtle: rgba(212, 175, 55, 0.14);
+
+  --ring: var(--nx-gold-500);
+  --success: #3fa57a;
+  --success-subtle: rgba(63, 165, 122, 0.14);
+  --danger: #e5564d;
+  --danger-subtle: rgba(229, 86, 77, 0.14);
+  --warning-bg: rgba(212, 175, 55, 0.14);
+  --warning-fg: var(--nx-gold-300);
+
+  --nx-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --nx-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --nx-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.45);
+  --nx-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.4), 0 24px 64px rgba(0, 0, 0, 0.6);
+  --shadow-popover: var(--nx-shadow-md);
+  --nx-shadow-overlay: var(--nx-shadow-lg);
+  --glass: rgba(10, 10, 11, 0.78);
+  --overlay: rgba(0, 0, 0, 0.5);
+  --overlay-strong: rgba(0, 0, 0, 0.72);
+
+  --sidebar-bg: var(--nx-ink);
+  --sidebar-fg: var(--nx-paper);
+  --sidebar-fg-muted: var(--nx-graphite-350);
+  --sidebar-border: var(--nx-graphite-700);
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active: rgba(255, 255, 255, 0.08);
+  --sidebar-accent: var(--nx-gold-500);
+}
+
+/* --- Compact density: more visible rows in tables --- */
+[data-density="compact"] {
+  --control-h: 34px;
+  --row-h: 46px;
+}
+
+/* Touch: every standard control is 44 px, also in compact density. Fine pointers keep 40/34 px. */
+@media (pointer: coarse) {
+  :root,
+  [data-density="compact"] {
+    --control-h: 44px;
+  }
+}
+
+/* On very wide screens content grows so the center does not look narrow. */
+@media (min-width: 1536px) {
+  :root {
+    --content-max: 1480px;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --topbar-height: 72px;
+  }
+}
