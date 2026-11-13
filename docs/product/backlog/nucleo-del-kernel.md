@@ -109,7 +109,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-spaces-03 · Crear espacios aislados con RLS y SET LOCAL
 
-- **Estado:** En revisión. **Tamaño:** L. **Rama:** `feature/HU-kernel-spaces-03`.
+- **Estado:** Terminada. **Tamaño:** L. **Rama:** `feature/HU-kernel-spaces-03`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero espacios con un rol de base de datos que no pueda saltarse la RLS y un mecanismo que fije el espacio en cada transacción,
@@ -138,7 +138,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-participants-04 · Registrar identidades y participantes por espacio
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-kernel-participants-04`.
+- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-participants-04`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero identidades únicas y participantes que pertenezcan a un espacio,
