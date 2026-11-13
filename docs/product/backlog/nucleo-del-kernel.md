@@ -85,7 +85,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-testinfra-02 · Probar contra PostgreSQL real en local y en CI
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-kernel-testinfra-02`.
+- **Estado:** Terminada. **Tamaño:** M. **Rama:** `feature/HU-kernel-testinfra-02`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero un arnés de pruebas de integración que use el PostgreSQL de `task infra:up` y un servicio PostgreSQL en CI,
@@ -109,7 +109,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-spaces-03 · Crear espacios aislados con RLS y SET LOCAL
 
-- **Estado:** Lista. **Tamaño:** L. **Rama:** `feature/HU-kernel-spaces-03`.
+- **Estado:** En revisión. **Tamaño:** L. **Rama:** `feature/HU-kernel-spaces-03`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero espacios con un rol de base de datos que no pueda saltarse la RLS y un mecanismo que fije el espacio en cada transacción,
