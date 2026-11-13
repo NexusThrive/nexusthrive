@@ -30,6 +30,15 @@ func InSpace(ctx context.Context, pool *sql.DB, spaceID string, fn func(ctx cont
 		return model.NewError(model.CodeInvalidInput, "space id must be a non-nil UUID", nil)
 	}
 
+	return inTransaction(ctx, pool, parsed.String(), fn)
+}
+
+// inTransaction runs fn in a transaction and commits when fn returns nil. A
+// non-empty spaceID is fixed as the current space first; an empty one runs
+// without a space, for the few operations that precede any space data, such as
+// creating an identity. It is not exported so that every access to space data
+// keeps going through InSpace.
+func inTransaction(ctx context.Context, pool *sql.DB, spaceID string, fn func(ctx context.Context, tx *sql.Tx) error) (err error) {
 	tx, err := pool.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -44,8 +53,10 @@ func InSpace(ctx context.Context, pool *sql.DB, spaceID string, fn func(ctx cont
 		_ = tx.Rollback()
 	}()
 
-	if _, err := tx.ExecContext(ctx, "SELECT set_config($1, $2, true)", SpaceSetting, parsed.String()); err != nil {
-		return fmt.Errorf("set current space: %w", err)
+	if spaceID != "" {
+		if _, err := tx.ExecContext(ctx, "SELECT set_config($1, $2, true)", SpaceSetting, spaceID); err != nil {
+			return fmt.Errorf("set current space: %w", err)
+		}
 	}
 	if err := fn(ctx, tx); err != nil {
 		return err

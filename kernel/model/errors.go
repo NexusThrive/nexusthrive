@@ -17,6 +17,9 @@ const (
 	// CodeRuleViolation marks a request that is well formed but breaks a rule,
 	// such as a duplicated unique value.
 	CodeRuleViolation Code = "rule_violation"
+	// CodeNotFound marks a request for something that does not exist, or that
+	// the current space cannot see.
+	CodeNotFound Code = "not_found"
 	// CodePermissionDenied marks an actor that may not perform the operation.
 	CodePermissionDenied Code = "permission_denied"
 )
