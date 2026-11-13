@@ -31,11 +31,12 @@ nexusthrive/
 │   ├── mobile/             Expo · recepción
 │   └── desktop/            Tauri · escritorio
 ├── packages/
+│   ├── brand/              marca: tokens, CSS, fuentes y logo
 │   ├── ui/                 componentes (Tailwind + Storybook)
 │   ├── app/                lógica de pantallas compartida
 │   ├── sdk/                cliente generado desde contracts
 │   ├── i18n/               textos por idioma
-│   └── config/             tsconfig, ESLint y Tailwind compartidos
+│   └── config/             tsconfig y ESLint compartidos
 ├── contracts/              Protobuf + JSON Schema · fuente única
 ├── integrations/n8n/       nodo y flujos de n8n
 ├── infra/                  Docker local y despliegue

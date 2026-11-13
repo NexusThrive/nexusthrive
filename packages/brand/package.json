@@ -1,0 +1,43 @@
+{
+  "name": "@nexusthrive/brand",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "NexusThrive brand foundation: design tokens, base CSS, Tailwind v4 theme, fonts and logo.",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    "./tokens.json": "./tokens/tokens.json",
+    "./tokens.css": "./css/tokens.css",
+    "./theme-v4.css": "./css/theme-v4.css",
+    "./base.css": "./css/base.css",
+    "./fonts.css": "./css/fonts.css",
+    "./logo/*": "./logo/*",
+    "./brand-logo": "./src/brand-logo.tsx"
+  },
+  "files": [
+    "css",
+    "tokens",
+    "fonts",
+    "logo",
+    "src"
+  ],
+  "scripts": {
+    "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
+    "typecheck": "tsc --noEmit",
+    "test": "node ../../tools/tokens-check.mjs"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "~5.9"
+  }
+}
