@@ -9,6 +9,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   branch-name:
     if: github.event_name == 'pull_request'
@@ -32,6 +35,7 @@ jobs:
     outputs:
       go: ${{ steps.filter.outputs.go }}
       ts: ${{ steps.filter.outputs.ts }}
+      contracts: ${{ steps.filter.outputs.contracts }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
       - uses: actions/checkout@v4
@@ -39,19 +43,32 @@ jobs:
         id: filter
         with:
           filters: |
+            shared: &shared
+              - '.github/workflows/ci.yml'
+              - 'Taskfile.yml'
+              - '.tool-versions'
             go:
+              - *shared
               - 'kernel/**'
               - 'platform/**'
               - 'distributions/**'
               - 'services/api/**'
               - 'go.work'
             ts:
+              - *shared
               - 'apps/**'
               - 'packages/**'
+              - 'integrations/n8n/**'
               - 'package.json'
+              - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+            contracts:
+              - *shared
+              - 'contracts/**'
             docs:
               - 'docs/**'
+              - 'tools/docs-check.mjs'
 
   go:
     needs: changes
@@ -61,9 +78,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
-      - run: go vet ./kernel/... ./platform/... ./distributions/... ./services/api/...
-      - run: go test ./kernel/... ./platform/... ./distributions/... ./services/api/...
+          go-version-file: go.work
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task lint:go
+      - run: task test:go
 
   typescript:
     needs: changes
@@ -74,12 +95,27 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .tool-versions
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+
+  contracts:
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task lint:contracts
 
   docs:
     needs: changes
@@ -89,5 +125,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .tool-versions
       - run: node tools/docs-check.mjs

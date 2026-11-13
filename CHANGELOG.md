@@ -12,6 +12,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Monorepo skeleton: `kernel`, `platform`, `distributions/business`, `services`, `apps`, `packages`, `contracts`, `integrations`, `infra` and `tools`.
 - Data model for the `kernel` and `platform` schemas, and the stage 2 `business` schema.
 - NexusThrive console design.
+- Phase B1 scaffolding: kernel architecture test, per-module Go tasks with `staticcheck` and `buf`, `@nexusthrive/config` shared presets and a CI that runs only what changed.
 - Brand package (`packages/brand`): design tokens for light and dark mode, base CSS, Tailwind v4 theme, logo and the Public Stunt font with its license record.
 - Design system rules in `docs/06-reglas/sistema-de-diseno`: brand, tone, tokens, interaction, motion, states, accessibility and UI quality checklist. ADR-0016.
 - `@nexusthrive/brand` workspace package: exports, `files` (fonts included), optional React peer, typecheck, lockfile and `tools/tokens-check.mjs` (`task tokens:check`) to keep `tokens.json`, `tokens.css`, `theme-v4.css` and the radius docs in sync.
