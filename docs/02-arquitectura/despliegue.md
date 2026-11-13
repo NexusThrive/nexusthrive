@@ -33,7 +33,7 @@ flowchart TB
 | `apps/web`, `apps/console` | Vercel | Solo archivos estáticos; la consola en un subdominio propio |
 | `services/api` | Staging: servidor propio con Dokploy. Production: Render | Una sola imagen; único con acceso a la base |
 | PostgreSQL | Supabase, un proyecto por entorno | Solo como Postgres: sin Data API ni Supabase Auth; copias en production |
-| Redis | Administrado | Caché y sesiones |
+| Redis | Staging: servidor propio con Dokploy. Production: ninguno al inicio | Solo límites de tasa y caché; ver [ADR-0025](../05-decisiones/0025-redis-diferido.md) |
 | `services/ai` | Contenedor aparte | Lee la réplica |
 | n8n | Servidor propio con Dokploy | Una instancia con credenciales separadas por entorno; solo habla con la API |
 | `apps/mobile` | App Store y Google Play con Expo | |
