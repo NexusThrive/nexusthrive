@@ -1,11 +1,22 @@
 version: "3"
 
+vars:
+  # Every Go module listed in go.work. The root has no module, so patterns
+  # such as ./kernel/... cannot cover them all; absolute directories can.
+  GO_PACKAGES:
+    sh: go list -m -f '{{"{{.Dir}}"}}/...' | tr '\n' ' '
+  STATICCHECK: honnef.co/go/tools/cmd/staticcheck@2025.1.1
+  BUF: github.com/bufbuild/buf/cmd/buf@v1.50.0
+
 tasks:
   setup:
-    desc: Install toolchains and dependencies
+    desc: Install dependencies (requires Go, Node.js and pnpm from .tool-versions)
+    preconditions:
+      - sh: command -v pnpm
+        msg: pnpm is required; see docs/07-ingenieria/development-setup.md
     cmds:
-      - pnpm install
       - go work sync
+      - pnpm install --frozen-lockfile
 
   infra:up:
     desc: Start local PostgreSQL and Redis
@@ -21,7 +32,9 @@ tasks:
     desc: Generate code from contracts (Go, TypeScript, Python)
     dir: contracts
     cmds:
-      - buf generate
+      # buf rejects a module without .proto files; no operation exists yet in B1.
+      - cmd: if [ -n "$(find proto -name '*.proto')" ]; then go run {{.BUF}} generate; fi
+        silent: true
 
   dev:
     desc: Run the API and the web apps
@@ -32,15 +45,44 @@ tasks:
   test:
     desc: Run every test suite
     cmds:
-      - go test ./kernel/... ./platform/... ./distributions/... ./services/...
+      - task: test:go
+      - task: test:ts
+
+  test:go:
+    desc: Run the Go tests of every module
+    cmds:
+      - go test {{.GO_PACKAGES}}
+
+  test:ts:
+    desc: Run the TypeScript tests of every workspace
+    cmds:
       - pnpm test
 
   lint:
     desc: Lint Go, TypeScript and contracts
     cmds:
-      - go vet ./kernel/... ./platform/... ./distributions/... ./services/...
+      - task: lint:go
+      - task: lint:ts
+      - task: lint:contracts
+
+  lint:go:
+    desc: Check formatting, vet and staticcheck on every Go module
+    cmds:
+      - test -z "$(gofmt -l kernel platform distributions services)" || (gofmt -l kernel platform distributions services && exit 1)
+      - go vet {{.GO_PACKAGES}}
+      - go run {{.STATICCHECK}} {{.GO_PACKAGES}}
+
+  lint:ts:
+    desc: Lint every TypeScript workspace
+    cmds:
       - pnpm lint
-      - buf lint contracts
+
+  lint:contracts:
+    desc: Lint the Protobuf contracts
+    cmds:
+      # buf rejects a module without .proto files; no operation exists yet in B1.
+      - cmd: if [ -n "$(find contracts/proto -name '*.proto')" ]; then go run {{.BUF}} lint contracts; fi
+        silent: true
 
   docs:check:
     desc: Render every Mermaid diagram in docs to catch syntax errors
