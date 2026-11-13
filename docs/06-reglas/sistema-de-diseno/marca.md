@@ -32,7 +32,7 @@ Logo, color, tipografía, forma, motivo gráfico e iconografía. Aplica a produc
 
 ### Color
 
-El color sale del logo: bloque negro, esquinas rectas, acento oro.
+El color sale del logo: bloque negro, acento oro. Las esquinas rectas son solo del logo; la interfaz usa la escala de radios suaves.
 
 | Rol | Token | HEX | Uso |
 |---|---|---|---|
@@ -63,7 +63,7 @@ Montserrat, Inter y JetBrains Mono son libres (SIL OFL 1.1). Public Stunt tiene 
 
 ### Forma, espacio e iconos
 
-- Radios suaves en tres niveles: controles 10 px, contenedores 12–24 px, estado en píldora. Diálogos y hojas 28 px.
+- Radios suaves en tres niveles: controles 10 px (`md`), contenedores 12–24 px (`lg` a `3xl`), estado en píldora (`full`). Diálogos y hojas 28 px (`sheet`). Los valores completos están en [Tokens](tokens.md).
 - El borde separa; la sombra solo eleva lo que flota.
 - Espacio con base de 4 px.
 - Iconos lineales, de trazo consistente y sin relleno decorativo. En acciones destructivas el icono acompaña al texto, no lo reemplaza.

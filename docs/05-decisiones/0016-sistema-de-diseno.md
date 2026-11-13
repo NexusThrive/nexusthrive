@@ -12,6 +12,8 @@ Las apps (consola, web, móvil y escritorio) necesitan verse como un solo produc
 
 La marca vive en `packages/brand`: tokens en CSS (`tokens.css`, fuente de la verdad) con su espejo `tokens.json`, el tema de Tailwind v4, los estilos base, el logo y las fuentes. Los componentes viven en `@nexusthrive/ui` y solo usan tokens. Las reglas de uso se documentan en `docs/06-reglas/sistema-de-diseno`.
 
+La escala de radios suave de `tokens.css` es la canónica: `xs` 6, `sm` 8, `md` 10 (controles), `lg` 12 (tarjetas), `xl` 14, `2xl` 16 (menús, avisos), `3xl` 24 (widgets), `sheet` 28 (diálogos y hojas) y `full` (estado en píldora). Las esquinas rectas solo aplican al logo.
+
 Public Stunt se incluye con su licencia comercial registrada en `packages/brand/fonts/public-stunt/LICENSE.md`, solo para piezas de marca y nunca para texto de interfaz. Montserrat, Inter y JetBrains Mono son libres (SIL OFL 1.1) y cada app las aloja.
 
 ## Alternativas consideradas
@@ -21,6 +23,7 @@ Public Stunt se incluye con su licencia comercial registrada en `packages/brand/
 | Tokens dentro de `@nexusthrive/ui` | Las piezas de marca, el sitio y las herramientas de diseño necesitan los tokens sin depender de componentes React. |
 | Preset de Tailwind en `@nexusthrive/config` | Separa los valores de su documentación y obliga a Tailwind a quien solo necesita CSS. |
 | Tokens en JSON con generación de CSS | Agrega una herramienta antes de necesitarla; el CSS es legible y suficiente. |
+| Radios casi nulos (2–8 px) | La interfaz necesita una jerarquía visible entre controles, contenedores y superficies flotantes; con radios casi nulos todo se ve igual de plano. |
 | Dejar Public Stunt fuera del repositorio | Las piezas de marca dependerían de copias locales sin control. |
 
 ## Consecuencias

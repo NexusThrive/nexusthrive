@@ -51,7 +51,7 @@ Escala (`--text-*`): 11 · 12 · 13 · 14 · 16 · 18 · 20 · 24 · 30 · 40 ·
 | Grupo | Tokens |
 |---|---|
 | Espacio (base 4 px) | `--space-1` … `--space-20` (4–80 px) |
-| Radios | `xs` 6 · `sm` 8 · `md` 10 (controles) · `lg` 12 (tarjetas) · `xl` 14 · `2xl` 16 (menús, avisos) · `3xl` 24 (widgets) · `sheet` 28 (diálogos, hojas) · `full` para estado |
+| Radios | `xs` 6 · `sm` 8 · `md` 10 (controles) · `lg` 12 (tarjetas) · `xl` 14 · `2xl` 16 (menús, avisos) · `3xl` 24 (widgets) · `sheet` 28 (diálogos, hojas) · `full` 9999 (estado en píldora) · `none` 0 · `widget` (alias de `3xl`) |
 | Sombras | `xs` campos · `sm` tarjeta al pasar el cursor · `md` menús y ayuda · `lg` diálogos y paneles · `focus` halo oro de un campo |
 
 ### Capas

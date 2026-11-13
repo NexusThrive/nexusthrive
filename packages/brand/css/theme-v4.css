@@ -68,6 +68,7 @@
   --text-ui: 0.8125rem;
   --text-ui--line-height: 1.25rem;
   /* Radii and shadows: values live in tokens.css (`--nx-radius-*`, `--nx-shadow-*`); here they are only named. */
+  --radius-none: 0;
   --radius-xs: var(--nx-radius-xs);
   --radius-sm: var(--nx-radius-sm);
   --radius-md: var(--nx-radius-md);
@@ -75,7 +76,9 @@
   --radius-xl: var(--nx-radius-xl);
   --radius-2xl: var(--nx-radius-2xl);
   --radius-3xl: var(--nx-radius-3xl);
+  --radius-widget: var(--nx-radius-3xl);
   --radius-sheet: var(--nx-radius-sheet);
+  --radius-full: 9999px;
   --shadow-xs: var(--nx-shadow-xs);
   --shadow-sm: var(--nx-shadow-sm);
   --shadow-md: var(--nx-shadow-md);
