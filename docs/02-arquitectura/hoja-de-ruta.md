@@ -31,11 +31,11 @@ flowchart LR
 | Fase | Terminada cuando |
 |---|---|
 | B1 | `task setup`, `task test` y `task lint` funcionan en una máquina limpia; el CI corre solo lo que cambió |
-| B2 | Las cinco leyes tienen pruebas en verde; un intercambio y un compromiso de prueba se escriben en una transacción con su evento y su outbox |
+| B2 | Las cinco leyes tienen pruebas en verde; un intercambio y un compromiso de prueba se escriben en una transacción con su evento y su outbox, y la prueba de aislamiento de las tablas del kernel de M1 (ningún dato cruza entre espacios) |
 | B3 | Una operación entra por la API con token de Clerk, se ejecuta, se repite con la misma clave sin duplicarse y su señal llega a un webhook firmado |
 | B4 | La plataforma crea un espacio en prueba con su suscripción, publica una piel de prueba y procesa una solicitud de capacidad de punta a punta |
 | B5 | El equipo opera desde la consola: crea negocios, confirma cobros, decide solicitudes, abre accesos de soporte auditados y reintenta tareas fallidas |
-| B6 | Pruebas de aislamiento entre espacios, doble factor obligatorio para el equipo, métricas y alertas, y una restauración de copia probada |
+| B6 | Batería completa de pruebas de aislamiento entre espacios (todas las capas), doble factor obligatorio para el equipo, métricas y alertas, y una restauración de copia probada |
 | N1 y N2 | Ver [MVP de Business](../03-distribuciones/business/mvp/README.md) |
 
 ### Ruta al MVP
