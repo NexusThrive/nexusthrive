@@ -1,5 +1,6 @@
 // Command migrate applies the kernel migrations to the database named by
-// DATABASE_URL. Use a direct connection or a session-mode pooler, never a
+// DATABASE_URL and, when API_DB_PASSWORD is set, lets the API role log in.
+// Use a direct connection or a session-mode pooler, never a
 // transaction-mode pooler (ADR-0019).
 package main
 
@@ -36,6 +37,10 @@ func run(ctx context.Context) error {
 	defer conn.Close()
 
 	if err := db.Migrate(ctx, conn, db.Config{Schema: kernelSchema}); err != nil {
+		return err
+	}
+	// The API role password comes from the environment, never from a migration.
+	if err := db.SetAPIRolePassword(ctx, conn, os.Getenv("API_DB_PASSWORD")); err != nil {
 		return err
 	}
 	fmt.Println("migrations applied to schema", kernelSchema)

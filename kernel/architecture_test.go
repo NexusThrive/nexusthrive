@@ -5,7 +5,9 @@ import (
 	"go/parser"
 	"go/token"
 	"io/fs"
+	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -49,6 +51,53 @@ func TestKernelDoesNotLearnBusinessVocabulary(t *testing.T) {
 			t.Errorf("%s: identifier %q uses business word %q", file.path, violation.identifier, violation.word)
 		}
 	}
+}
+
+// sqlWordPattern extracts the words of a SQL file: identifiers, strings and
+// comments alike, because none of them may carry business vocabulary.
+var sqlWordPattern = regexp.MustCompile(`[a-z]+`)
+
+// TestMigrationsDoNotLearnBusinessVocabulary scans the kernel migrations,
+// comments and string literals included, for the forbidden words.
+func TestMigrationsDoNotLearnBusinessVocabulary(t *testing.T) {
+	paths, err := filepath.Glob(filepath.Join("db", "migrations", "*.sql"))
+	if err != nil {
+		t.Fatalf("list migrations: %v", err)
+	}
+	if len(paths) == 0 {
+		t.Fatal("no kernel migrations found to scan")
+	}
+	for _, path := range paths {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		for _, word := range forbiddenSQLWords(string(raw)) {
+			t.Errorf("%s: uses business word %q", path, word)
+		}
+	}
+}
+
+// TestSQLScanDetectsViolations proves the SQL scan is not vacuous.
+func TestSQLScanDetectsViolations(t *testing.T) {
+	const source = "CREATE TABLE kernel.Invoices (id int); -- the customer pays\nSELECT 'gym';"
+	got := forbiddenSQLWords(source)
+	slices.Sort(got)
+	if want := []string{"customer", "gym", "invoice"}; !slices.Equal(got, want) {
+		t.Errorf("expected words %v, got %v", want, got)
+	}
+}
+
+// forbiddenSQLWords returns the forbidden words found in SQL text, whole words
+// only, singular or plural, case-insensitive.
+func forbiddenSQLWords(sql string) []string {
+	var found []string
+	for _, word := range sqlWordPattern.FindAllString(strings.ToLower(sql), -1) {
+		if match, ok := matchForbiddenWord(word); ok {
+			found = append(found, match)
+		}
+	}
+	return found
 }
 
 // TestArchitectureRulesDetectViolations proves the checks above are not
