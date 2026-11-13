@@ -6,61 +6,75 @@
 
 ## Contexto
 
-Hay que alojar cuatro piezas: la API en Go (contenedor Docker), PostgreSQL administrado con copias, la web estática (`apps/web`, `apps/console`, Storybook) y n8n autoalojado. Los usuarios están en Colombia. El equipo es pequeño: se prefiere poco trabajo de operación. [Despliegue](../02-arquitectura/despliegue.md) listaba opciones sin elegir.
+Hay que alojar cuatro piezas: la API en Go (contenedor Docker), PostgreSQL con copias, la web estática (`apps/web`, `apps/console` y Storybook) y n8n. Los usuarios están en Colombia y el equipo es pequeño, por lo que se prefiere poco trabajo de operación y poco costo fijo. Ya existe un servidor propio con Dokploy y n8n en marcha, y el dominio `nexusthrive.com.co`.
 
-Esta decisión tiene **costo mensual**, por lo que queda en `Propuesta` hasta que una persona la acepte (ver puntos de control humano). Las características de cada proveedor, sus regiones y sus precios cambian: deben confirmarse en el momento de contratar.
+Esta decisión tiene **costo mensual** (Render y Supabase en production), por lo que sigue en `Propuesta` hasta que una persona la acepte. Regiones, planes y precios cambian: deben confirmarse al contratar.
 
 ## Decisión
 
-Se propone **Render** para la API, PostgreSQL, n8n y los sitios estáticos, con estos entornos:
+Hay **una sola API** (una imagen Docker) desplegada en dos entornos. El reparto es:
 
-| Entorno | Cómo se despliega | Datos |
+| Pieza | `staging` | `production` |
 |---|---|---|
-| `local` | `task infra:up` | Base y Redis locales |
-| `staging` | Automático desde `main` | Base propia con datos de prueba |
-| `production` | Por etiqueta `vX.Y.Z`, con aprobación manual | Base propia con copias y restauración probada |
+| Web y consola | Vercel (vista previa) | Vercel |
+| API (`services/api`) | Servidor propio con Dokploy, desplegada automáticamente desde `main` | Render, por etiqueta `vX.Y.Z` con aprobación manual |
+| PostgreSQL | Proyecto de Supabase propio | Proyecto de Supabase propio, con plan de pago y copias |
+| n8n | Servidor propio con Dokploy | La misma instancia, con credenciales separadas por entorno |
+| Storybook | Vercel o servidor propio | — |
+
+El entorno `local` se levanta con `task infra:up`.
 
 Reglas comunes:
 
-- La infraestructura se describe como código (blueprint del proveedor) dentro de `infra/`.
-- Las migraciones corren en cada despliegue antes de recibir tráfico.
-- Los secretos viven en el gestor del proveedor, nunca en el repositorio.
-- Staging y production no comparten base, claves ni cuentas de Clerk y Wompi.
+- **Supabase se usa solo como PostgreSQL administrado.** La API de datos (PostgREST) y Supabase Auth se desactivan: Clerk autentica y solo el kernel y sus extensiones tocan la base (ADR-0006, ADR-0010).
+- Un proyecto de Supabase por entorno; nunca comparten base, claves ni cuentas de Clerk y Wompi.
+- La API se conecta de forma directa o por el pooler en modo sesión; el modo transacción no se usa porque rompe las sentencias preparadas de `pgx`.
+- La base de production se crea en la misma región que la API de production para evitar latencia entre continentes.
+- La infraestructura se describe como código dentro de `infra/`. Las migraciones corren en cada despliegue antes de recibir tráfico.
+- Los secretos viven en el gestor de cada proveedor, nunca en el repositorio.
+- Subdominios de `nexusthrive.com.co`: `app`, `console`, `api`, `staging`, `staging-api` y `storybook`.
 
 ## Alternativas consideradas
 
-| Alternativa | Ventajas | Por qué no se eligió |
-|---|---|---|
-| **Render** (elegida) | Docker, PostgreSQL administrado con copias, sitios estáticos y servicios con disco (n8n) en un solo panel; blueprint como código; poca operación | Sin región en Sudamérica a la fecha de esta propuesta (mayor latencia desde Colombia); ver riesgos |
-| Fly.io | Regiones cercanas a Colombia, despliegue por contenedor | PostgreSQL administrado más reciente y más trabajo de operación; sitios estáticos y n8n requieren armarse a mano |
-| Google Cloud (Cloud Run, Cloud SQL, Storage) | Región en São Paulo, escalado y copias maduros | Más piezas que configurar y operar (redes, IAM, balanceadores); costo base mayor para un MVP |
-| VPS propio (Hetzner u otro) con Coolify | Costo bajo y control total | El equipo asumiría copias, parches y alta disponibilidad de PostgreSQL |
+| Alternativa | Por qué no se eligió |
+|---|---|
+| Todo en Render (API, base, web, n8n) | Un solo panel, pero más costo fijo y sin aprovechar el servidor propio ya disponible. |
+| Producción en el servidor propio | Internet residencial, un solo disco y cortes de energía no sirven para cobrar a clientes. |
+| Fly.io | PostgreSQL administrado más reciente y más operación manual. |
+| Google Cloud (Cloud Run y Cloud SQL) | Región en São Paulo, pero más piezas que operar y costo base mayor para un MVP. |
+| Base en el servidor propio para production | Sin copias externas ni alta disponibilidad. |
+| Web en Cloudflare Pages | Plan gratuito apto para uso comercial; queda como reemplazo si el plan de Vercel resulta limitante. |
 
 ## Consecuencias
 
 ### Positivas
 
-- Un solo proveedor y un solo panel para el MVP.
-- Staging y production idénticos por blueprint.
-- Migrar luego a AWS o GCP es posible: todo es contenedor y PostgreSQL estándar.
+- Staging sin costo y con despliegue automático.
+- Production con base administrada, copias y restauración.
+- Migrar a otro proveedor es posible: todo es contenedor y PostgreSQL estándar.
 
 ### Negativas
 
-- Latencia mayor que con una región sudamericana.
-- Dependencia de un proveedor para copias y restauración.
+- Dos plataformas de despliegue de la API (Dokploy y Render) que mantener equivalentes.
+- El plan gratuito de Supabase pausa proyectos inactivos: staging puede tardar en despertar.
 
 ### Riesgos
 
-- Datos personales de personas en Colombia alojados fuera del país: requiere revisión legal (Ley 1581 de 2012) antes de producción. Mitigación: el texto de privacidad y términos queda marcado `needs human review`.
-- Licencia de n8n: la instancia propia es para operar NexusThrive; ofrecer n8n a terceros exige revisar su licencia (pendiente de [ADR-0005](0005-integraciones.md)).
+- El plan gratuito de Vercel (Hobby) es para uso no comercial: production requiere el plan de pago. Confirmar los términos vigentes antes de lanzar.
+- Staging y n8n dependen de un servidor residencial: si cae, se atrasan avisos y despliegues de prueba, nunca dinero (ADR-0005).
+- Datos personales de personas en Colombia alojados fuera del país: requiere revisión legal (Ley 1581 de 2012) antes de producción. El texto de privacidad se marca `needs human review`.
+- Exposición accidental del servidor propio: `nexus-postgres` y otros servicios no deben escuchar fuera de la red local o de Tailscale; la entrada pública va por `cloudflared`.
+- Licencia de n8n: la instancia propia es para operar NexusThrive; ofrecer n8n a terceros exige revisar su licencia (pendiente de ADR-0005).
 
 ## Cumplimiento
 
-- `infra/` contiene el blueprint de `staging` y `production`.
+- `infra/` contiene la definición de `staging` y `production`.
 - Una prueba de humo corre tras cada despliegue contra `/healthz` y `/readyz`.
+- Una prueba de arquitectura impide que el código use endpoints de la API de datos de Supabase.
 - La restauración de una copia se prueba antes de la v1.0 (fase B6).
 
 ## Referencias
 
 - [Despliegue](../02-arquitectura/despliegue.md)
+- [ADR-0006](0006-identidad.md)
 - [ADR-0010](0010-esquemas-por-capa.md)
