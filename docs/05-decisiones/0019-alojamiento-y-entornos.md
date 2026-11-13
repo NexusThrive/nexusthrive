@@ -1,6 +1,6 @@
 # ADR-0019 · Alojamiento y entornos
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-11-13
 - **Responsables:** santy401
 
@@ -8,7 +8,7 @@
 
 Hay que alojar cuatro piezas: la API en Go (contenedor Docker), PostgreSQL con copias, la web estática (`apps/web`, `apps/console` y Storybook) y n8n. Los usuarios están en Colombia y el equipo es pequeño, por lo que se prefiere poco trabajo de operación y poco costo fijo. Ya existe un servidor propio con Dokploy y n8n en marcha, y el dominio `nexusthrive.com.co`.
 
-Esta decisión tiene **costo mensual** (Render y Supabase en production), por lo que sigue en `Propuesta` hasta que una persona la acepte. Regiones, planes y precios cambian: deben confirmarse al contratar.
+Esta decisión tiene **costo mensual** (Render y Supabase en production). El responsable la aceptó el 2026-11-13. Regiones, planes y precios cambian: deben confirmarse al contratar.
 
 ## Decisión
 
