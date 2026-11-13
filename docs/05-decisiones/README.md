@@ -42,6 +42,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0021](0021-auri.md) | AURI, la IA de NexusThrive | Aceptada |
 | [0022](0022-cobro-con-wompi.md) | Cobro de NexusThrive con Wompi | Aceptada |
 | [0023](0023-urls-y-dominios.md) | URLs y dominios | Aceptada |
+| [0024](0024-herramienta-de-migraciones.md) | Goose como herramienta de migraciones en SQL puro | Aceptada |
 | [0025](0025-redis-diferido.md) | Redis diferido hasta que haya varias instancias de la API | Aceptada |
 
 ## Pendientes
