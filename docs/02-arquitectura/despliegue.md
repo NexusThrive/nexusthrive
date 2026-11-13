@@ -6,16 +6,16 @@ Definir dónde corre cada pieza en producción.
 
 ## Alcance
 
-Entorno de producción. El entorno local está en [`07-ingenieria/development-setup.md`](../07-ingenieria/development-setup.md).
+Entornos `staging` y `production`, según [ADR-0019](../05-decisiones/0019-alojamiento-y-entornos.md) y las URLs de [ADR-0023](../05-decisiones/0023-urls-y-dominios.md). El entorno local está en [`07-ingenieria/development-setup.md`](../07-ingenieria/development-setup.md).
 
 ## Funcionamiento
 
 ```mermaid
 flowchart TB
-    U["Persona"] --> CDN1["app.nexusthrive.com<br/>apps/web en CDN"]
-    S["Equipo NexusThrive"] --> CDN2["console.nexusthrive.com<br/>apps/console en CDN"]
+    U["Persona"] --> CDN1["app.nexusthrive.com.co<br/>apps/web en CDN"]
+    S["Equipo NexusThrive"] --> CDN2["console.nexusthrive.com.co<br/>apps/console en CDN"]
     U --> MOB["App móvil"]
-    CDN1 -->|"HTTPS + token"| API["api.nexusthrive.com<br/>services/api en contenedor"]
+    CDN1 -->|"HTTPS + token"| API["api.nexusthrive.com.co<br/>services/api en contenedor"]
     CDN2 -->|"HTTPS + token + doble factor"| API
     MOB --> API
     CLK["Clerk"] -.->|"token"| U
@@ -30,12 +30,12 @@ flowchart TB
 
 | Pieza | Dónde | Notas |
 |---|---|---|
-| `apps/web`, `apps/console` | CDN (Cloudflare Pages, Vercel o Netlify) | Solo archivos estáticos; la consola en un dominio propio |
-| `services/api` | Contenedor (Fly.io, Railway o Render; luego AWS o GCP) | Único con acceso a la base |
-| PostgreSQL | Administrado (Neon, Supabase o RDS) | Con réplica de lectura y copias diarias |
+| `apps/web`, `apps/console` | Vercel | Solo archivos estáticos; la consola en un subdominio propio |
+| `services/api` | Staging: servidor propio con Dokploy. Production: Render | Una sola imagen; único con acceso a la base |
+| PostgreSQL | Supabase, un proyecto por entorno | Solo como Postgres: sin Data API ni Supabase Auth; copias en production |
 | Redis | Administrado | Caché y sesiones |
 | `services/ai` | Contenedor aparte | Lee la réplica |
-| n8n | Instancia propia | Solo habla con la API |
+| n8n | Servidor propio con Dokploy | Una instancia con credenciales separadas por entorno; solo habla con la API |
 | `apps/mobile` | App Store y Google Play con Expo | |
 | `apps/desktop` | Instaladores Tauri | |
 

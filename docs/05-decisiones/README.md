@@ -41,6 +41,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0020](0020-control-externo.md) | Control externo: API, MCP, webhooks y n8n | Aceptada |
 | [0021](0021-auri.md) | AURI, la IA de NexusThrive | Aceptada |
 | [0022](0022-cobro-con-wompi.md) | Cobro de NexusThrive con Wompi | Aceptada |
+| [0023](0023-urls-y-dominios.md) | URLs y dominios | Aceptada |
 
 ## Pendientes
 
