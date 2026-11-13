@@ -2,58 +2,15 @@ package db_test
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"testing/fstest"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
-
 	"github.com/nexusthrive/nexusthrive/kernel/db"
+	"github.com/nexusthrive/nexusthrive/kernel/db/dbtest"
 )
-
-// Integration tests read the PostgreSQL URL from DATABASE_URL and fall back
-// to the one used by infra/docker/compose.yaml (task infra:up).
-const defaultDatabaseURL = "postgres://nexusthrive:nexusthrive@localhost:55432/nexusthrive?sslmode=disable"
-
-// openDatabase connects to PostgreSQL and fails the test when it is not
-// reachable; integration tests are never skipped.
-func openDatabase(t *testing.T) *sql.DB {
-	t.Helper()
-	url := os.Getenv("DATABASE_URL")
-	if url == "" {
-		url = defaultDatabaseURL
-	}
-	conn, err := sql.Open("pgx", url)
-	if err != nil {
-		t.Fatalf("open database: %v", err)
-	}
-	t.Cleanup(func() { conn.Close() })
-	if err := conn.PingContext(context.Background()); err != nil {
-		t.Fatalf("PostgreSQL is not reachable (run `task infra:up` or set DATABASE_URL): %v", err)
-	}
-	return conn
-}
-
-// randomSchema returns a unique schema name and drops it when the test ends.
-func randomSchema(t *testing.T, conn *sql.DB) string {
-	t.Helper()
-	raw := make([]byte, 6)
-	if _, err := rand.Read(raw); err != nil {
-		t.Fatalf("random schema id: %v", err)
-	}
-	name := "kernel_test_" + hex.EncodeToString(raw)
-	t.Cleanup(func() {
-		if _, err := conn.Exec(fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", name)); err != nil {
-			t.Errorf("drop schema %s: %v", name, err)
-		}
-	})
-	return name
-}
 
 func count(t *testing.T, conn *sql.DB, query string, args ...any) int {
 	t.Helper()
@@ -69,8 +26,8 @@ func schemaTables(t *testing.T, conn *sql.DB, schema, table string) int {
 }
 
 func TestMigrateCreatesSchemaAndVersionTable(t *testing.T) {
-	conn := openDatabase(t)
-	schema := randomSchema(t, conn)
+	t.Parallel()
+	conn, schema := dbtest.Schema(t)
 
 	if err := db.Migrate(context.Background(), conn, db.Config{Schema: schema, Files: fstest.MapFS{}}); err != nil {
 		t.Fatalf("Migrate: %v", err)
@@ -87,8 +44,8 @@ func TestMigrateCreatesSchemaAndVersionTable(t *testing.T) {
 }
 
 func TestMigrateIsIdempotent(t *testing.T) {
-	conn := openDatabase(t)
-	schema := randomSchema(t, conn)
+	t.Parallel()
+	conn, schema := dbtest.Schema(t)
 	files := fstest.MapFS{
 		"00001_probe.sql": {Data: []byte(fmt.Sprintf("-- +goose Up\nCREATE TABLE %s.probe (id int PRIMARY KEY);\n", schema))},
 	}
@@ -109,8 +66,8 @@ func TestMigrateIsIdempotent(t *testing.T) {
 }
 
 func TestMigrateInvalidSQLRollsBack(t *testing.T) {
-	conn := openDatabase(t)
-	schema := randomSchema(t, conn)
+	t.Parallel()
+	conn, schema := dbtest.Schema(t)
 	body := fmt.Sprintf("-- +goose Up\nCREATE TABLE %s.first_step (id int);\nSELECT * FROM %s.missing_table;\n", schema, schema)
 	files := fstest.MapFS{"00001_broken.sql": {Data: []byte(body)}}
 
