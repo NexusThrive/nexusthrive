@@ -1,7 +1,14 @@
 # Glosario
 
+## Propósito
+
+Fijar el significado de cada término. Entre paréntesis, el nombre técnico en el código.
+
 | Término | Qué significa |
 |---|---|
+| **Plataforma** (`platform`) | La capa por encima de todo: equipo NexusThrive, planes, suscripciones, pieles, solicitudes y soporte |
+| **Consola NexusThrive** | El panel del equipo NexusThrive para operar la plataforma |
+| **Espacio** (`Space`) | La unidad de aislamiento: un negocio, una comunidad, una persona o la propia plataforma |
 | **Kernel** | El núcleo de NexusThrive. Estructura participantes, recursos, intercambios y compromisos. No conoce ningún mundo |
 | **Distribución** | Un mundo con su propio idioma que corre sobre el kernel: Business, Comunidad, Personal, Code |
 | **Traductor** | La parte de una distribución que convierte su idioma en piezas del kernel (un socio es un participante) |
@@ -13,6 +20,7 @@
 | **SDK** | La librería generada desde el contrato que usan las caras y las integraciones |
 | **Puerta** | Un punto de entrada al kernel: API, MCP, webhooks |
 | **Señal** | Un evento que el kernel emite cuando algo pasa: venta, pago, vence, entrada |
-| **Participante** | Quién: persona, organización o agente de IA |
-| **Compromiso** | Valor prometido para el futuro: una deuda, una membresía, una cita |
-| **Intercambio** | Valor que se mueve entre participantes: un pago, una venta |
+| **Identidad** (`Identity`) | Alguien que puede iniciar sesión: una persona con Clerk o un agente con llave |
+| **Participante** (`Participant`) | Quién: persona, organización o agente de IA |
+| **Compromiso** (`Commitment`) | Valor prometido para el futuro: una deuda, una membresía, una cita |
+| **Intercambio** (`Exchange`) | Valor que se mueve entre participantes: un pago, una venta |

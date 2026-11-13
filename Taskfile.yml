@@ -1,0 +1,48 @@
+version: "3"
+
+tasks:
+  setup:
+    desc: Install toolchains and dependencies
+    cmds:
+      - pnpm install
+      - go work sync
+
+  infra:up:
+    desc: Start local PostgreSQL and Redis
+    cmds:
+      - docker compose -f infra/docker/compose.yaml up -d
+
+  infra:down:
+    desc: Stop local infrastructure
+    cmds:
+      - docker compose -f infra/docker/compose.yaml down
+
+  gen:
+    desc: Generate code from contracts (Go, TypeScript, Python)
+    dir: contracts
+    cmds:
+      - buf generate
+
+  dev:
+    desc: Run the API and the web apps
+    deps: [infra:up]
+    cmds:
+      - go run ./services/api/cmd/api & pnpm dev
+
+  test:
+    desc: Run every test suite
+    cmds:
+      - go test ./kernel/... ./platform/... ./distributions/... ./services/...
+      - pnpm test
+
+  lint:
+    desc: Lint Go, TypeScript and contracts
+    cmds:
+      - go vet ./kernel/... ./platform/... ./distributions/... ./services/...
+      - pnpm lint
+      - buf lint contracts
+
+  docs:check:
+    desc: Render every Mermaid diagram in docs to catch syntax errors
+    cmds:
+      - node tools/docs-check.mjs

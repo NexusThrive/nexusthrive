@@ -1,52 +1,63 @@
-# El kernel
+# Kernel
 
-El kernel tiene seis componentes. Son responsabilidades, no seis servicios: corren en un solo binario de Go.
+## Propósito
+
+Explicar qué hace el kernel por dentro: cómo recibe, autoriza, ejecuta, guarda y anuncia cada operación.
+
+## Alcance
+
+Los seis componentes del kernel y el camino de una operación. El modelo de datos está en [modelo-de-datos/kernel.md](modelo-de-datos/kernel.md).
+
+## Conceptos principales
+
+El kernel tiene seis componentes. Son responsabilidades, no servicios separados: corren en un solo binario de Go.
+
+| Componente | Paquete | Responsabilidad | Nunca hace |
+|---|---|---|---|
+| `Model` | `model/` | Define participantes, recursos, intercambios y compromisos | Saber de rubros |
+| `State` | `state/` | Guarda el presente y la memoria; aplica la conservación | Borrar historia |
+| `Capability` | `capability/` | Decide quién puede hacer qué: personas, integraciones y agentes | Ejecutar acciones |
+| `Coordination` | `coordination/` | Vigila el tiempo, despierta compromisos, despacha señales | Mover valor por su cuenta |
+| `Execution Engine` | `execution/` | Corre cada operación autorizada en una transacción | Saltarse el permiso |
+| `Extension` | `extension/` | Registra la plataforma y las distribuciones | Modificar el núcleo |
+
+Las puertas (`gateway/`) traducen HTTP, MCP y webhooks al motor de operaciones.
+
+## Funcionamiento
 
 ```mermaid
 flowchart LR
-    IN["Puertas<br/>API · MCP · webhooks"] --> CAP["Capacidades<br/>¿puede hacerlo?"]
-    CAP --> EJE["Ejecución<br/>lo hace en una transacción"]
-    EJE --> EST["Estado<br/>guarda y recuerda"]
-    EST --> MOD["Modelo<br/>participantes, recursos,<br/>intercambios, compromisos"]
-    EJE --> SEN["Señales"]
-    COO["Coordinación<br/>reloj y compromisos"] --> SEN
-    EST --> COO
-    EXT["Extensiones<br/>distribuciones cargadas"] --> CAP
+    IN["gateway<br/>API · MCP · webhooks"] --> CAP["Capability<br/>¿puede hacerlo?"]
+    CAP --> EXE["Execution Engine<br/>una transacción"]
+    EXT["Extension<br/>plataforma y distribuciones"] --> EXE
+    EXE --> MOD["Model"]
+    EXE --> ST["State<br/>libro y eventos"]
+    ST --> CO["Coordination<br/>temporizadores y outbox"]
+    CO -->|"señales"| OUT["Webhooks · n8n · IA"]
 ```
 
-| Componente | Responsabilidad | Nunca hace |
-|---|---|---|
-| **Modelo** | Define participantes, recursos, intercambios, compromisos y cómo se relacionan | Saber de rubros |
-| **Estado** | Guarda el presente y la memoria; aplica la ley de conservación | Borrar historia |
-| **Capacidades** | Decide quién puede hacer qué: personas, integraciones y agentes de IA | Ejecutar acciones |
-| **Coordinación** | Vigila el tiempo, despierta compromisos, ordena dependencias | Mover valor por su cuenta |
-| **Ejecución** | Corre cada operación autorizada en una transacción y registra sus consecuencias | Saltarse el permiso |
-| **Extensiones** | Carga distribuciones, sus traductores, sus operaciones y su configuración | Modificar el núcleo |
+El camino de toda operación, venga de una cara, de la consola, de una IA o de n8n:
 
-## El camino de una operación
-
-Toda acción, venga de la web, de una IA o de n8n, sigue el mismo camino:
-
-1. Entra por una **puerta**.
-2. **Capacidades** verifica identidad, participante, permiso y que la función esté activa.
-3. La **extensión** de la distribución traduce la intención a piezas del kernel.
-4. **Ejecución** la corre en una sola transacción.
-5. **Estado** la guarda y emite la **señal** en la misma transacción.
-6. **Coordinación** agenda lo que el tiempo deba despertar después.
+1. Entra por una **puerta** con un token o una llave.
+2. `Capability` resuelve identidad, espacio y participante, y verifica permiso y capacidad activa.
+3. La **extensión** dueña de la operación la traduce a piezas del kernel.
+4. `Execution Engine` abre una transacción, revisa la idempotencia y ejecuta.
+5. `State` escribe intercambios, compromisos, eventos y outbox en esa misma transacción.
+6. `Coordination` programa temporizadores y despacha las señales cuando la transacción confirma.
 
 Si cualquier paso falla, no queda nada a medias.
 
-## Organización del código
+## Reglas e invariantes
 
-```
-kernel/
-├── cmd/kernel/          punto de entrada del binario
-├── model/               las siete piezas
-├── state/               persistencia, conservación, eventos
-├── capability/          identidad, permisos, alcances
-├── coordination/        reloj, compromisos, outbox
-├── execution/           motor de operaciones e idempotencia
-├── extension/           carga de distribuciones
-├── gateway/             API (Connect), MCP, webhooks
-└── laws/                pruebas de las cinco leyes
-```
+- Las cinco [leyes](../01-modelo/leyes.md) tienen pruebas en `kernel/laws/` que nunca se desactivan.
+- Una prueba de arquitectura falla si aparece vocabulario de una distribución dentro de `kernel/`.
+- `kernel/` no importa `platform/` ni `distributions/`; ellas se registran en `extension/`.
+
+## Ejemplo
+
+El componente de ejecución procesa operaciones autorizadas. Cada operación se ejecuta dentro de una transacción para evitar que el estado quede parcialmente actualizado. Antes de ejecutarla, el kernel valida la identidad, las capacidades y las reglas correspondientes.
+
+## Decisiones relacionadas
+
+- [ADR-0001 · El kernel no conoce ningún mundo](../05-decisiones/0001-kernel-sin-mundo.md)
+- [ADR-0009 · Libro de movimientos de doble partida](../05-decisiones/0009-libro-de-movimientos.md)

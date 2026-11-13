@@ -1,0 +1,8 @@
+go 1.24
+
+use (
+	./distributions/business
+	./kernel
+	./platform
+	./services/api
+)

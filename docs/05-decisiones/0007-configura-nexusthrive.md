@@ -1,15 +1,43 @@
-# 0007 · El dueño no activa funciones
+# ADR-0007 · El dueño no activa funciones
 
-**Estado:** aceptada
+- **Estado:** Aceptada
+- **Fecha:** 2026-11-13
+- **Responsables:** santy401
 
 ## Contexto
+
 Dejar que cada dueño encienda y apague módulos crea combinaciones inválidas y un sistema difícil de sostener.
 
 ## Decisión
-- El registro aplica la piel del rubro.
-- La IA ajusta solo dentro de lo permitido por la piel.
-- El equipo de NexusThrive aprueba lo demás.
-- El dueño solicita; nunca ve interruptores.
 
-## Pendiente
-Definir qué puede aplicar la IA sin aprobación del equipo.
+Las capacidades de un espacio las configuran el alta (según la piel), la IA (solo dentro de las sugeridas por la piel) y el equipo NexusThrive desde la consola. El dueño solicita con `capabilities.Request`.
+
+## Alternativas consideradas
+
+| Alternativa | Por qué no se eligió |
+|---|---|
+| Interruptores para el dueño | Combinaciones inválidas y soporte imposible. |
+| Solo el equipo NexusThrive | No escala sin la ayuda de la IA. |
+
+## Consecuencias
+
+### Positivas
+
+- Cada negocio recibe una configuración coherente.
+- El origen de cada capacidad queda registrado.
+
+### Negativas
+
+- El dueño depende de una respuesta para funciones nuevas.
+
+### Riesgos
+
+- Que la cola de solicitudes crezca sin atención.
+
+## Cumplimiento
+
+`space_capabilities.source` solo admite `package`, `ai`, `admin` y `code`. No existe operación de activación para roles de un negocio.
+
+## Referencias
+
+- [Consola](../02-arquitectura/plataforma/consola.md)

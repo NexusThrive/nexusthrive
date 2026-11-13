@@ -1,16 +1,28 @@
-# Modelo universal: las siete piezas
+# Las siete piezas
+
+## Propósito
+
+Definir las piezas con las que el kernel describe cualquier ecosistema.
+
+## Alcance
+
+El concepto de cada pieza. Cómo se guardan está en [modelo-de-datos/kernel.md](../02-arquitectura/modelo-de-datos/kernel.md).
+
+## Conceptos principales
 
 Cualquier ecosistema se describe con siete piezas. Un gimnasio, una tienda, una familia que ahorra o una comunidad son la misma combinación con distintos nombres.
 
-| # | Pieza | Responde | Ejemplos |
+| # | Pieza (código) | Responde | Ejemplos |
 |---|---|---|---|
-| 1 | **Participante** | ¿Quién? | Una persona, una organización, un agente de IA |
-| 2 | **Recurso** | ¿Qué tiene valor? | Dinero, tiempo, objetos, conocimiento, acceso |
-| 3 | **Intercambio** | ¿Qué valor se movió? | Una venta, un pago, una hora trabajada |
-| 4 | **Compromiso** | ¿Qué valor se prometió? | Una deuda, una membresía, una cita, una meta |
-| 5 | **Evento** | ¿Qué pasó? | Todo lo anterior queda registrado; es la memoria |
-| 6 | **Tiempo** | ¿Cuándo? | Plazos, ciclos y vencimientos que despiertan compromisos |
-| 7 | **Regla** | ¿Quién puede y qué debe pasar solo? | Permisos, políticas, automatizaciones |
+| 1 | **Participante** (`Participant`) | ¿Quién? | Una persona, una organización, un agente de IA |
+| 2 | **Recurso** (`Resource`) | ¿Qué tiene valor? | Dinero, tiempo, objetos, conocimiento, acceso |
+| 3 | **Intercambio** (`Exchange`) | ¿Qué valor se movió? | Una venta, un pago, una hora trabajada |
+| 4 | **Compromiso** (`Commitment`) | ¿Qué valor se prometió? | Una deuda, una membresía, una cita, una meta |
+| 5 | **Evento** (`Event`) | ¿Qué pasó? | Todo lo anterior queda registrado; es la memoria |
+| 6 | **Tiempo** (`Timer`) | ¿Cuándo? | Plazos, ciclos y vencimientos que despiertan compromisos |
+| 7 | **Regla** (`Grant`, `Capability`) | ¿Quién puede y qué debe pasar solo? | Permisos, políticas, automatizaciones |
+
+## Funcionamiento
 
 ```mermaid
 flowchart LR
@@ -26,7 +38,9 @@ flowchart LR
     G -.->|"permite o bloquea"| C
 ```
 
-## El mismo modelo en distintos mundos
+## Ejemplo
+
+El mismo modelo en distintos mundos:
 
 | Pieza | Gimnasio | Tienda | Comunidad | Persona |
 |---|---|---|---|---|
