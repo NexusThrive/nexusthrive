@@ -34,12 +34,20 @@ Dark mode is the `.dark` class (or `data-theme="dark"`) on `<html>`. Compact den
 ## Rules
 
 - Components never write a raw color, shadow, z-index or duration. They use a token; if one is missing, add it here.
-- `css/tokens.css` and `tokens/tokens.json` change together, in the same commit.
+- `css/tokens.css` and `tokens/tokens.json` change together, in the same commit. `task tokens:check` enforces it.
 - Montserrat, Inter and JetBrains Mono are open fonts (SIL OFL 1.1). Each app self-hosts them when it is created.
 - Public Stunt is for brand pieces only. Check its license record before serving it on the web or bundling it in an app.
 - The logo is never redrawn, recolored outside ink and white, rotated or given effects.
 
-## Status
+## Package
 
-This folder holds the assets. It becomes a workspace package (`package.json` with exports) when the first app needs it,
-together with the lockfile. Components built on these tokens live in [`@nexusthrive/ui`](../ui/README.md).
+`@nexusthrive/brand` is a private workspace package. Its `exports` are `tokens.json`, `tokens.css`, `theme-v4.css`, `base.css`, `fonts.css`, `logo/*` and `brand-logo`.
+`fonts.css` points to `../fonts/public-stunt/`, so the font files ship in `files` together with the CSS.
+React is an optional peer dependency, needed only for `brand-logo`.
+
+| Command | What it does |
+|---|---|
+| `pnpm --filter @nexusthrive/brand test` or `task tokens:check` | Fails if `tokens.json`, `tokens.css`, `theme-v4.css` or the radius table in `docs/06-reglas/sistema-de-diseno/tokens.md` differ |
+| `pnpm --filter @nexusthrive/brand typecheck` | Type-checks `src/brand-logo.tsx` |
+
+Components built on these tokens live in [`@nexusthrive/ui`](../ui/README.md).

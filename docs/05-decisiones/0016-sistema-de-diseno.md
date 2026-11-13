@@ -41,7 +41,7 @@ Public Stunt se incluye con su licencia comercial registrada en `packages/brand/
 ### Riesgos
 
 - Que el tipo de licencia de Public Stunt no cubra incrustarla en web o apps. Mitigación: confirmarlo y actualizar el registro antes de servirla.
-- Que `tokens.css` y `tokens.json` se desincronicen. Mitigación: se revisa en cada PR y se automatiza una comprobación cuando exista la primera app.
+- Que `tokens.css` y `tokens.json` se desincronicen. Mitigación: `tools/tokens-check.mjs` (`task tokens:check`) compara ambos archivos y la escala de radios en `theme-v4.css` y en la documentación; corre como prueba del paquete en cada PR.
 
 ## Cumplimiento
 
