@@ -513,7 +513,7 @@ Cada historia las hereda y no las repite en detalle.
 | HU-kernel-events-09 | Lista | sí | sí | sí | sí | M |
 | HU-kernel-outbox-10 | Lista | sí | sí | sí | sí | M |
 | HU-kernel-commitments-11 | Lista | sí | sí | sí | sí | L |
-| HU-kernel-timers-12 | Lista | sí | sí | pendiente | sí | M |
+| HU-kernel-timers-12 | Lista | sí | sí | sí | sí | M |
 | HU-kernel-execution-13 | Lista | sí | sí | sí | sí | L |
-| HU-kernel-idempotency-14 | Lista | sí | sí | pendiente | sí | M |
+| HU-kernel-idempotency-14 | Lista | sí | sí | sí | sí | M |
 | HU-kernel-laws-15 | Lista | sí | sí | sí | sí | M |
