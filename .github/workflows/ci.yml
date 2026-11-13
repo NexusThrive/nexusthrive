@@ -74,6 +74,22 @@ jobs:
     needs: changes
     if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: nexusthrive
+          POSTGRES_PASSWORD: nexusthrive
+          POSTGRES_DB: nexusthrive
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nexusthrive -d nexusthrive"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      DATABASE_URL: postgres://nexusthrive:nexusthrive@localhost:5432/nexusthrive?sslmode=disable
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -85,6 +101,40 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task lint:go
       - run: task test:go
+
+  migrations:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: nexusthrive
+          POSTGRES_PASSWORD: nexusthrive
+          POSTGRES_DB: nexusthrive
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nexusthrive -d nexusthrive"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      DATABASE_URL: postgres://nexusthrive:nexusthrive@localhost:5432/nexusthrive?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # Twice on an empty database: the second run must change nothing.
+      - run: task db:migrate
+      - run: task db:migrate
+      - run: go test ./kernel/db/...
 
   typescript:
     needs: changes
