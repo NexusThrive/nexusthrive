@@ -47,6 +47,24 @@ El camino de toda operación, venga de una cara, de la consola, de una IA o de n
 
 Si cualquier paso falla, no queda nada a medias.
 
+## Permisos y verificación
+
+`capability/` verifica dentro de la transacción que ya fijó el espacio (`state.InSpace`), con la misma RLS que la operación. No recibe un espacio aparte: el espacio es el de la transacción, y sin espacio fijado todo es `permission_denied`. El catálogo mínimo tiene 13 claves con su riesgo (`read`, `write`, `money`) y vive en `model.KernelCatalog()`; las distribuciones lo amplían con `Extend`, que nunca admite el espacio de nombres `kernel`.
+
+`Check` evalúa en este orden y corta en el primer fallo:
+
+| Paso | Falla con | Error |
+|---|---|---|
+| 1. Actor nulo, mal formado o no resoluble (también si la clave es desconocida) | Un anónimo no obtiene información | `permission_denied` |
+| 2. Clave de permiso o de capacidad fuera del catálogo o mal formada | Error de código | `invalid_input` |
+| 3. Sin grant vigente (vencido, revocado o participante archivado) | Mensaje único | `permission_denied` |
+| 4. Espacio `suspended` o `closed` y permiso `write` o `money` | `provisioning` cuenta como `active` | `space_suspended` |
+| 5. Capacidad declarada que no está `active` | | `capability_inactive` |
+
+El actor `system` salta solo el paso 3. Para `write` y `money`, `Check` toma `FOR SHARE` sobre los grants leídos y sobre la fila del espacio: una revocación o suspensión concurrente espera a que termine la transacción. Las funciones `CheckRoleCreatable`, `CheckGrantable`, `CheckRevocable` y `CheckCapabilityEnable` aplican las reglas de escalada del ADR-0029; las operaciones las llaman en `execution-13`.
+
+**Límite de confianza en M1:** el actor lo afirma la capa de aplicación. `Check` prueba que ese participante tiene permiso, no que quien llama sea ese participante; la puerta de B3 construye el `Actor` solo desde un token validado. Un espacio `closed` es terminal (disparador) y `kernel.capability.write` solo existe en espacios `platform` (disparador): ver [modelo de datos](modelo-de-datos/kernel.md).
+
 ## Reglas e invariantes
 
 - Las cinco [leyes](../01-modelo/leyes.md) tienen pruebas en `kernel/laws/` que nunca se desactivan.
@@ -61,3 +79,4 @@ El componente de ejecución procesa operaciones autorizadas. Cada operación se 
 
 - [ADR-0001 · El kernel no conoce ningún mundo](../05-decisiones/0001-kernel-sin-mundo.md)
 - [ADR-0009 · Libro de movimientos de doble partida](../05-decisiones/0009-libro-de-movimientos.md)
+- [ADR-0032 · Catálogo de permisos y verificación](../05-decisiones/0032-catalogo-de-permisos-y-verificacion.md)

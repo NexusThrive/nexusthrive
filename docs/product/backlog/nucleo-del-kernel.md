@@ -192,7 +192,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-permissions-06 · Verificar permisos con un catálogo mínimo del kernel
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-kernel-permissions-06`.
+- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-permissions-06`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero un catálogo mínimo de permisos y una verificación previa a toda operación,
@@ -325,7 +325,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-outbox-10 · Escribir y reclamar filas del outbox sin entrega doble
 
-- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-outbox-10`.
+- **Estado:** Terminada. **Tamaño:** M. **Rama:** `feature/HU-kernel-outbox-10`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero que cada evento deje una fila de outbox y que pueda reclamarse sin duplicar la entrega,
