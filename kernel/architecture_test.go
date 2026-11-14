@@ -300,8 +300,7 @@ func TestOnlyExecutionImportsState(t *testing.T) {
 			return err
 		}
 		if entry.IsDir() {
-			switch entry.Name() {
-			case ".git", ".claude", "node_modules", "vendor":
+			if path != root && skippedDirectory(entry.Name()) {
 				return filepath.SkipDir
 			}
 			return nil
@@ -385,6 +384,28 @@ import "github.com/nexusthrive/nexusthrive/kernel/model"
 		}
 		if got := stateImportViolations(c.path, parsed); len(got) != c.want {
 			t.Errorf("%s: %d violations %v, want %d", c.name, len(got), got, c.want)
+		}
+	}
+}
+
+// skippedDirectory reports whether the scan of the repository leaves a
+// directory out: any hidden directory (its name starts with a dot, such as the
+// version control directory or a nested working copy of the repository),
+// dependencies and vendored code are not source of this repository.
+func skippedDirectory(name string) bool {
+	return strings.HasPrefix(name, ".") || name == "node_modules" || name == "vendor"
+}
+
+// TestScanSkipsHiddenAndVendoredDirectories pins the rule of skippedDirectory.
+func TestScanSkipsHiddenAndVendoredDirectories(t *testing.T) {
+	for _, name := range []string{".git", ".hidden", ".nested", "node_modules", "vendor"} {
+		if !skippedDirectory(name) {
+			t.Errorf("%q is scanned, want skipped", name)
+		}
+	}
+	for _, name := range []string{"kernel", "platform", "state", "execution", "my.dir"} {
+		if skippedDirectory(name) {
+			t.Errorf("%q is skipped, want scanned", name)
 		}
 	}
 }
