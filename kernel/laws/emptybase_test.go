@@ -29,14 +29,15 @@ func goCommand(t *testing.T, module, databaseURL string, args ...string) (string
 	return string(out), err
 }
 
-// TestLawsRunOnEmptyBaseAfterMigrateCommand guards criterion 6 of the closing
-// story, the same sequence the CI runs: on an empty database the command
-// `go run ./db/cmd/migrate` applies the migrations, and then the suite runs
-// against that database. The command is also safe to run twice. The test
-// builds the base itself because the suite creates its own databases beside
-// it, and it runs one test of the suite as a witness, since a test cannot run
-// the whole suite that contains it.
-func TestLawsRunOnEmptyBaseAfterMigrateCommand(t *testing.T) {
+// TestMigrateCommandBuildsIsolatedSchemaOnEmptyBase guards criterion 6 of the
+// closing story as far as one test can: on an empty database the command
+// `go run ./db/cmd/migrate` applies the migrations, and running it again
+// changes nothing and succeeds. The test then reads the base the command
+// built, not a base of its own: every table with a space_id has row level
+// security enabled, forced and a policy, and the API role has none of the
+// attributes that bypass it. That the whole suite then passes is what the CI
+// runs, migrate followed by test; a test cannot run the suite that contains it.
+func TestMigrateCommandBuildsIsolatedSchemaOnEmptyBase(t *testing.T) {
 	t.Parallel()
 	admin := dbtest.Admin(t)
 	raw := make([]byte, 6)
@@ -82,10 +83,21 @@ func TestLawsRunOnEmptyBaseAfterMigrateCommand(t *testing.T) {
 		t.Fatalf("after the migration the schema has %d tables (%v), want the whole kernel", tables, err)
 	}
 
-	// The witness: a test of the suite that needs the schema, run against the
-	// migrated base. The pattern keeps it from running this test again.
-	out, err := goCommand(t, module, target.String(), "test", "./laws", "-count=1", "-run", "^TestLawPermissionAPIRoleCannotBypassIsolation$")
-	if err != nil {
-		t.Fatalf("the suite failed on the migrated base: %v\n%s", err, out)
+	// The witness reads the base the command built.
+	built := catalogTables(t, empty)
+	withSpace := 0
+	for _, table := range built {
+		if table.HasSpaceID {
+			withSpace++
+		}
+	}
+	if withSpace < 13 {
+		t.Errorf("the migrated base has %d tables with a space_id, want the whole kernel", withSpace)
+	}
+	for _, finding := range structureFindings(built) {
+		t.Errorf("migrated base: %s", finding)
+	}
+	for _, finding := range apiRoleFindings(t, empty) {
+		t.Errorf("migrated base: %s", finding)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -23,18 +24,22 @@ var businessWords = []string{
 }
 
 // vocabularyExempt are the files that name the words in order to forbid them.
-var vocabularyExempt = []string{"architecture_test.go", "vocabulary_test.go"}
+// They are given by path from the kernel directory, in slash form, so a file
+// of the same name elsewhere is still scanned.
+var vocabularyExempt = []string{"architecture_test.go", "laws/vocabulary_test.go"}
 
 var (
 	wordPattern = regexp.MustCompile(`\p{L}+`)
 	// camelBoundary splits identifiers such as ApplySales into words.
 	camelBoundary = regexp.MustCompile(`([a-z0-9])([A-Z])`)
+	// acronymBoundary splits HTTPCustomer into HTTP and Customer.
+	acronymBoundary = regexp.MustCompile(`([A-Z]+)([A-Z][a-z])`)
 )
 
 // businessWordsIn returns the forbidden words found in text, whole words only.
 func businessWordsIn(text string) []string {
 	var found []string
-	for _, word := range wordPattern.FindAllString(strings.ToLower(camelBoundary.ReplaceAllString(text, "$1 $2")), -1) {
+	for _, word := range wordPattern.FindAllString(strings.ToLower(acronymBoundary.ReplaceAllString(camelBoundary.ReplaceAllString(text, "$1 $2"), "$1 $2")), -1) {
 		for _, forbidden := range businessWords {
 			if word == forbidden || word == forbidden+"s" {
 				found = append(found, forbidden)
@@ -58,10 +63,24 @@ func goSourceWords(name, source string) []string {
 			return found
 		}
 		switch tok {
-		case token.COMMENT, token.STRING, token.CHAR, token.IDENT:
+		case token.STRING, token.CHAR:
+			// The literal is decoded first: "\ncustomer" holds the word
+			// behind an escape the raw text would hide.
+			if value, err := strconv.Unquote(lit); err == nil {
+				lit = value
+			}
+			found = append(found, businessWordsIn(lit)...)
+		case token.COMMENT, token.IDENT:
 			found = append(found, businessWordsIn(lit)...)
 		}
 	}
+}
+
+// isVocabularyExempt reports whether the file at path, found by walking root,
+// is one of the files that name the words in order to forbid them.
+func isVocabularyExempt(root, path string) bool {
+	rel, err := filepath.Rel(root, path)
+	return err == nil && slices.Contains(vocabularyExempt, filepath.ToSlash(rel))
 }
 
 // TestKernelCommentsStringsAndSQLHaveNoBusinessVocabulary guards criterion 7
@@ -77,7 +96,7 @@ func TestKernelCommentsStringsAndSQLHaveNoBusinessVocabulary(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if entry.IsDir() || slices.Contains(vocabularyExempt, entry.Name()) {
+		if entry.IsDir() || isVocabularyExempt(root, path) {
 			return nil
 		}
 		ext := filepath.Ext(path)
@@ -125,12 +144,20 @@ func TestBusinessVocabularyScanDetectsWords(t *testing.T) {
 		{"identifier in camel case", "package p\nfunc ApplyMembership() {}\n", []string{"membership"}},
 		{"snake case identifier", "package p\nvar restaurant_id int\n", []string{"restaurant"}},
 		{"spanish", "package p\nvar x = \"membresía del cliente\"\n", []string{"membresía", "cliente"}},
+		{"escape before the word", "package p\nvar x = \"\\ncustomer\"\n", []string{"customer"}},
+		{"acronym before the word", "package p\nvar HTTPCustomer int\n", []string{"customer"}},
 		{"clean", "package p\n// a participant joins a space\nvar x = \"salesforce salary resale\"\n", nil},
 	}
 	for _, c := range cases {
 		if got := goSourceWords("sample.go", c.source); !slices.Equal(got, c.want) {
 			t.Errorf("%s: found %v, want %v", c.name, got, c.want)
 		}
+	}
+	if !isVocabularyExempt("..", "../architecture_test.go") || !isVocabularyExempt("..", "../laws/vocabulary_test.go") {
+		t.Errorf("the two files that name the words must be exempt")
+	}
+	if isVocabularyExempt("..", "../state/architecture_test.go") || isVocabularyExempt("..", "../state/vocabulary_test.go") {
+		t.Errorf("a file of the same name elsewhere must still be scanned")
 	}
 	if got := businessWordsIn("CREATE TABLE kernel.invoices (id int); -- a gym"); !slices.Equal(got, []string{"invoice", "gym"}) {
 		t.Errorf("SQL: found %v, want invoice and gym", got)

@@ -1,19 +1,27 @@
 package laws_test
 
 import (
+	"context"
+	"strings"
 	"testing"
+
+	"github.com/nexusthrive/nexusthrive/kernel/execution"
 )
 
 // writtenTables are the tables the operation of the tests writes, with the
 // steps that have already succeeded when the first insert into the table
 // fails. A step is marked done when its call returns, so the entries of an
 // exchange and the timer of a commitment belong to the step that creates them.
+//
+// The exchange is the first write of the standard operation, so for the
+// exchanges and entries the test runs the event step before it, which gives
+// the rollback something to remove.
 var writtenTables = []struct {
 	table string
 	ran   []string
 }{
-	{"exchanges", nil},
-	{"entries", nil},
+	{"exchanges", []string{"event"}},
+	{"entries", []string{"event"}},
 	{"commitments", []string{"exchange"}},
 	{"timers", []string{"exchange"}},
 	{"events", []string{"exchange", "commitment"}},
@@ -44,8 +52,23 @@ func TestLawEndToEndInjectedFailureLeavesNothing(t *testing.T) {
 		}
 		before := w.counts()
 		op := newOperation(t, f, "k-inject-"+target.table)
-		if err := w.run(actor, w.spaceA, "request-inject", op.standard()); err == nil {
+		handler := op.standard()
+		if target.table == "exchanges" || target.table == "entries" {
+			handler = func(ctx context.Context, tx *execution.Tx) error {
+				if err := op.stepEvent(ctx, tx); err != nil {
+					return err
+				}
+				if err := op.stepExchange(ctx, tx, true); err != nil {
+					return err
+				}
+				return op.stepCommitment(ctx, tx, op.f.debtor)
+			}
+		}
+		err := w.run(actor, w.spaceA, "request-inject", handler)
+		if err == nil {
 			t.Errorf("%s: the operation succeeded although the database failed", target.table)
+		} else if !strings.Contains(err.Error(), "failure injected into "+target.table) {
+			t.Errorf("%s: the operation failed for another reason: %v", target.table, err)
 		}
 		for _, step := range target.ran {
 			if !op.ran[step] {

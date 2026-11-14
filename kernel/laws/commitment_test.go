@@ -120,12 +120,12 @@ func TestLawCommitmentRequiredAndBoundedFields(t *testing.T) {
 	}
 }
 
-// TestLawCommitmentCancelWithNullReasonIsNoOpInSQL fixes the behaviour of
+// TestAcceptedBehaviourCancelWithNullReasonIsNoOpInSQL fixes the behaviour of
 // follow-up 58: in SQL, writing a null cancellation reason on an open
 // commitment changes nothing and succeeds, and a blank reason is refused by
 // the CHECK. The refusal of a missing reason lives in the Go layer
 // (invalid_input), which the last assertion keeps in view.
-func TestLawCommitmentCancelWithNullReasonIsNoOpInSQL(t *testing.T) {
+func TestAcceptedBehaviourCancelWithNullReasonIsNoOpInSQL(t *testing.T) {
 	t.Parallel()
 	w := newEngineWorld(t)
 	f := w.ledger(w.spaceA)
@@ -154,14 +154,14 @@ func TestLawCommitmentCancelWithNullReasonIsNoOpInSQL(t *testing.T) {
 	}
 }
 
-// TestLawCommitmentCreditorMayFulfillWithOwnEntry fixes the behaviour of
+// TestAcceptedBehaviourCreditorMayFulfillWithOwnEntry fixes the behaviour of
 // follow-up 56, accepted for milestone 1: the kernel asks that an entry
 // fulfilling a commitment be positive, whole and in an account of the
 // creditor, and nothing more. A creditor therefore fulfills its own
 // commitment with a transfer between its own accounts, and with an entry
 // recorded before the commitment existed. Tightening this is a decision for
 // ADR-0033, not a change of this test.
-func TestLawCommitmentCreditorMayFulfillWithOwnEntry(t *testing.T) {
+func TestAcceptedBehaviourCreditorMayFulfillWithOwnEntry(t *testing.T) {
 	t.Parallel()
 	w := newEngineWorld(t)
 	f := w.ledger(w.spaceA)

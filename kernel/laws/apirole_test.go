@@ -119,15 +119,25 @@ func TestAPIRoleVerifierDetectsWeakRoles(t *testing.T) {
 		tx.Rollback()
 	}
 
-	tx, err := admin.Begin()
-	if err != nil {
-		t.Fatalf("begin: %v", err)
-	}
-	defer tx.Rollback()
-	if _, err := tx.Exec(`ALTER TABLE kernel.spaces OWNER TO ` + db.APIRole); err != nil {
-		t.Fatalf("change the owner: %v", err)
-	}
-	if got := apiRoleFindings(t, tx); len(got) == 0 {
-		t.Errorf("the verifier accepted a role that owns a table")
+	for name, statements := range map[string][]string{
+		"owner of a table":    {`ALTER TABLE kernel.spaces OWNER TO ` + db.APIRole},
+		"owner of a function": {`ALTER FUNCTION kernel.current_space_id() OWNER TO ` + db.APIRole},
+		"owner of the schema": {`ALTER SCHEMA kernel OWNER TO ` + db.APIRole},
+		"member of a role":    {`CREATE ROLE laws_probe_parent`, `GRANT laws_probe_parent TO ` + db.APIRole},
+	} {
+		tx, err := admin.Begin()
+		if err != nil {
+			t.Fatalf("begin: %v", err)
+		}
+		for _, statement := range statements {
+			if _, err := tx.Exec(statement); err != nil {
+				tx.Rollback()
+				t.Fatalf("%s: %q: %v", name, statement, err)
+			}
+		}
+		if got := apiRoleFindings(t, tx); len(got) == 0 {
+			t.Errorf("the verifier accepted a role that is the %s", name)
+		}
+		tx.Rollback()
 	}
 }
