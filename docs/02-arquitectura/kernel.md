@@ -65,6 +65,10 @@ El actor `system` salta solo el paso 3. Para `write` y `money`, `Check` toma `FO
 
 **Límite de confianza en M1:** el actor lo afirma la capa de aplicación. `Check` prueba que ese participante tiene permiso, no que quien llama sea ese participante; la puerta de B3 construye el `Actor` solo desde un token validado. Un espacio `closed` es terminal (disparador) y `kernel.capability.write` solo existe en espacios `platform` (disparador): ver [modelo de datos](modelo-de-datos/kernel.md).
 
+## Compromisos
+
+Un compromiso es una obligación de un deudor a un acreedor sobre un recurso, con monto y vencimiento obligatorio. El kernel, no quien llama, deriva su estado (`open`, `fulfilled`, `canceled`, `expired`), el monto cumplido y la hora de cierre; el rol de la API solo inserta compromisos abiertos. Se cumple con asientos del libro: cada cumplimiento aplica un asiento positivo de una cuenta del acreedor, una sola vez y completo, y `state.AppendFulfillment` bloquea la fila del compromiso (`FOR NO KEY UPDATE`) para que dos cumplimientos concurrentes nunca superen el monto. Cancelar exige un motivo y solo es posible mientras el compromiso está abierto. Los cumplimientos son de solo agregar y los compromisos no se borran. Los temporizadores y el vencimiento llegan con timers-12. Detalle en [modelo de datos](modelo-de-datos/kernel.md) y [ADR-0033](../05-decisiones/0033-compromisos-estado-derivado-y-asiento-unico.md).
+
 ## Reglas e invariantes
 
 - Las cinco [leyes](../01-modelo/leyes.md) tienen pruebas en `kernel/laws/` que nunca se desactivan.
