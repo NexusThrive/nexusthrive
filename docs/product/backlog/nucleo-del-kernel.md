@@ -192,7 +192,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-permissions-06 · Verificar permisos con un catálogo mínimo del kernel
 
-- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-permissions-06`.
+- **Estado:** Terminada. **Tamaño:** M. **Rama:** `feature/HU-kernel-permissions-06`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero un catálogo mínimo de permisos y una verificación previa a toda operación,
@@ -293,7 +293,7 @@ Cada historia las hereda y no las repite en detalle.
   - Escala y estado de cuenta: reglas nuevas derivadas de HU-kernel-resources-07.
   - Operación de riesgo `money` (siempre idempotente en el motor; ver HU-kernel-idempotency-14).
 - **Dependencias:** HU-kernel-resources-07.
-- **Fuera de alcance:** `commitment_id` en asientos (se llena en HU-kernel-commitments-11), eventos y outbox (HU-kernel-execution-13), saldos, cobro con Wompi, permisos (se aplican en HU-kernel-execution-13).
+- **Fuera de alcance:** `commitment_id` en asientos (descartado en ADR-0033: el vínculo vive solo en `fulfillments`), eventos y outbox (HU-kernel-execution-13), saldos, cobro con Wompi, permisos (se aplican en HU-kernel-execution-13).
 
 ---
 
@@ -353,7 +353,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-commitments-11 · Crear, cumplir y cancelar compromisos
 
-- **Estado:** Lista. **Tamaño:** L. **Rama:** `feature/HU-kernel-commitments-11`.
+- **Estado:** En revisión. **Tamaño:** L. **Rama:** `feature/HU-kernel-commitments-11`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero compromisos con vencimiento obligatorio que se cumplan con asientos y no superen su monto,
