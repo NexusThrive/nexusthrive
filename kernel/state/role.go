@@ -85,6 +85,11 @@ func translateGrantError(operation string, err error) error {
 		switch pgErr.Code {
 		case "23505":
 			return model.NewError(model.CodeRuleViolation, "a role key, an active grant or a capability is already in use", err)
+		case "23001":
+			// restrict_violation: the database refuses a permission or a write
+			// that the space may not hold, such as kernel.capability.write
+			// outside a platform space. Same precedent as translateSpaceError.
+			return model.NewError(model.CodePermissionDenied, "the space may not hold this permission or perform this write", err)
 		case "23514", "22P02":
 			return model.NewError(model.CodeInvalidInput, "data violates a constraint", err)
 		case "23503":

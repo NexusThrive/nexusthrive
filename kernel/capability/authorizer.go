@@ -46,6 +46,16 @@ func NewAuthorizer(catalog model.Catalog, clock model.Clock) (*Authorizer, error
 	return &Authorizer{catalog: catalog, clock: clock}, nil
 }
 
+// Catalog returns the catalog the authorizer verifies against. A catalog has
+// no mutable state: extending the returned value builds a new catalog and
+// leaves the authorizer's own untouched.
+func (a *Authorizer) Catalog() model.Catalog { return a.catalog }
+
+// Clock returns the clock the authorizer judges grant expiry with. The engine
+// reuses it to claim and fire, so the clock that verifies and the clock that
+// acts cannot diverge.
+func (a *Authorizer) Clock() model.Clock { return a.clock }
+
 // denied is the single refusal of a missing permission. Its message is the
 // same for every cause, so a caller cannot tell an expired grant from a
 // revoked one, an archived participant or a space it cannot see.

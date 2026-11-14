@@ -6,9 +6,11 @@ package state
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/nexusthrive/nexusthrive/kernel/model"
 )
@@ -66,4 +68,35 @@ func inTransaction(ctx context.Context, pool *sql.DB, spaceID string, fn func(ct
 	}
 	committed = true
 	return nil
+}
+
+// deferredConstraints are the checks the database postpones to the COMMIT. A
+// failure of one of them is a rule the operation broke, not a fault of the
+// system.
+var deferredConstraints = map[string]struct{}{
+	"exchanges_conservation":    {},
+	"exchanges_min_entries":     {},
+	"exchanges_reversal_mirror": {},
+	"commitments_fulfilled_sum": {},
+	"timers_coherent":           {},
+}
+
+// TranslateCommitError turns the failure of a deferred check at COMMIT into a
+// rule_violation that keeps the cause. Any other error, a missing privilege
+// (42501) included, and any error that is already typed is returned as it came,
+// so that a real fault is never disguised as a rule.
+func TranslateCommitError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if _, typed := model.CodeOf(err); typed {
+		return err
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if _, deferred := deferredConstraints[pgErr.ConstraintName]; deferred {
+			return model.NewError(model.CodeRuleViolation, "the operation breaks a rule that is checked when it commits", err)
+		}
+	}
+	return err
 }

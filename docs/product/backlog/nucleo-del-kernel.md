@@ -385,7 +385,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-timers-12 · Crear timers con el compromiso y vencerlos con reloj inyectable
 
-- **Estado:** En revisión (P1 resuelta: se escribe el evento `kernel.commitment.expired` v1 y no hay cumplimiento tardío). **Tamaño:** M. **Rama:** `feature/HU-kernel-timers-12`.
+- **Estado:** Terminada (P1 resuelta: se escribe el evento `kernel.commitment.expired` v1 y no hay cumplimiento tardío). **Tamaño:** M. **Rama:** `feature/HU-kernel-timers-12`.
 - **Pregunta que la desbloquea:** P1 (evento al vencer y cumplimiento tardío de un compromiso `expired`).
 - **Historia:**
   Como ingeniero de NexusThrive,
@@ -414,13 +414,13 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-execution-13 · Ejecutar cada operación en una sola transacción con permiso
 
-- **Estado:** Lista. **Tamaño:** L. **Rama:** `feature/HU-kernel-execution-13`.
+- **Estado:** En revisión. **Tamaño:** L. **Rama:** `feature/HU-kernel-execution-13`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero un motor de ejecución que verifique permiso y escriba libro, compromiso, evento y outbox juntos o ninguno,
   para que ninguna operación deje estados a medias.
 - **Criterios de aceptación:**
-  1. Dado un actor con `kernel.exchange.write` y `kernel.commitment.write`, cuando se ejecuta una operación de prueba que registra un intercambio, crea un compromiso, escribe un evento y una fila de outbox `internal`, entonces las cuatro escrituras existen tras el `COMMIT`, con el mismo `request_id`.
+  1. Dado un actor con `kernel.exchange.write` y `kernel.commitment.write`, cuando se ejecuta una operación de prueba que registra un intercambio, crea un compromiso, escribe un evento y una fila de outbox `internal`, entonces las cuatro escrituras existen tras el `COMMIT`; el evento lleva el `request_id` de la operación y es el ancla de la trazabilidad: la fila de outbox cuelga del evento por `event_seq` y el `payload` del evento nombra los identificadores del intercambio y del compromiso (reformulado con aprobación del responsable; `exchanges` y `commitments` no tienen columna `request_id`).
   2. Dado el mismo caso, cuando la escritura del compromiso falla, entonces no queda ni intercambio, ni asientos, ni evento, ni outbox.
   3. Dado el mismo caso, cuando la escritura del outbox falla, entonces no queda nada de lo anterior.
   4. Dado el mismo caso, cuando la escritura del intercambio viola la conservación al confirmar, entonces no queda ningún compromiso, evento ni outbox.

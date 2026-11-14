@@ -120,7 +120,9 @@ func AppendEventAndEnqueue(ctx context.Context, tx *sql.Tx, clock model.Clock, i
 }
 
 // ClaimOutbox claims up to limit due rows of one subscriber in spaceID, in a
-// transaction of its own. See ClaimOutboxTx for what a claim does.
+// transaction of its own. It is for standalone use and tests and runs no
+// permission check; production goes through execution.Engine. See ClaimOutboxTx
+// for what a claim does.
 func ClaimOutbox(ctx context.Context, pool *sql.DB, clock model.Clock, spaceID string, s model.Subscriber, limit int) ([]model.OutboxRow, error) {
 	if err := validateOutboxClaim(s, limit); err != nil {
 		return nil, err

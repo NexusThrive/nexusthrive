@@ -65,7 +65,7 @@ func scanCommitment(row rowScanner) (model.Commitment, error) {
 // commitment in the same statement, at its due date (ADR-0034), so a commitment
 // with a due date in the past expires at the first firing round.
 func AppendCommitment(ctx context.Context, tx *sql.Tx, actor model.Actor, in model.NewCommitment) (model.Commitment, error) {
-	if err := validateExchangeActor(actor); err != nil {
+	if err := validateWriteActor(actor); err != nil {
 		return model.Commitment{}, err
 	}
 	if err := in.Validate(); err != nil {
@@ -97,8 +97,10 @@ func AppendCommitment(ctx context.Context, tx *sql.Tx, actor model.Actor, in mod
 }
 
 // CreateCommitment appends one commitment to spaceID in a transaction of its
-// own. It is for standalone use and tests; operations that write more than the
-// commitment call AppendCommitment inside their own transaction.
+// own. It is for standalone use and tests, accepts only the system actor and
+// runs no permission check; production goes through execution.Engine.
+// Operations that write more than the commitment call AppendCommitment inside
+// their own transaction.
 func CreateCommitment(ctx context.Context, pool *sql.DB, actor model.Actor, spaceID string, in model.NewCommitment) (model.Commitment, error) {
 	if err := validateExchangeActor(actor); err != nil {
 		return model.Commitment{}, err
@@ -143,7 +145,7 @@ func readCommitment(ctx context.Context, tx *sql.Tx, id string) (model.Commitmen
 // the entry. The database locks the commitment row first, so two concurrent
 // fulfillments serialize and cannot exceed the amount between them.
 func AppendFulfillment(ctx context.Context, tx *sql.Tx, actor model.Actor, commitmentID, entryID string) (model.Fulfillment, model.Commitment, error) {
-	if err := validateExchangeActor(actor); err != nil {
+	if err := validateWriteActor(actor); err != nil {
 		return model.Fulfillment{}, model.Commitment{}, err
 	}
 	if err := requireID("commitment id", commitmentID); err != nil {
@@ -218,7 +220,7 @@ func FulfillCommitment(ctx context.Context, pool *sql.DB, actor model.Actor, spa
 // a fulfillment that race have one winner. Everything else follows
 // AppendCommitment.
 func AppendCancelCommitment(ctx context.Context, tx *sql.Tx, actor model.Actor, commitmentID, reason string) (model.Commitment, error) {
-	if err := validateExchangeActor(actor); err != nil {
+	if err := validateWriteActor(actor); err != nil {
 		return model.Commitment{}, err
 	}
 	if err := requireID("commitment id", commitmentID); err != nil {

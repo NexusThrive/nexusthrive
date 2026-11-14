@@ -27,6 +27,7 @@ flowchart LR
 ## Funcionamiento
 
 - Cada operación declara su **permiso**, su **capacidad**, su **riesgo** (`read`, `write`, `money`) y si es **idempotente**. Las de dinero siempre lo son.
+  Mientras no exista `contracts/`, la declaración vive en Go (`execution.Operation`, [ADR-0035](../05-decisiones/0035-motor-de-ejecucion.md)): una **lista** de permisos que se verifican todos, una capacidad opcional, el riesgo (igual al mayor de sus permisos) y la idempotencia. El motor se niega a registrar una operación de dinero sin idempotencia.
 - Los nombres de operaciones, campos y eventos están en inglés.
 - Los eventos llevan versión. Un cambio incompatible crea `.v2`; el anterior se mantiene durante un periodo de transición.
 - `buf lint` y `buf breaking` corren en el CI.
