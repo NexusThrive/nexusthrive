@@ -446,8 +446,8 @@ func TestIsolationVerifierDetectsFlawedTables(t *testing.T) {
 	}
 
 	// A table with no space_id and no rule is reported too.
-	orphan := []catalogTable{{Name: "orphan", RLS: true, Forced: true}}
-	if got := structureFindings(orphan); len(got) != 1 {
-		t.Errorf("a table without space_id and rule: findings %v, want 1", got)
+	orphan := []catalogTable{{Name: "orphan", RLS: true, Forced: true, Policies: []catalogPolicy{{Name: "p", Cmd: "*", Using: "true", Check: "true"}}}}
+	if got := structureFindings(orphan); len(got) != 1 || !strings.Contains(got[0], "no space_id") {
+		t.Errorf("a table without space_id and rule: findings %v, want the one about space_id", got)
 	}
 }
