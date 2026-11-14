@@ -25,6 +25,12 @@ const (
 	// CodeAlreadyDone marks a request whose effect already holds, such as
 	// revoking a grant that is already revoked. Nothing changes.
 	CodeAlreadyDone Code = "already_done"
+	// CodeSpaceSuspended marks a write or money operation in a space that is
+	// suspended or closed; reads still work.
+	CodeSpaceSuspended Code = "space_suspended"
+	// CodeCapabilityInactive marks an operation whose capability the space
+	// does not have active.
+	CodeCapabilityInactive Code = "capability_inactive"
 )
 
 // Error is a typed contract error. Message is safe to show to callers; Err
