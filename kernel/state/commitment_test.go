@@ -530,17 +530,17 @@ func TestCancelOpenCommitment(t *testing.T) {
 	open := c.create(t, "100.00")
 
 	before := time.Now().Add(-time.Second)
-	got, err := state.CancelCommitment(context.Background(), c.api, c.actor, spaceA, open.ID, "customer asked")
+	got, err := state.CancelCommitment(context.Background(), c.api, c.actor, spaceA, open.ID, "creditor asked")
 	if err != nil {
 		t.Fatalf("CancelCommitment: %v", err)
 	}
-	if got.Status != model.CommitmentStatusCanceled || got.CanceledReason != "customer asked" {
+	if got.Status != model.CommitmentStatusCanceled || got.CanceledReason != "creditor asked" {
 		t.Errorf("commitment = %s %q, want canceled with the reason", got.Status, got.CanceledReason)
 	}
 	if got.ClosedAt.IsZero() || got.ClosedAt.Before(before) || got.ClosedAt.Location() != time.UTC {
 		t.Errorf("ClosedAt = %v, want the cancellation time", got.ClosedAt)
 	}
-	if read := c.get(t, open.ID); read.Status != model.CommitmentStatusCanceled || read.CanceledReason != "customer asked" {
+	if read := c.get(t, open.ID); read.Status != model.CommitmentStatusCanceled || read.CanceledReason != "creditor asked" {
 		t.Errorf("stored commitment = %s %q", read.Status, read.CanceledReason)
 	}
 

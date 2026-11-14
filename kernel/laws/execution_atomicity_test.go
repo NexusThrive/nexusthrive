@@ -349,12 +349,10 @@ func TestOperationFailureLeavesNothing(t *testing.T) {
 	const missingDebtor = "01900000-0000-7000-8000-0000000000ee"
 
 	cases := []struct {
-		name    string
-		setup   func()
-		cleanup func()
-		fn      func(*operation) execution.Handler
-		code    model.Code
-		ran     []string
+		name string
+		fn   func(*operation) execution.Handler
+		code model.Code
+		ran  []string
 	}{
 		{
 			name: "the commitment fails (criterion 2)",
@@ -368,30 +366,6 @@ func TestOperationFailureLeavesNothing(t *testing.T) {
 			},
 			code: model.CodeRuleViolation,
 			ran:  []string{"exchange"},
-		},
-		{
-			name: "the outbox fails (criterion 3)",
-			setup: func() {
-				for _, statement := range []string{
-					`CREATE FUNCTION kernel.fail_outbox_write() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'outbox write failed on purpose'; END $$`,
-					`CREATE TRIGGER fail_outbox_write BEFORE INSERT ON kernel.outbox FOR EACH ROW EXECUTE FUNCTION kernel.fail_outbox_write()`,
-				} {
-					if _, err := w.admin.Exec(statement); err != nil {
-						t.Fatalf("create the failing trigger: %v", err)
-					}
-				}
-			},
-			cleanup: func() {
-				if _, err := w.admin.Exec(`DROP TRIGGER fail_outbox_write ON kernel.outbox`); err != nil {
-					t.Fatalf("drop the failing trigger: %v", err)
-				}
-				if _, err := w.admin.Exec(`DROP FUNCTION kernel.fail_outbox_write()`); err != nil {
-					t.Fatalf("drop the failing function: %v", err)
-				}
-			},
-			fn:   func(o *operation) execution.Handler { return o.standard() },
-			code: "",
-			ran:  []string{"exchange", "commitment"},
 		},
 		{
 			name: "the entries do not add up to zero (criterion 4)",
@@ -411,9 +385,6 @@ func TestOperationFailureLeavesNothing(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		if c.setup != nil {
-			c.setup()
-		}
 		before := w.counts()
 		o := newOperation(t, f)
 		err := w.run(actor, w.spaceA, "request-fail", c.fn(o))
@@ -433,18 +404,16 @@ func TestOperationFailureLeavesNothing(t *testing.T) {
 		if changed := diff(before, w.counts()); len(changed) != 0 {
 			t.Errorf("%s: the failed operation left %v", c.name, changed)
 		}
-		if c.cleanup != nil {
-			c.cleanup()
-		}
 	}
 
-	// Once the failing trigger is gone the same operation succeeds, so the
-	// failure came from the trigger and not from the operation.
+	// The same operation succeeds, so the failures above came from the steps
+	// and not from the operation. The failure injected in each write is in
+	// TestLawEndToEndInjectedFailureLeavesNothing.
 	before := w.counts()
 	if err := w.run(actor, w.spaceA, "request-ok", newOperation(t, f).standard()); err != nil {
-		t.Fatalf("the operation after the cleanup failed: %v", err)
+		t.Fatalf("the operation afterwards failed: %v", err)
 	}
 	if changed := diff(before, w.counts()); changed["outbox"] != 1 || changed["exchanges"] != 1 {
-		t.Errorf("the operation after the cleanup changed %v", changed)
+		t.Errorf("the operation afterwards changed %v", changed)
 	}
 }

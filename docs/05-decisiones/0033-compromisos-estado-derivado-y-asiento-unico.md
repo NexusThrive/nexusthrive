@@ -54,6 +54,7 @@ HU-kernel-commitments-11 implementa la ley de compromiso (`docs/01-modelo/leyes.
 - Un superusuario o dueño puede deshabilitar disparadores (límite de ADR-0028); `CHECK`, `UNIQUE` y claves foráneas siguen.
 - Cumplir dos compromisos en orden opuesto desde transacciones distintas puede dar `40P01`; el llamador reintenta.
 - timers-12 debe acotar la vía de `expired` (seguimiento 53).
+- Autocumplimiento (seguimiento 56): un acreedor, o quien escriba en su nombre, puede cumplir su propio compromiso con cualquier asiento positivo de una cuenta suya, incluido un traspaso entre cuentas propias o un asiento anterior al compromiso; no se exige que el contra-asiento venga del deudor ni que sea posterior. Es el comportamiento aceptado en M1 y lo fija `TestAcceptedBehaviourCreditorMayFulfillWithOwnEntry` en `kernel/laws`. Exigir un asiento ligado al deudor o posterior al compromiso queda como decisión pendiente de un ADR propio.
 
 ## Cumplimiento
 

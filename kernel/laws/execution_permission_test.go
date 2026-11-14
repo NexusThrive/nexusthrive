@@ -10,11 +10,11 @@ import (
 	"github.com/nexusthrive/nexusthrive/kernel/state"
 )
 
-// TestExecutionDeniedLeavesNoRows guards criteria 5 and 6: an operation that
+// TestLawPermissionExecutionDeniedLeavesNoRows guards criteria 5 and 6: an operation that
 // the actor may not run answers permission_denied, the handler never runs and
 // no table of the schema changes. The same operation with the right actor, in
 // the same space, is the positive control.
-func TestExecutionDeniedLeavesNoRows(t *testing.T) {
+func TestLawPermissionExecutionDeniedLeavesNoRows(t *testing.T) {
 	t.Parallel()
 	w := newEngineWorld(t)
 	f := w.ledger(w.spaceA)

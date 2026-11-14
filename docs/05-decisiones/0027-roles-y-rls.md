@@ -61,7 +61,7 @@ Esta enmienda no cambia la decisión ni el estado de la ADR; precisa cómo se ap
 
 ### Riesgo aceptado en M1: vincular una identidad ajena
 
-La clave foránea ignora la RLS, y la política de `INSERT` de `identities` no limita quién crea una identidad. Un espacio que conozca el UUID de una identidad de otro espacio podría crear un participante vinculado a ella y, a partir de ahí, leer su correo y su nombre por la política de visibilidad. Es aceptable en M1 porque solo el actor `system` crea participantes (cualquier otro actor recibe `permission_denied`) y porque el UUID v7 tiene 74 bits aleatorios y no se adivina. La fase B3 exigirá una vía acotada para vincular identidades (por ejemplo, invitación verificada) y para buscar o crear una identidad por proveedor al iniciar sesión, cada una con su propia ADR.
+La clave foránea ignora la RLS, y la política de `INSERT` de `identities` no limita quién crea una identidad. Un espacio que conozca el UUID de una identidad de otro espacio podría crear un participante vinculado a ella y, a partir de ahí, leer su correo y su nombre por la política de visibilidad. Es aceptable en M1 porque solo el actor `system` crea participantes (cualquier otro actor recibe `permission_denied`). Un UUID no es un secreto y no se debe tratar como barrera: lo que sostiene el riesgo es que el `IdentityID` nunca viene de la petición de un cliente, sino que lo resuelve el servidor (invitación verificada o sesión). La prueba `TestIdentityOfAnotherSpaceCanBeLinked` de `kernel/laws` fija el comportamiento aceptado. La fase B3 exigirá una vía acotada para vincular identidades (por ejemplo, invitación verificada) y para buscar o crear una identidad por proveedor al iniciar sesión, cada una con su propia ADR.
 
 ## Referencias
 

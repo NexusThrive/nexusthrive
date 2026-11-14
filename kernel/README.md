@@ -26,4 +26,6 @@ Current state of the engine: `execution.Engine` runs every operation in one tran
 
 Current state of timers: `Engine.FireDueTimers` fires the due expiry timers of a space and expires their commitments; nothing calls it in production until the scheduler process exists (see `docs/02-arquitectura/kernel.md`, section "Temporizadores y vencimiento").
 
+Not built yet: the timer scheduler process does not exist, so a commitment past its due date stays open until it does, and the privileged road of NexusThrive staff into a space belongs to phase B4 (platform layer). A test in `laws/` keeps both statements here.
+
 Documentation (Spanish): `docs/02-arquitectura/kernel.md`.
