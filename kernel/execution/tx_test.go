@@ -30,7 +30,7 @@ func TestTxRequiresDeclaredPermission(t *testing.T) {
 	holder := w.holder(w.spaceA, "holder", model.PermissionExchangeWrite, model.PermissionCommitmentWrite, model.PermissionEventRead)
 	before := w.snapshot()
 
-	exchange := model.NewExchange{Kind: "test.exchange", IdempotencyKey: "k-tx", Entries: []model.NewEntry{
+	exchange := model.NewExchange{Kind: "test.exchange", Entries: []model.NewEntry{
 		{AccountID: f.to, ResourceID: f.resource, Amount: amount(t, "1.00")},
 		{AccountID: f.from, ResourceID: f.resource, Amount: amount(t, "1.00").Neg()},
 	}}
@@ -62,7 +62,7 @@ func TestTxRequiresDeclaredPermission(t *testing.T) {
 		t.Fatalf("Run reader: %v", err)
 	}
 
-	err = w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	err = w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		_, err := tx.ReadEvents(ctx, 0, 10)
 		requireCode(t, "events from the money operation", err, model.CodePermissionDenied)
 		if _, err := tx.RecordExchange(ctx, exchange); err != nil {
@@ -87,7 +87,7 @@ func TestTxRejectsForeignNamespace(t *testing.T) {
 	before := w.snapshot()
 
 	for _, eventType := range []string{model.EventTypeCommitmentExpired, "kernel.space.created", "other.thing", "testing.thing", "test", "test.thing\n"} {
-		err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+		err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 			_, err := tx.AppendEvent(ctx, EventInput{Type: eventType, Version: 1, Payload: json.RawMessage(`{}`)}, model.SubscriberInternal)
 			return err
 		})
@@ -96,15 +96,15 @@ func TestTxRejectsForeignNamespace(t *testing.T) {
 		}
 	}
 	for _, kind := range []string{"kernel.exchange.reversal", "other.exchange", "testing.exchange"} {
-		err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
-			_, err := tx.RecordExchange(ctx, model.NewExchange{Kind: kind, IdempotencyKey: "k-ns", Entries: []model.NewEntry{
+		err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+			_, err := tx.RecordExchange(ctx, model.NewExchange{Kind: kind, Entries: []model.NewEntry{
 				{AccountID: f.to, ResourceID: f.resource, Amount: amount(t, "1.00")},
 				{AccountID: f.from, ResourceID: f.resource, Amount: amount(t, "1.00").Neg()},
 			}})
 			return err
 		})
 		requireCode(t, "exchange kind "+kind, err, model.CodeRuleViolation)
-		err = w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+		err = w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 			_, err := tx.CreateCommitment(ctx, model.NewCommitment{
 				Kind: kind, DebtorParticipantID: f.debtor, CreditorParticipantID: f.creditor, ResourceID: f.resource, Amount: amount(t, "1.00"),
 			})
@@ -117,7 +117,7 @@ func TestTxRejectsForeignNamespace(t *testing.T) {
 	}
 
 	// Control: the own namespace writes.
-	err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		_, err := tx.AppendEvent(ctx, EventInput{Type: "test.thing", Version: 1, Payload: json.RawMessage(`{}`)})
 		return err
 	})
@@ -142,17 +142,17 @@ func TestTxClosedAfterHandler(t *testing.T) {
 			return returned
 		}
 	}
-	if err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, capture(nil)); err != nil {
+	if err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, capture(nil)); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	_ = w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, capture(model.NewError(model.CodeNotFound, "x", nil)))
+	_ = w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, capture(model.NewError(model.CodeNotFound, "x", nil)))
 	if len(captured) != 2 {
 		t.Fatalf("captured %d transactions, want 2", len(captured))
 	}
 	before := w.snapshot()
 	for i, tx := range captured {
 		ctx := context.Background()
-		_, err := tx.RecordExchange(ctx, model.NewExchange{Kind: "test.exchange", IdempotencyKey: "k-late", Entries: []model.NewEntry{
+		_, err := tx.RecordExchange(ctx, model.NewExchange{Kind: "test.exchange", Entries: []model.NewEntry{
 			{AccountID: f.to, ResourceID: f.resource, Amount: amount(t, "1.00")},
 			{AccountID: f.from, ResourceID: f.resource, Amount: amount(t, "1.00").Neg()},
 		}})
@@ -215,7 +215,7 @@ func TestTxCopyIsClosedToo(t *testing.T) {
 	w := newWorld(t)
 	holder := w.writer(w.spaceA, "holder")
 	var copied Tx
-	err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		copied = *tx
 		return nil
 	})
