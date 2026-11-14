@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/nexusthrive/nexusthrive/kernel/db"
 	"github.com/nexusthrive/nexusthrive/kernel/db/dbtest"
 )
 
@@ -474,6 +475,12 @@ func TestSessionReplicationRoleDeniedToAPI(t *testing.T) {
 		`INSERT INTO kernel.commitments (id, created_at) OVERRIDING SYSTEM VALUE VALUES ('01900000-0000-7000-8000-0000000001f1', now())`,
 	} {
 		requireRule(t, query, asAPI(t, e.admin, query), "42501", "")
+	}
+	// SET ROLE needs another role to belong to, and the test harness runs as a
+	// superuser that can always switch back, so the property is checked in the
+	// catalog: the API role belongs to no role and has no special attribute.
+	if got := count(t, e.admin, `SELECT count(*) FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member WHERE r.rolname = $1`, db.APIRole); got != 0 {
+		t.Errorf("the API role is a member of %d roles, want none", got)
 	}
 	for _, query := range []string{
 		`LOCK TABLE kernel.commitments IN SHARE MODE`, `LOCK TABLE kernel.commitments IN ACCESS EXCLUSIVE MODE`,
