@@ -24,7 +24,7 @@ const (
 	// CommitmentStatusCanceled is a commitment closed with a reason.
 	CommitmentStatusCanceled CommitmentStatus = "canceled"
 	// CommitmentStatusExpired is a commitment closed because it was not met in
-	// time. Only the timer story writes it.
+	// time. Only a fired timer brings a commitment here (ADR-0034).
 	CommitmentStatusExpired CommitmentStatus = "expired"
 )
 
