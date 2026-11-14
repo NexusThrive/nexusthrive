@@ -31,6 +31,10 @@ const (
 	// CodeCapabilityInactive marks an operation whose capability the space
 	// does not have active.
 	CodeCapabilityInactive Code = "capability_inactive"
+	// CodeIdempotencyConflict marks a request that reuses the idempotency key of
+	// another request still in force: the same key, but another operation, actor
+	// or body (ADR-0026). Nothing is written.
+	CodeIdempotencyConflict Code = "idempotency_conflict"
 )
 
 // Error is a typed contract error. Message is safe to show to callers; Err

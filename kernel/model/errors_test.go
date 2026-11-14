@@ -46,3 +46,12 @@ func TestAlreadyDoneCodeValue(t *testing.T) {
 		t.Errorf("CodeAlreadyDone = %q", model.CodeAlreadyDone)
 	}
 }
+
+// TestIdempotencyConflictCodeValue pins the wire value of the
+// idempotency_conflict code (ADR-0004 amendment, ADR-0026).
+func TestIdempotencyConflictCodeValue(t *testing.T) {
+	t.Parallel()
+	if model.CodeIdempotencyConflict != "idempotency_conflict" {
+		t.Errorf("CodeIdempotencyConflict = %q", model.CodeIdempotencyConflict)
+	}
+}
