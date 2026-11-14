@@ -14,20 +14,20 @@ type rowQuerier interface {
 }
 
 // apiRoleFindings checks that the role of the API cannot go around row level
-// security: it is not a superuser, it has no BYPASSRLS, it cannot create roles
+// security: it is not a superuser and cannot log in (the password is set out of band by deployments, never in the test databases), it has no BYPASSRLS, it cannot create roles
 // or databases or replicate, it owns no table, function or schema of the
 // database, and it is a member of no other role that could.
 func apiRoleFindings(t *testing.T, q rowQuerier) []string {
 	t.Helper()
 	var findings []string
-	var super, bypass, createRole, createDB, replication bool
-	err := q.QueryRow(`SELECT rolsuper, rolbypassrls, rolcreaterole, rolcreatedb, rolreplication FROM pg_roles WHERE rolname = $1`, db.APIRole).
-		Scan(&super, &bypass, &createRole, &createDB, &replication)
+	var super, bypass, createRole, createDB, replication, login bool
+	err := q.QueryRow(`SELECT rolsuper, rolbypassrls, rolcreaterole, rolcreatedb, rolreplication, rolcanlogin FROM pg_roles WHERE rolname = $1`, db.APIRole).
+		Scan(&super, &bypass, &createRole, &createDB, &replication, &login)
 	if err != nil {
 		t.Fatalf("read the role %s: %v", db.APIRole, err)
 	}
 	for attribute, set := range map[string]bool{
-		"SUPERUSER": super, "BYPASSRLS": bypass, "CREATEROLE": createRole, "CREATEDB": createDB, "REPLICATION": replication,
+		"SUPERUSER": super, "BYPASSRLS": bypass, "CREATEROLE": createRole, "CREATEDB": createDB, "REPLICATION": replication, "LOGIN": login,
 	} {
 		if set {
 			findings = append(findings, "the API role has "+attribute)
@@ -104,7 +104,7 @@ func TestAPIRoleVerifierDetectsWeakRoles(t *testing.T) {
 	t.Parallel()
 	admin := dbtest.Database(t)
 
-	for _, attribute := range []string{"SUPERUSER", "BYPASSRLS", "CREATEROLE", "CREATEDB", "REPLICATION"} {
+	for _, attribute := range []string{"SUPERUSER", "BYPASSRLS", "CREATEROLE", "CREATEDB", "REPLICATION", "LOGIN"} {
 		tx, err := admin.Begin()
 		if err != nil {
 			t.Fatalf("begin: %v", err)

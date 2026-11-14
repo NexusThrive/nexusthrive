@@ -24,7 +24,15 @@ func goCommand(t *testing.T, module, databaseURL string, args ...string) (string
 	t.Helper()
 	command := exec.Command("go", args...)
 	command.Dir = module
-	command.Env = append(os.Environ(), "DATABASE_URL="+databaseURL)
+	// The password of the API role is a deployment matter: with it the command
+	// would grant LOGIN to a role that belongs to the whole cluster.
+	var env []string
+	for _, entry := range os.Environ() {
+		if !strings.HasPrefix(entry, "API_DB_PASSWORD=") {
+			env = append(env, entry)
+		}
+	}
+	command.Env = append(env, "DATABASE_URL="+databaseURL)
 	out, err := command.CombinedOutput()
 	return string(out), err
 }

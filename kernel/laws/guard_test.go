@@ -58,6 +58,13 @@ func omissionFindings(name, source string) ([]string, error) {
 			}
 		}
 	}
+	for _, decl := range file.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok && fn.Recv == nil && strings.HasPrefix(fn.Name.Name, "TestLaw") && fn.Body != nil {
+			for _, what := range trivialBody(fn.Body) {
+				report(fn.Pos(), fn.Name.Name+" "+what)
+			}
+		}
+	}
 	selected := map[*ast.Ident]bool{}
 	ast.Inspect(file, func(node ast.Node) bool {
 		if n, ok := node.(*ast.SelectorExpr); ok {
@@ -96,6 +103,48 @@ func omissionFindings(name, source string) ([]string, error) {
 		return true
 	})
 	return findings, nil
+}
+
+// trivialBody says why a test of a law proves nothing: it has no call at all
+// (so it never touches t or a helper), its first statement is an
+// unconditional return, or an if at its top level returns early.
+func trivialBody(body *ast.BlockStmt) []string {
+	var reasons []string
+	calls := false
+	ast.Inspect(body, func(node ast.Node) bool {
+		if _, ok := node.(*ast.CallExpr); ok {
+			calls = true
+		}
+		return true
+	})
+	if !calls {
+		reasons = append(reasons, "makes no call, so it checks nothing")
+	}
+	if len(body.List) > 0 {
+		if _, ok := body.List[0].(*ast.ReturnStmt); ok {
+			reasons = append(reasons, "starts with a return")
+		}
+	}
+	for _, stmt := range body.List {
+		ifStmt, ok := stmt.(*ast.IfStmt)
+		if !ok {
+			continue
+		}
+		returns := false
+		ast.Inspect(ifStmt.Body, func(node ast.Node) bool {
+			if _, ok := node.(*ast.FuncLit); ok {
+				return false
+			}
+			if _, ok := node.(*ast.ReturnStmt); ok {
+				returns = true
+			}
+			return true
+		})
+		if returns {
+			reasons = append(reasons, "returns early from a condition")
+		}
+	}
+	return reasons
 }
 
 // lawPrefixes are the test name prefixes that stand for each of the five laws.
@@ -205,6 +254,11 @@ func TestOmissionGuardDetectsOmissions(t *testing.T) {
 		{"build constraint", "//go:build integration\n\npackage p\n", 1},
 		{"old build constraint", "// +build integration\n\npackage p\n", 1},
 		{"two at once", "package p\nfunc f(t T) { t.Skip(); testing.Short() }", 2},
+		{"empty law test", "package p\nfunc TestLawX(t *testing.T) {}", 1},
+		{"law test without calls", "package p\nfunc TestLawX(t *testing.T) { x := 1; _ = x }", 1},
+		{"law test that returns first", "package p\nfunc TestLawX(t *testing.T) { return; t.Fatal() }", 1},
+		{"law test that returns early", "package p\nfunc TestLawX(t *testing.T) { if ok() { return }; t.Fatal() }", 1},
+		{"law test with a closure that returns", "package p\nfunc TestLawX(t *testing.T) { t.Run(\"a\", func(t *testing.T) { return }); t.Fatal() }", 0},
 		{"clean", "package p\nfunc f(t T) { t.Fatal(\"x\"); t.Run(\"a\", nil) }", 0},
 	}
 	if got := testFunctions(t, "a_test.go", "package p\nfunc TestLawX(t *testing.T) {}\nfunc TestLawY(t *testing.B) {}\nfunc TestLawZ() {}\nfunc (r R) TestLawW(t *testing.T) {}"); len(got) != 1 || !got["TestLawX"] {

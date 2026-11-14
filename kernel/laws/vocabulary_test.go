@@ -49,6 +49,10 @@ func businessWordsIn(text string) []string {
 	return found
 }
 
+// The scan matches whole words after splitting camel case, acronyms and
+// underscores. A word glued in lower case to another (customerid) is not
+// found; that limit is accepted.
+//
 // goSourceWords scans a Go source for forbidden words in every token that
 // carries text: comments, string and character literals, and identifiers.
 func goSourceWords(name, source string) []string {
