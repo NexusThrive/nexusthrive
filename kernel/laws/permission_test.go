@@ -92,12 +92,12 @@ func diff(before, after map[string]int) map[string]int {
 	return changed
 }
 
-// TestDeniedPermissionLeavesNoRows guards criterion 10 of the permission law:
+// TestLawPermissionDeniedLeavesNoRows guards criterion 10 of the permission law:
 // when the check refuses an operation, no table of the kernel schema gains or
 // loses a row. The operation under test checks first and writes a resource
 // after; a positive control with permission raises exactly one table by one
 // row, which proves the counting can see a write.
-func TestDeniedPermissionLeavesNoRows(t *testing.T) {
+func TestLawPermissionDeniedLeavesNoRows(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	admin := dbtest.Database(t)
