@@ -62,9 +62,9 @@ func OpenAccount(ctx context.Context, pool *sql.DB, actor model.Actor, spaceID s
 // closed_at unchanged. An id that does not exist, or belongs to another space,
 // is not_found. Only the system actor may call it until permissions arrive.
 //
-// Refusing entries on a closed account belongs to the ledger story, which
-// reads the status under a share lock so that a concurrent close and entry
-// serialize.
+// The ledger refuses entries on a closed account: it reads the status under a
+// share lock, so a concurrent close and entry serialize. The kernel stamps
+// closed_at when the account closes.
 func CloseAccount(ctx context.Context, pool *sql.DB, actor model.Actor, spaceID, accountID string) error {
 	if actor.Kind != model.ActorSystem {
 		return model.NewError(model.CodePermissionDenied, "only the system actor closes accounts", nil)

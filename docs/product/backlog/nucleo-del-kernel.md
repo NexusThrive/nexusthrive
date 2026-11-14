@@ -165,7 +165,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-grants-05 · Guardar roles, grants, capacidades activas y auditoría de acceso
 
-- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-grants-05`.
+- **Estado:** Terminada. **Tamaño:** M. **Rama:** `feature/HU-kernel-grants-05`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero las tablas de roles, grants, capacidades activas por espacio y `access_audit`,
@@ -268,7 +268,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-exchanges-08 · Registrar intercambios que conservan el valor y no se reescriben
 
-- **Estado:** Lista. **Tamaño:** L. **Rama:** `feature/HU-kernel-exchanges-08`.
+- **Estado:** En revisión. **Tamaño:** L. **Rama:** `feature/HU-kernel-exchanges-08`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero registrar intercambios con asientos que suman cero por recurso y corregirlos solo con intercambios compensatorios,
