@@ -49,6 +49,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0029](0029-otorgante-entre-espacios-y-escalada.md) | Otorgante entre espacios y reglas contra la escalada de privilegios | Aceptada |
 | [0030](0030-libro-de-doble-partida.md) | Libro de doble partida: conservación diferida, inmutabilidad en dos capas, compensación y decimales | Aceptada |
 | [0031](0031-outbox-reclamo-y-arrendamiento.md) | Outbox: reclamo de un solo espacio, arrendamiento, entrega al menos una vez y valores de partida | Aceptada |
+| [0032](0032-catalogo-de-permisos-y-verificacion.md) | Catálogo de permisos y verificación: orden de errores, bloqueo y límite del actor afirmado | Aceptada |
 
 ## Pendientes
 
