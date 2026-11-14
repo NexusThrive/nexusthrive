@@ -15,8 +15,8 @@ La ley de memoria dice que los hechos nunca se borran ni se reescriben. `kernel.
 
 **Inmutabilidad en dos capas.**
 
-- Capa de permisos: el rol de la API recibe solo `SELECT` e `INSERT`, y la RLS tiene solo políticas `SELECT` e `INSERT`. Un `UPDATE`, `DELETE` o `TRUNCATE` de la API falla con `42501`.
-- Capa de disparadores: un disparador `BEFORE UPDATE OR DELETE` por fila y otro `BEFORE TRUNCATE` por sentencia rechazan el cambio con `restrict_violation`, incluso para el dueño y el administrador, y aunque un permiso se conceda por error. `seq` es `GENERATED ALWAYS`, así que un `INSERT` ordinario no puede fijarlo.
+- Capa de permisos: el rol de la API recibe `SELECT` sobre la tabla e `INSERT` por columnas, sin la columna `seq`, y la RLS tiene solo políticas `SELECT` e `INSERT`. Un `UPDATE`, `DELETE` o `TRUNCATE` de la API falla con `42501`.
+- Capa de disparadores: un disparador `BEFORE UPDATE OR DELETE` por fila y otro `BEFORE TRUNCATE` por sentencia rechazan el cambio con `restrict_violation`, incluso para el dueño y el administrador, y aunque un permiso se conceda por error. `seq` es `GENERATED ALWAYS`, así que un `INSERT` ordinario no puede fijarlo, y la falta de `INSERT` sobre esa columna impide también `OVERRIDING SYSTEM VALUE`. Un `INSERT` de tabla completa lo permitiría y un `seq` adelantado a la secuencia haría chocar con la clave primaria los siguientes eventos de todos los espacios.
 - Límite aceptado: un superusuario puede deshabilitar el disparador (`ALTER TABLE ... DISABLE TRIGGER`) o usar `session_replication_role = replica`. Es DDL deliberado y queda en el registro del servidor, no una escritura accidental. B6 puede añadir auditoría de DDL.
 
 **Garantías de `seq`.** El kernel garantiza que:

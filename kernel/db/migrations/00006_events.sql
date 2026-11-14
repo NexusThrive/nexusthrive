@@ -4,7 +4,8 @@
 ALTER TABLE kernel.participants ADD CONSTRAINT participants_id_space_key UNIQUE (id, space_id);
 
 -- Events are the memory of the system: append-only facts in one global order.
--- seq is generated always, so no statement can choose or reuse it.
+-- seq is generated always, so an ordinary insert cannot choose it, and the API
+-- role has no INSERT privilege on that column, so it cannot override it either.
 CREATE TABLE kernel.events (
   seq bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   id uuid NOT NULL UNIQUE CHECK (substr(id::text, 15, 1) = '7'),
@@ -38,7 +39,13 @@ CREATE POLICY events_select ON kernel.events FOR SELECT
 CREATE POLICY events_insert ON kernel.events FOR INSERT
   WITH CHECK (space_id = (SELECT kernel.current_space_id()));
 
-GRANT SELECT, INSERT ON kernel.events TO nexusthrive_api;
+-- INSERT is granted by column and leaves out seq. A table-wide INSERT would let
+-- the API role write seq with OVERRIDING SYSTEM VALUE, and a value ahead of the
+-- sequence would make every later insert of every space collide on the key.
+GRANT SELECT ON kernel.events TO nexusthrive_api;
+GRANT INSERT (id, space_id, type, version, subject_ref, payload, actor_participant_id,
+              actor_kind, request_id, occurred_at)
+  ON kernel.events TO nexusthrive_api;
 
 -- Second layer of immutability (ADR-0028). Privileges protect only the API
 -- role; the table owner and the administrator may update and delete by default,

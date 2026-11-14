@@ -29,7 +29,7 @@ const eventColumns = `seq, id, space_id, type, version, subject_ref, payload,
 // transaction). The input is validated first: an invalid_input or
 // permission_denied error writes nothing and leaves the transaction usable. A
 // database error leaves it aborted, and the caller must roll it back. A
-// transaction with no current space gets rule_violation.
+// transaction with no current space gets rule_violation before any write.
 func AppendEvent(ctx context.Context, tx *sql.Tx, in model.NewEvent) (model.Event, error) {
 	if err := in.Validate(); err != nil {
 		return model.Event{}, err
@@ -41,6 +41,17 @@ func AppendEvent(ctx context.Context, tx *sql.Tx, in model.NewEvent) (model.Even
 	var occurredAt any
 	if !in.OccurredAt.IsZero() {
 		occurredAt = in.OccurredAt
+	}
+
+	// Check the space first and explicitly: relying on the database error would
+	// mean treating a privilege failure (42501) as "no space", which hides real
+	// permission problems. The read does not abort the transaction.
+	var space sql.NullString
+	if err := tx.QueryRowContext(ctx, `SELECT kernel.current_space_id()::text`).Scan(&space); err != nil {
+		return model.Event{}, fmt.Errorf("read current space: %w", err)
+	}
+	if !space.Valid {
+		return model.Event{}, model.NewError(model.CodeRuleViolation, "the transaction has no current space to write events in", nil)
 	}
 
 	stored := model.Event{NewEvent: in, ID: id.String()}
@@ -167,7 +178,7 @@ func translateEventError(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
-		case "23502", "42501":
+		case "23502":
 			return model.NewError(model.CodeRuleViolation, "the transaction has no current space to write events in", err)
 		case "23514", "22P02":
 			return model.NewError(model.CodeInvalidInput, "event data violates a constraint", err)

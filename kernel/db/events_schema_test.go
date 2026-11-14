@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -250,21 +251,115 @@ func TestEventsForcedRLSAndPolicies(t *testing.T) {
 		t.Errorf("event policies = %v, want [INSERT SELECT]", cmds)
 	}
 
-	grants, err := admin.Query(`SELECT privilege_type FROM information_schema.role_table_grants
+	// Table-level privileges: SELECT only. INSERT is granted by column.
+	tableGrants := stringColumn(t, admin, `SELECT privilege_type FROM information_schema.role_table_grants
 		WHERE table_schema = 'kernel' AND table_name = 'events' AND grantee = 'nexusthrive_api' ORDER BY 1`)
-	if err != nil {
-		t.Fatalf("list grants: %v", err)
+	if len(tableGrants) != 1 || tableGrants[0] != "SELECT" {
+		t.Errorf("API table grants on events = %v, want [SELECT]", tableGrants)
 	}
-	defer grants.Close()
-	var got []string
-	for grants.Next() {
-		var p string
-		if err := grants.Scan(&p); err != nil {
+	insertColumns := stringColumn(t, admin, `SELECT column_name FROM information_schema.column_privileges
+		WHERE table_schema = 'kernel' AND table_name = 'events' AND grantee = 'nexusthrive_api'
+		AND privilege_type = 'INSERT' ORDER BY 1`)
+	want := []string{"actor_kind", "actor_participant_id", "id", "occurred_at", "payload",
+		"request_id", "space_id", "subject_ref", "type", "version"}
+	if !slices.Equal(insertColumns, want) {
+		t.Errorf("API insert columns on events = %v, want %v (no seq)", insertColumns, want)
+	}
+	if got := stringColumn(t, admin, `SELECT privilege_type FROM information_schema.column_privileges
+		WHERE table_schema = 'kernel' AND table_name = 'events' AND column_name = 'seq'
+		AND grantee = 'nexusthrive_api' ORDER BY 1`); len(got) != 1 || got[0] != "SELECT" {
+		t.Errorf("API privileges on seq = %v, want [SELECT]", got)
+	}
+}
+
+// stringColumn runs a query that returns one text column and collects it.
+func stringColumn(t *testing.T, admin *sql.DB, query string) []string {
+	t.Helper()
+	rows, err := admin.Query(query)
+	if err != nil {
+		t.Fatalf("query %q: %v", query, err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var v string
+		if err := rows.Scan(&v); err != nil {
 			t.Fatalf("scan: %v", err)
 		}
-		got = append(got, p)
+		out = append(out, v)
 	}
-	if len(got) != 2 || got[0] != "INSERT" || got[1] != "SELECT" {
-		t.Errorf("API grants on events = %v, want [INSERT SELECT]", got)
+	if err := rows.Err(); err != nil {
+		t.Fatalf("query %q: %v", query, err)
+	}
+	return out
+}
+
+// apiInsertEvent runs one INSERT as the API role inside space A and returns
+// the error. The transaction is always rolled back.
+func apiInsertEvent(t *testing.T, api *sql.DB, query string, args ...any) error {
+	t.Helper()
+	tx, err := api.Begin()
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`SELECT set_config('kernel.space_id', $1, true)`, eventSpaceA); err != nil {
+		t.Fatalf("set space: %v", err)
+	}
+	_, err = tx.Exec(query, args...)
+	return err
+}
+
+// TestEventsAPIRoleCannotSetSeq checks that the API role cannot choose seq, not
+// even with OVERRIDING SYSTEM VALUE, which would let one space break the order
+// and the primary key for every other space.
+func TestEventsAPIRoleCannotSetSeq(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+	seedEventFixtures(t, admin)
+	for query, want := range map[string]string{
+		`INSERT INTO kernel.events (seq, id, space_id, type, version, payload, actor_kind)
+		 OVERRIDING SYSTEM VALUE
+		 VALUES (999999, $1, $2, 'kernel.test.recorded', 1, '{}', 'system')`: "42501",
+		`INSERT INTO kernel.events (seq, id, space_id, type, version, payload, actor_kind)
+		 VALUES (999999, $1, $2, 'kernel.test.recorded', 1, '{}', 'system')`: "428C9",
+	} {
+		// The explicit override fails for lack of privilege (42501); naming seq
+		// without it is already refused by the generated-always rule (428C9).
+		if got := pgCode(apiInsertEvent(t, api, query, eventID2, eventSpaceA)); got != want {
+			t.Errorf("API insert naming seq: SQLSTATE %q, want %s", got, want)
+		}
+	}
+	if got := count(t, admin, `SELECT count(*) FROM kernel.events`); got != 1 {
+		t.Errorf("stored events = %d, want only the seeded one", got)
+	}
+}
+
+// TestEventsAPIRoleInsertsAndReadsSeq checks that the column grant keeps the
+// normal path working: the sequence assigns seq and the API role can read it.
+func TestEventsAPIRoleInsertsAndReadsSeq(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+	seedEventFixtures(t, admin)
+	tx, err := api.Begin()
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`SELECT set_config('kernel.space_id', $1, true)`, eventSpaceA); err != nil {
+		t.Fatalf("set space: %v", err)
+	}
+	var seq, first int64
+	if err := tx.QueryRow(`SELECT min(seq) FROM kernel.events`).Scan(&first); err != nil {
+		t.Fatalf("API cannot read seq: %v", err)
+	}
+	if err := tx.QueryRow(`INSERT INTO kernel.events (id, space_id, type, version, payload, actor_kind)
+		VALUES ($1, kernel.current_space_id(), 'kernel.test.recorded', 1, '{}', 'system') RETURNING seq`, eventID2).Scan(&seq); err != nil {
+		t.Fatalf("normal insert failed: %v", err)
+	}
+	if seq <= first {
+		t.Errorf("seq = %d, want above the seeded %d", seq, first)
 	}
 }
