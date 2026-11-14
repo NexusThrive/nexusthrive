@@ -268,7 +268,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-exchanges-08 · Registrar intercambios que conservan el valor y no se reescriben
 
-- **Estado:** En revisión. **Tamaño:** L. **Rama:** `feature/HU-kernel-exchanges-08`.
+- **Estado:** Terminada. **Tamaño:** L. **Rama:** `feature/HU-kernel-exchanges-08`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero registrar intercambios con asientos que suman cero por recurso y corregirlos solo con intercambios compensatorios,
@@ -325,7 +325,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-outbox-10 · Escribir y reclamar filas del outbox sin entrega doble
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-kernel-outbox-10`.
+- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-outbox-10`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero que cada evento deje una fila de outbox y que pueda reclamarse sin duplicar la entrega,
