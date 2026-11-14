@@ -17,3 +17,8 @@ Observaciones no bloqueantes de las revisiones que no entran en la historia dond
 | 11 | todas | El backlog sigue marcando `migrations-01` como "Lista" y la tabla de definición de listo está sin actualizar. | Cierre del sprint |
 | 12 | events-09 | `payload` no tiene tamaño máximo; el límite pertenece al contrato de B3. | B3 (contratos de eventos) |
 | 13 | events-09 | Los consumidores por cursor de `seq` deben reanudar con traslape y deduplicar por `id`, o usar un horizonte de transacción (ADR-0028). | B3 (ADR propio) |
+| 14 | events-09 | `AppendEvent` hace una lectura previa de `current_space_id()` por evento (un viaje de ida y vuelta más); si se vuelve un coste, fusionarla con el `INSERT`. | Optimización posterior |
+| 15 | events-09 | El `GRANT INSERT` por columnas de `kernel.events` debe actualizarse a mano al añadir columnas; la prueba con `column_privileges` lo detecta. Mencionarlo en el ADR-0028. | Enmienda del ADR-0028 en `laws-15` |
+| 16 | events-09 | `TestEventsAPIRoleCannotSetSeq` itera sobre un `map` (orden no determinista, sin efecto en el resultado). | Pulido al cierre de M1 |
+| 17 | resources-07 | Un disparador en exchanges-08 debe impedir cambiar `scale` o `kind` de un recurso cuando existan asientos (la API ya no puede, pero el dueño sí). | exchanges-08 |
+| 18 | resources-07 | Abrir una cuenta para un titular archivado y cerrar una cuenta con hijas abiertas no está prohibido; decidir si se prohíbe. | exchanges-08 o posterior |
