@@ -45,6 +45,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0024](0024-herramienta-de-migraciones.md) | Goose como herramienta de migraciones en SQL puro | Aceptada |
 | [0025](0025-redis-diferido.md) | Redis diferido hasta que haya varias instancias de la API | Aceptada |
 | [0027](0027-roles-y-rls.md) | Roles de base de datos y RLS con SET LOCAL | Aceptada |
+| [0028](0028-orden-de-eventos.md) | Eventos de solo agregar: inmutabilidad en dos capas y orden de `seq` | Aceptada |
 
 ## Pendientes
 

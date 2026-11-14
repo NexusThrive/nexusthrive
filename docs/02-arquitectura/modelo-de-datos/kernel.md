@@ -279,10 +279,10 @@ erDiagram
         bigint seq PK
         uuid id UK
         uuid space_id FK
-        text type "kernel.space.created"
+        text type "kernel.space.created, sin sufijo de versión"
         int version
         text subject_ref
-        jsonb payload "validado con JSON Schema"
+        jsonb payload "objeto JSON; esquema en B3"
         uuid actor_participant_id FK
         text actor_kind "person, agent, api_key, system"
         text request_id
@@ -343,6 +343,8 @@ erDiagram
 
 - **Conservación:** un disparador diferido verifica que `sum(entries.amount)` por `(exchange_id, resource_id)` sea cero al confirmar la transacción.
 - **Memoria:** `events`, `entries` y `fulfillments` no admiten `UPDATE` ni `DELETE`; un error se corrige con un intercambio cuyo `reverses_exchange_id` apunta al original.
+- **Eventos:** `type` son dos o más segmentos en minúsculas separados por punto (`kernel.space.created`) y no lleva sufijo de versión, porque la versión es la columna `version`. `payload` es un objeto JSON; su validación con JSON Schema llega en B3. `seq` es `GENERATED ALWAYS`: único, creciente por orden de asignación, con huecos tras un rollback, y no es el orden de confirmación (ADR-0028). Una lectura "desde `seq = n`" es inclusiva y devuelve solo eventos confirmados del espacio actual en orden ascendente; el consumidor guarda como cursor el último `seq` más uno, reanuda con traslape y deduplica por `id`. Un evento sin actor se rechaza, salvo `actor_kind = system`; el actor, si es un participante, debe pertenecer al mismo espacio (clave foránea compuesta `(actor_participant_id, space_id)` hacia `participants (id, space_id)`).
+- **Inmutabilidad de eventos:** dos capas. El rol de la API tiene `SELECT` sobre la tabla e `INSERT` solo por columnas (todas menos `seq`, así que tampoco puede fijarlo con `OVERRIDING SYSTEM VALUE` ni con `COPY`), y la RLS solo tiene políticas `SELECT` e `INSERT`. Además, un disparador por fila (`UPDATE`, `DELETE`) y otro por sentencia (`TRUNCATE`) llaman a `kernel.reject_event_change()`, que falla con `restrict_violation` incluso para el dueño y el administrador, y aunque un permiso se conceda por error. Un superusuario puede deshabilitar el disparador con DDL deliberado (ADR-0028).
 - **Compromiso:** `due_at` y `status` son obligatorios; `fulfilled_amount` nunca supera `amount`.
 - **Permiso:** toda fila escrita tiene un actor (`actor_participant_id` o equivalente); no existen escrituras anónimas.
 - **Movimiento:** al crear o modificar un compromiso con vencimiento se crea o reprograma su `timer` en la misma transacción.
@@ -359,7 +361,7 @@ Un socio paga 50.000 COP en efectivo de un plan de 100.000; queda debiendo 50.00
 | `entries` | +50.000 en la cuenta caja del negocio · −50.000 en la cuenta por cobrar del socio |
 | `fulfillments` | 50.000 aplicados a la deuda (`fulfilled_amount` = 50.000) |
 | `timers` | Señal `debt.overdue` en 5 días |
-| `events` + `outbox` | `business.payment.received.v1` pendiente para n8n |
+| `events` + `outbox` | `business.payment.received` (versión 1) pendiente para n8n |
 
 ## Decisiones relacionadas
 
