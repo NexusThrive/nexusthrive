@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/nexusthrive/nexusthrive/kernel/db"
 	"github.com/nexusthrive/nexusthrive/kernel/model"
 	"github.com/nexusthrive/nexusthrive/kernel/state"
 )
@@ -84,9 +85,9 @@ func newIsolationWorld(t *testing.T) *isolationWorld {
 
 // synthesizedInsert builds an insert of one row of table in space from the
 // catalog alone: every column that is not null and has no default gets a value
-// of its type, and the column space_id gets space. It is how a table the tests
-// do not know yet is filled, and how the tests try to write a row into
-// another space.
+// of its type, and the column space_id gets space. It is a last resort for a
+// table the tests do not know yet: the values only respect the types, so a
+// table with CHECK constraints needs an entry in seedOverrides instead.
 func synthesizedInsert(t *testing.T, admin *sql.DB, table, space string) (string, []any, error) {
 	t.Helper()
 	rows, err := admin.Query(`SELECT a.attname, format_type(a.atttypid, a.atttypmod)
@@ -150,13 +151,35 @@ func synthesizedValue(t *testing.T, name, typ, space string) (any, error) {
 	return nil, fmt.Errorf("no value for type %s: extend synthesizedValue or seed the table by hand", typ)
 }
 
+// seedOverrides gives, by table name, a function that writes one valid row of
+// the table in a space through its real path, with the triggers and CHECK
+// constraints on. A table whose constraints the synthesized row cannot meet
+// needs an entry here; fillMissingTables says so when it does not have one.
+var seedOverrides = map[string]func(t *testing.T, w *isolationWorld, space string) error{
+	// A record has a dotted operation, a 32-byte fingerprint and an actor of the
+	// space; the generation and the expiry are stamped by the trigger.
+	"idempotency_records": func(t *testing.T, w *isolationWorld, space string) error {
+		var actor string
+		if err := w.admin.QueryRow(`SELECT id::text FROM kernel.participants WHERE space_id = $1 LIMIT 1`, space).Scan(&actor); err != nil {
+			return err
+		}
+		return runIn(t, w.api, space, stmt{
+			`INSERT INTO kernel.idempotency_records (id, space_id, key, operation, actor_participant_id, request_hash, response, created_at)
+			 VALUES ($1, $2, 'isolation-key', 'test.isolation', $3, decode(repeat('ab', 32), 'hex'), '{}'::jsonb, now())`,
+			[]any{newID(t), space, actor},
+		})
+	},
+}
+
 // fillMissingTables gives one row in each space to every table with a space_id
 // column that the seed left empty, which is how a table added by a later story
-// joins the isolation test without editing it. The rows are written as the
-// administrator with the triggers switched off, because only the isolation of
-// reads and writes is under test here.
-func fillMissingTables(t *testing.T, w *isolationWorld, tables []catalogTable) {
+// joins the isolation test. A table with an entry in overrides is filled by
+// it, through its real path; any other is filled from the catalog as the
+// administrator with the triggers switched off, which only respects types. It
+// returns what it could not fill, each with the override to add.
+func fillMissingTables(t *testing.T, w *isolationWorld, tables []catalogTable, overrides map[string]func(*testing.T, *isolationWorld, string) error) []string {
 	t.Helper()
+	var failures []string
 	for _, table := range tables {
 		if !table.HasSpaceID {
 			continue
@@ -170,27 +193,107 @@ func fillMissingTables(t *testing.T, w *isolationWorld, tables []catalogTable) {
 			if n > 0 {
 				continue
 			}
+			if override, ok := overrides[table.Name]; ok {
+				if err := override(t, w, space); err != nil {
+					failures = append(failures, fmt.Sprintf("%s: its seedOverrides entry failed in space %s: %v", table.Name, space, err))
+				}
+				continue
+			}
 			insert, args, err := synthesizedInsert(t, w.admin, table.Name, space)
+			if err == nil {
+				err = insertWithoutTriggers(w.admin, insert, args)
+			}
 			if err != nil {
-				t.Errorf("%s has no rows in space %s and cannot be filled by itself: %v", table.Name, space, err)
-				continue
-			}
-			tx, err := w.admin.Begin()
-			if err != nil {
-				t.Fatalf("begin: %v", err)
-			}
-			if _, err := tx.Exec(`SET LOCAL session_replication_role = replica`); err != nil {
-				tx.Rollback()
-				t.Fatalf("switch the triggers off: %v", err)
-			}
-			if _, err := tx.Exec(insert, args...); err != nil {
-				tx.Rollback()
-				t.Errorf("%s has no rows in space %s and its synthesized row failed: %v", table.Name, space, err)
-				continue
-			}
-			if err := tx.Commit(); err != nil {
-				t.Fatalf("commit the synthesized row of %s: %v", table.Name, err)
+				failures = append(failures, fmt.Sprintf("%s: no rows in space %s and it cannot be filled from the catalog (%v); add an entry for it to seedOverrides that writes a valid row", table.Name, space, err))
 			}
 		}
 	}
+	return failures
+}
+
+// insertWithoutTriggers runs an insert as the administrator with the triggers
+// and foreign keys off; CHECK constraints still apply.
+func insertWithoutTriggers(admin *sql.DB, query string, args []any) error {
+	tx, err := admin.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`SET LOCAL session_replication_role = replica`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(query, args...); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// canInsertAnyColumn reports whether the API role may insert into the table.
+func canInsertAnyColumn(t *testing.T, admin *sql.DB, table string) bool {
+	t.Helper()
+	var ok bool
+	if err := admin.QueryRow(`SELECT has_any_column_privilege($1, ('kernel.' || quote_ident($2))::regclass, 'INSERT')`, db.APIRole, table).Scan(&ok); err != nil {
+		t.Fatalf("read the insert privilege of %s: %v", table, err)
+	}
+	return ok
+}
+
+// crossInsert tries to write into space other, as the API role acting in space
+// acting, a copy of a real row of the table with only its space_id (and its
+// id) changed, and returns the SQLSTATE of the attempt. Because the copy is a
+// valid row, a refusal for any reason but the insert policy would be a
+// different rule at work, so the statement runs with the triggers and foreign
+// keys off, which leaves the policy as the first check that can refuse it. The
+// control is the same row written in its own space, where the policy lets it
+// pass: it fails, if at all, for another reason, which shows the policy was
+// what stopped the attack. Both attempts are rolled back.
+func crossInsert(t *testing.T, w *isolationWorld, table, acting, other string) (attack, control string, err error) {
+	t.Helper()
+	var document string
+	err = w.admin.QueryRow(`SELECT to_jsonb(x)::text FROM kernel.`+pgx.Identifier{table}.Sanitize()+` x WHERE space_id = $1 LIMIT 1`, acting).Scan(&document)
+	if err != nil {
+		return "", "", fmt.Errorf("read a row to copy: %w", err)
+	}
+	rows, err := w.admin.Query(`SELECT a.attname FROM pg_attribute a
+		WHERE a.attrelid = ('kernel.' || quote_ident($1))::regclass AND a.attnum > 0 AND NOT a.attisdropped AND a.attgenerated = ''
+		  AND has_column_privilege($2, a.attrelid, a.attnum, 'INSERT') ORDER BY a.attnum`, table, db.APIRole)
+	if err != nil {
+		return "", "", fmt.Errorf("read the columns: %w", err)
+	}
+	var columns []string
+	for rows.Next() {
+		var column string
+		if err := rows.Scan(&column); err != nil {
+			rows.Close()
+			return "", "", err
+		}
+		columns = append(columns, pgx.Identifier{column}.Sanitize())
+	}
+	rows.Close()
+	if len(columns) == 0 {
+		return "42501", "42501", nil
+	}
+	list := strings.Join(columns, ", ")
+	query := `INSERT INTO kernel.` + pgx.Identifier{table}.Sanitize() + ` (` + list + `)
+		SELECT ` + list + ` FROM jsonb_populate_record(NULL::kernel.` + pgx.Identifier{table}.Sanitize() + `,
+		$1::jsonb || jsonb_build_object('space_id', $2::text, 'id', $3::text))`
+
+	attempt := func(space string) string {
+		tx, err := w.admin.Begin()
+		if err != nil {
+			t.Fatalf("begin: %v", err)
+		}
+		defer tx.Rollback()
+		for _, statement := range []string{`SET LOCAL session_replication_role = replica`, `SET LOCAL ROLE ` + pgx.Identifier{db.APIRole}.Sanitize()} {
+			if _, err := tx.Exec(statement); err != nil {
+				t.Fatalf("%s: %v", statement, err)
+			}
+		}
+		if _, err := tx.Exec(`SELECT set_config('kernel.space_id', $1, true)`, space); err != nil {
+			t.Fatalf("set space: %v", err)
+		}
+		_, err = tx.Exec(query, document, other, newID(t))
+		return pgCode(err)
+	}
+	return attempt(acting), attempt(other), nil
 }

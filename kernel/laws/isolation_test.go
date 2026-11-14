@@ -290,18 +290,18 @@ func dataFindings(t *testing.T, w *isolationWorld, tables []catalogTable) []stri
 				})
 			}
 			if table.HasSpaceID {
-				insert, args, err := synthesizedInsert(t, w.admin, table.Name, other)
-				if err != nil {
+				attack, control, err := crossInsert(t, w, table.Name, acting, other)
+				switch {
+				case err != nil:
 					report(table.Name, "cannot try an insert into the other space: %v", err)
-					continue
-				}
-				before, err := count(w.admin, `SELECT count(*) FROM `+name+` WHERE space_id = $1`, other)
-				if err != nil {
-					t.Fatalf("count: %v", err)
-				}
-				_ = runIn(t, w.api, acting, stmt{insert, args})
-				if after, _ := count(w.admin, `SELECT count(*) FROM `+name+` WHERE space_id = $1`, other); after != before {
-					report(table.Name, "a space inserted %d rows into the other", after-before)
+				case attack == "":
+					report(table.Name, "a space inserted a row into the other")
+				case attack != "42501":
+					report(table.Name, "an insert into the other space failed with SQLSTATE %s, want the policy (42501)", attack)
+				case control == "42501" && canInsertAnyColumn(t, w.admin, table.Name):
+					// The same row is refused even in its own space, so the
+					// refusal above does not prove the policy.
+					report(table.Name, "the row refused in the other space is refused in its own too (42501): the insert policy is not proven")
 				}
 			}
 		}
@@ -348,7 +348,9 @@ func TestLawIsolationEveryTableOfSpaceData(t *testing.T) {
 		}
 	}
 
-	fillMissingTables(t, w, tables)
+	for _, failure := range fillMissingTables(t, w, tables, seedOverrides) {
+		t.Errorf("%s", failure)
+	}
 	for _, finding := range structureFindings(tables) {
 		t.Errorf("%s", finding)
 	}
@@ -436,13 +438,55 @@ func TestIsolationVerifierDetectsFlawedTables(t *testing.T) {
 		if len(mine) != 1 || !mine[0].HasSpaceID {
 			t.Fatalf("%s: the catalog does not show the probe: %+v", table, mine)
 		}
-		fillMissingTables(t, w, mine)
+		if failures := fillMissingTables(t, w, mine, nil); len(failures) != 0 {
+			t.Fatalf("%s: the probe could not be filled: %v", table, failures)
+		}
 		if got := structureFindings(mine); (len(got) > 0) != p.structure {
 			t.Errorf("%s: structure findings %v, want findings: %v", table, got, p.structure)
 		}
 		if got := dataFindings(t, w, mine); (len(got) > 0) != p.data {
 			t.Errorf("%s: data findings %v, want findings: %v", table, got, p.data)
 		}
+	}
+
+	// A table whose CHECK the synthesized row cannot meet is reported with the
+	// override to add, and is verified once the override writes a valid row.
+	const checked = "probe_checked"
+	if _, err := w.admin.Exec(`CREATE TABLE kernel.` + checked + ` (
+		id uuid PRIMARY KEY, space_id uuid NOT NULL REFERENCES kernel.spaces (id), label text NOT NULL CHECK (label ~ '^valid[.]'))`); err != nil {
+		t.Fatalf("create %s: %v", checked, err)
+	}
+	if _, err := w.admin.Exec(`GRANT SELECT, INSERT, UPDATE, DELETE ON kernel.` + checked + ` TO ` + db.APIRole); err != nil {
+		t.Fatalf("grant: %v", err)
+	}
+	for _, statement := range append(append(forced(checked), selectPolicy(checked)), writePolicies(checked)...) {
+		if _, err := w.admin.Exec(statement); err != nil {
+			t.Fatalf("%s: %q: %v", checked, statement, err)
+		}
+	}
+	var mine []catalogTable
+	for _, candidate := range catalogTables(t, w.admin) {
+		if candidate.Name == checked {
+			mine = append(mine, candidate)
+		}
+	}
+	failures := fillMissingTables(t, w, mine, nil)
+	if len(failures) == 0 || !strings.Contains(failures[0], "seedOverrides") || !strings.Contains(failures[0], checked) {
+		t.Errorf("a table that cannot be filled: failures %v, want one naming the table and seedOverrides", failures)
+	}
+	overrides := map[string]func(*testing.T, *isolationWorld, string) error{
+		checked: func(t *testing.T, w *isolationWorld, space string) error {
+			return runIn(t, w.api, space, stmt{`INSERT INTO kernel.` + checked + ` (id, space_id, label) VALUES ($1, $2, 'valid.row')`, []any{newID(t), space}})
+		},
+	}
+	if failures := fillMissingTables(t, w, mine, overrides); len(failures) != 0 {
+		t.Errorf("the override did not fill the table: %v", failures)
+	}
+	if got := structureFindings(mine); len(got) != 0 {
+		t.Errorf("%s: structure findings %v, want none", checked, got)
+	}
+	if got := dataFindings(t, w, mine); len(got) != 0 {
+		t.Errorf("%s: data findings %v, want none: a row that respects its CHECK is copied and the policy is what refuses it", checked, got)
 	}
 
 	// A table with no space_id and no rule is reported too.
