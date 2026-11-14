@@ -59,7 +59,16 @@ func TestFireDueTimersNeedsTimerProcess(t *testing.T) {
 	}
 	w.setStatus(w.spaceA, "active")
 
+	// The clock of the authorizer decides what is due: a clock behind the fire
+	// time fires nothing, even though the clock of the database is ahead.
+	w.clock.Set(time.Now().Add(-72 * time.Hour))
 	run, err := w.engine.FireDueTimers(context.Background(), call(system, w.spaceA), 10)
+	if err != nil || len(run.Fired) != 0 {
+		t.Errorf("a round with a clock behind the fire time = %+v (%v), want nothing fired", run, err)
+	}
+	w.clock.Set(time.Now().Add(time.Hour))
+
+	run, err = w.engine.FireDueTimers(context.Background(), call(system, w.spaceA), 10)
 	if err != nil || len(run.Fired) != 1 || run.Fired[0].CommitmentID != created.ID {
 		t.Fatalf("system round = %+v (%v), want the timer of %s fired", run, err, created.ID)
 	}
@@ -109,7 +118,16 @@ func TestClaimOutboxNeedsClaimPermission(t *testing.T) {
 	}
 	w.setStatus(w.spaceA, "active")
 
+	// The clock of the authorizer decides what is due: behind the due time
+	// nothing is claimed.
+	w.clock.Set(time.Now().Add(-48 * time.Hour))
 	rows, err := w.engine.ClaimOutbox(context.Background(), call(claimer, w.spaceA), model.SubscriberInternal, 10)
+	if err != nil || len(rows) != 0 {
+		t.Errorf("claim with a clock behind the due time = %d rows (%v), want none", len(rows), err)
+	}
+	w.clock.Set(time.Now().Add(time.Hour))
+
+	rows, err = w.engine.ClaimOutbox(context.Background(), call(claimer, w.spaceA), model.SubscriberInternal, 10)
 	if err != nil || len(rows) != 1 {
 		t.Fatalf("claim with the key = %d rows (%v), want 1", len(rows), err)
 	}

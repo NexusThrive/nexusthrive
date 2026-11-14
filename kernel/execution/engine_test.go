@@ -187,6 +187,18 @@ func TestRunStampsActorAndRequestID(t *testing.T) {
 	if err != nil || seen != c {
 		t.Errorf("Tx accessors = %+v (%v), want %+v", seen, err, c)
 	}
+
+	// The space id is canonicalized: the Tx and the database see the same
+	// lowercase form whatever way the caller wrote the UUID.
+	upper := c
+	upper.SpaceID = strings.ToUpper(w.spaceA)
+	err = w.engine.Run(context.Background(), upper, moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+		seen = Call{Actor: tx.Actor(), SpaceID: tx.SpaceID(), RequestID: tx.RequestID()}
+		return nil
+	})
+	if err != nil || seen != c {
+		t.Errorf("Tx accessors for an uppercase space id = %+v (%v), want %+v", seen, err, c)
+	}
 }
 
 // TestRunSwallowedDatabaseErrorCannotCommit guards that a handler that hides a
