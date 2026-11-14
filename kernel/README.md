@@ -22,4 +22,10 @@ Rules:
 - No business vocabulary in this module (`customer`, `invoice`, `sale`, `membership`…). An architecture test enforces it.
 - This module never imports `platform/` or `distributions/`. They register themselves through `extension/`.
 
+Current state of the engine: `execution.Engine` runs every operation in one transaction. An operation is declared in Go with its permissions, capability, risk and idempotency; `Run` fixes the space, verifies every permission with `capability.Authorizer` inside the same transaction and before any write, and gives the handler a `Tx` with no raw SQL. Only `kernel/state` and `kernel/execution` may import `kernel/state` (an architecture test enforces it). Timers and the outbox are fired and claimed through `Engine.FireDueTimers` and `Engine.ClaimOutbox` (ADR-0035). Idempotent operations (required for `money`) run only through `Engine.RunIdempotent`: it verifies permissions, takes an advisory lock on (space, key), and either replays the stored response, answers `idempotency_conflict` for another fingerprint, or runs the handler and stores an append-only record in the same transaction (ADR-0026). `Run` refuses an idempotent operation.
+
+Current state of timers: `Engine.FireDueTimers` fires the due expiry timers of a space and expires their commitments; nothing calls it in production until the scheduler process exists (see `docs/02-arquitectura/kernel.md`, section "Temporizadores y vencimiento").
+
+Not built yet: the timer scheduler process does not exist, so a commitment past its due date stays open until it does, and the privileged road of NexusThrive staff into a space belongs to phase B4 (platform layer). A test in `laws/` keeps both statements here.
+
 Documentation (Spanish): `docs/02-arquitectura/kernel.md`.

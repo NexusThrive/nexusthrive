@@ -18,7 +18,7 @@ Registro, asistente de creación, preparación por IA, estados del negocio, prim
 
 ```mermaid
 flowchart TB
-    L["Página pública<br/>nexusthrive.com"] --> A["Crear cuenta<br/>correo o Google (Clerk)"]
+    L["Página pública<br/>nexusthrive.com.co"] --> A["Crear cuenta<br/>correo o Google (Clerk)"]
     A --> V["Verificar correo"]
     V --> Q{"¿Tiene invitación<br/>a un negocio?"}
     Q -->|"sí"| INV["Acepta y entra al negocio<br/>con su rol"]
