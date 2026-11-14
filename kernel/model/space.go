@@ -40,11 +40,31 @@ const (
 // ActorKind tells who performs an operation.
 type ActorKind string
 
-// ActorSystem is the kernel itself, used for internal bootstrap operations.
-const ActorSystem ActorKind = "system"
+const (
+	// ActorPerson is a human acting through a participant.
+	ActorPerson ActorKind = "person"
+	// ActorAgent is an automated agent acting through a participant.
+	ActorAgent ActorKind = "agent"
+	// ActorAPIKey is an integration acting with an API key.
+	ActorAPIKey ActorKind = "api_key"
+	// ActorSystem is the kernel itself, used for internal bootstrap operations.
+	ActorSystem ActorKind = "system"
+)
 
-// Actor identifies who performs an operation. Permission checks that use more
-// than the kind arrive with the permissions story.
+// Valid reports whether k is one of the known kinds.
+func (k ActorKind) Valid() bool {
+	switch k {
+	case ActorPerson, ActorAgent, ActorAPIKey, ActorSystem:
+		return true
+	}
+	return false
+}
+
+// Actor identifies who performs an operation. ParticipantID is the participant
+// the actor stands for; it may be empty only for the system actor. Permission
+// checks that use more than the kind and the participant arrive with the
+// permissions story.
 type Actor struct {
-	Kind ActorKind
+	Kind          ActorKind
+	ParticipantID string
 }
