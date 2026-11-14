@@ -100,16 +100,36 @@ func TestEventsRejectUpdateDeleteTruncateAsAdmin(t *testing.T) {
 	t.Parallel()
 	admin := dbtest.Database(t)
 	seedEventFixtures(t, admin)
-	for _, query := range []string{
-		`UPDATE kernel.events SET version = 2`,
-		`DELETE FROM kernel.events`,
-		`TRUNCATE kernel.events`,
-		`TRUNCATE kernel.spaces CASCADE`,
+	for query, want := range map[string]string{
+		`UPDATE kernel.events SET version = 2`: "23001",
+		`DELETE FROM kernel.events`:            "23001",
+		`TRUNCATE kernel.spaces CASCADE`:       "23001",
+		// The outbox references events, so PostgreSQL refuses a plain TRUNCATE
+		// on its own (0A000) before the trigger runs; the next test shows the
+		// trigger holds without that foreign key.
+		`TRUNCATE kernel.events`: "0A000",
 	} {
 		_, err := admin.Exec(query)
-		if got := pgCode(err); got != "23001" {
-			t.Errorf("%s as admin: SQLSTATE %q (%v), want 23001 restrict_violation", query, got, err)
+		if got := pgCode(err); got != want {
+			t.Errorf("%s as admin: SQLSTATE %q (%v), want %s", query, got, err, want)
 		}
+	}
+	requireEventsIntact(t, admin)
+}
+
+// TestEventsTruncateTriggerHoldsWithoutForeignKey shows that the truncate
+// trigger of events does not depend on the foreign key of the outbox that makes
+// PostgreSQL refuse the statement on its own.
+func TestEventsTruncateTriggerHoldsWithoutForeignKey(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	seedEventFixtures(t, admin)
+	if _, err := admin.Exec(`ALTER TABLE kernel.outbox DROP CONSTRAINT outbox_event_fkey`); err != nil {
+		t.Fatalf("drop foreign key: %v", err)
+	}
+	_, err := admin.Exec(`TRUNCATE kernel.events`)
+	if got := pgCode(err); got != "23001" {
+		t.Errorf("TRUNCATE kernel.events: SQLSTATE %q (%v), want 23001 restrict_violation", got, err)
 	}
 	requireEventsIntact(t, admin)
 }
