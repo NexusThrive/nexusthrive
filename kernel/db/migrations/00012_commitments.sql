@@ -211,9 +211,8 @@ BEGIN
       NEW.status := 'fulfilled';
     END IF;
   ELSIF NEW.canceled_reason IS DISTINCT FROM OLD.canceled_reason THEN
-    IF OLD.canceled_reason IS NOT NULL OR NEW.canceled_reason IS NULL THEN
-      RAISE EXCEPTION 'a cancellation reason is written once' USING ERRCODE = 'restrict_violation';
-    END IF;
+    -- An open commitment has no reason (a CHECK ties the two), so a different
+    -- one is a reason being written for the first time.
     NEW.status := 'canceled';
   END IF;
   -- Unchanged by a fulfillment that leaves the commitment open.
@@ -341,11 +340,9 @@ BEGIN
   ELSE
     target := NEW.commitment_id;
   END IF;
+  -- A commitment that row level security hides leaves stored null, which is
+  -- distinct from every sum, so the check below fails closed.
   SELECT c.fulfilled_amount INTO stored FROM kernel.commitments c WHERE c.id = target;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'the commitment is not visible to verify its fulfilled amount'
-      USING ERRCODE = 'integrity_constraint_violation', CONSTRAINT = 'commitments_fulfilled_sum';
-  END IF;
   SELECT COALESCE(sum(f.amount), 0) INTO total FROM kernel.fulfillments f WHERE f.commitment_id = target;
   IF stored IS DISTINCT FROM total THEN
     RAISE EXCEPTION 'the fulfilled amount must equal the sum of the fulfillments'

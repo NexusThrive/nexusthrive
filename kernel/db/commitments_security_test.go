@@ -240,6 +240,26 @@ func TestCommitmentOfOtherSpaceReferencesRejected(t *testing.T) {
 	}
 }
 
+// TestFulfillmentCreatedAtIsStampedByTheKernel guards that the creation time of
+// a fulfillment is the transaction time: the API role lacks the privilege and
+// the owner gets the time of the transaction whatever it writes.
+func TestFulfillmentCreatedAtIsStampedByTheKernel(t *testing.T) {
+	t.Parallel()
+	e := newCommitmentEnv(t)
+	id := e.commit(t, ledgerSpaceA, "100.00")
+	entry := e.creditEntry(t, "k1", exAccountA2, exAccountA3, ledgerResourceA, "40.00")
+
+	forged := stmt{`INSERT INTO kernel.fulfillments (id, space_id, commitment_id, entry_id, resource_id, amount, created_at)
+		VALUES ($1, $2, $3, $4, $5, 40, '2000-01-01T00:00:00Z')`, []any{newID(t), ledgerSpaceA, id, entry, ledgerResourceA}}
+	requireRule(t, "API insert with created_at", runTx(t, e.api, ledgerSpaceA, forged), "42501", "")
+	if err := runTx(t, e.admin, "", forged); err != nil {
+		t.Fatalf("owner insert with created_at: %v", err)
+	}
+	if got := count(t, e.admin, `SELECT count(*) FROM kernel.fulfillments WHERE created_at > now() - interval '1 minute'`); got != 1 {
+		t.Error("the owner forged the creation time of a fulfillment")
+	}
+}
+
 // TestFulfillmentDeferredSumCheck guards the second layer of the fulfilled
 // amount: with the immediate guards disabled, a commit that leaves it different
 // from the sum of the fulfillments fails.
