@@ -102,10 +102,13 @@ erDiagram
         uuid participant_id FK
         uuid role_id FK
         text[] extra_permissions
-        uuid granted_by FK
+        uuid granted_by FK "participante otorgante, puede ser de otro espacio"
+        uuid granted_by_space_id FK "espacio del otorgante"
+        text granted_by_space_kind FK "kind de ese espacio, atado a spaces"
         text reason "obligatorio en accesos de soporte"
         timestamptz expires_at
-        timestamptz revoked_at
+        timestamptz created_at
+        timestamptz revoked_at "lo fija el kernel con now()"
     }
     INVITATIONS {
         uuid id PK
@@ -132,11 +135,13 @@ erDiagram
         timestamptz revoked_at
     }
     SPACE_CAPABILITIES {
-        uuid space_id FK
-        text capability_key "business.membership, business.pos"
+        uuid space_id PK "clave primaria (space_id, capability_key)"
+        text capability_key PK "business.membership, business.pos"
         text status "active, suspended"
         text source "package, ai, admin, code"
         uuid enabled_by FK
+        uuid enabled_by_space_id FK "espacio de quien la habilita"
+        text enabled_by_space_kind FK "kind de ese espacio, atado a spaces"
         text reason
         timestamptz enabled_at
     }
@@ -337,7 +342,7 @@ erDiagram
 |---|---|
 | `idempotency_records` | Guarda la respuesta de cada operación por `space_id` + clave durante 24 horas; una repetición devuelve la misma respuesta |
 | `usage_counters` | Consumo por espacio, medidor y periodo (usuarios, participantes, llamadas a la API, acciones de IA) contra el límite del plan |
-| `access_audit` | Toda lectura o escritura hecha por un actor privilegiado (soporte, agentes) con motivo y `request_id` |
+| `access_audit` | Toda lectura o escritura hecha por un actor privilegiado (soporte, agentes) con motivo y `request_id`. Columnas: `id`, `space_id` (espacio auditado), `actor_participant_id` y `actor_space_id` (el actor vive en su propio espacio, normalmente `platform`), `action` (`read`, `write`), `subject_ref` opcional, `reason` y `request_id` obligatorios, `grant_id` opcional y `occurred_at`. Es de solo agregar |
 | `files` | Archivos (logos, comprobantes, documentos) con `sha256`, tipo y tamaño; el contenido vive en almacenamiento de objetos |
 
 ## Reglas e invariantes
@@ -347,6 +352,9 @@ erDiagram
 - **Eventos:** `type` son dos o más segmentos en minúsculas separados por punto (`kernel.space.created`) y no lleva sufijo de versión, porque la versión es la columna `version`. `payload` es un objeto JSON; su validación con JSON Schema llega en B3. `seq` es `GENERATED ALWAYS`: único, creciente por orden de asignación, con huecos tras un rollback, y no es el orden de confirmación (ADR-0028). Una lectura "desde `seq = n`" es inclusiva y devuelve solo eventos confirmados del espacio actual en orden ascendente; el consumidor guarda como cursor el último `seq` más uno, reanuda con traslape y deduplica por `id`. Un evento sin actor se rechaza, salvo `actor_kind = system`; el actor, si es un participante, debe pertenecer al mismo espacio (clave foránea compuesta `(actor_participant_id, space_id)` hacia `participants (id, space_id)`).
 - **Inmutabilidad de eventos:** dos capas. El rol de la API tiene `SELECT` sobre la tabla e `INSERT` solo por columnas (todas menos `seq`, así que tampoco puede fijarlo con `OVERRIDING SYSTEM VALUE` ni con `COPY`), y la RLS solo tiene políticas `SELECT` e `INSERT`. Además, un disparador por fila (`UPDATE`, `DELETE`) y otro por sentencia (`TRUNCATE`) llaman a `kernel.reject_event_change()`, que falla con `restrict_violation` incluso para el dueño y el administrador, y aunque un permiso se conceda por error. Un superusuario puede deshabilitar el disparador con DDL deliberado (ADR-0028).
 - **Recursos y cuentas:** `resources.code` va en mayúsculas (`^[A-Z][A-Z0-9_]{0,31}$`), es único por `(space_id, code)` y `scale` es un entero de 0 a 18. El recurso es inmutable para la API (sin `UPDATE`): cambiar `scale` o `kind` con asientos corrompería el libro. `accounts.name` y `accounts.code` son obligatorios y el código es único por `(space_id, holder_participant_id, code)`. `closed_at` es obligatorio si y solo si `status = closed`. Toda referencia a datos de espacio es una clave foránea compuesta con `space_id`, porque la comprobación de claves ignora la RLS: `(holder_participant_id, space_id)` hacia `participants`, `(resource_id, space_id)` hacia `resources` y `(parent_account_id, space_id, resource_id)` hacia `accounts`, de modo que la cuenta madre comparte espacio y recurso. Una cuenta nace abierta (la API no tiene `INSERT` sobre `status` ni `closed_at`), pasa una sola vez de `open` a `closed` y no se reabre: un disparador por fila (`kernel.reject_account_reopen()`, `restrict_violation`) lo impide incluso al dueño. Los asientos referenciarán `accounts (id, space_id, resource_id)` y un disparador de `entries` rechazará las cuentas cerradas bajo `FOR SHARE` (HU-kernel-exchanges-08).
+- **Roles, grants y capacidades:** `roles.key` cumple `^[a-z][a-z0-9_]{0,63}$` y es único por `(space_id, key)`. Toda lista de permisos (`roles.permissions`, `grants.extra_permissions`) no tiene elementos nulos, tiene a lo sumo 200 y cada elemento son dos o más segmentos en minúsculas separados por punto (`kernel.valid_permission_list`). Las referencias son claves foráneas compuestas con `space_id`: `(participant_id, space_id)` hacia `participants` y `(role_id, space_id)` hacia `roles`. Un grant activo por `(space_id, participant_id, role_id)` (índice único parcial donde `revoked_at` es nulo). El otorgante puede vivir en otro espacio (acceso de soporte), por eso lleva `granted_by`, `granted_by_space_id` y `granted_by_space_kind`, los tres nulos o los tres presentes, con las claves `(granted_by, granted_by_space_id)` hacia `participants` y `(granted_by_space_id, granted_by_space_kind)` hacia `spaces (id, kind)` (que por eso tiene `UNIQUE (id, kind)`); el cliente no puede declarar un `kind` falso. Solo otorga el propio espacio o un espacio `platform`, nadie se otorga a sí mismo, y un otorgante de un espacio `platform` distinto del espacio del grant (acceso de soporte) exige `reason` y `expires_at` (`CHECK` de la tabla; el alta de staff dentro del propio espacio `platform` queda libre). El kernel no crea grants ya vencidos; la vigencia (no revocado y `expires_at` nulo o futuro) se evalúa en Go con un reloj inyectable. `space_capabilities` usa la clave `(space_id, capability_key)`, nace `active` (la API no inserta `status`) y aplica las mismas reglas de alcance a `enabled_by*`; con `source = admin` exige `enabled_by`. Reglas de escalada de privilegios: ADR-0029.
+- **Revocación:** `revoked_at` no es falsificable: un disparador por fila (`kernel.guard_grant_update()`) fija `revoked_at := now()`, rechaza con `restrict_violation` cualquier cambio de otra columna y cualquier cambio de un grant ya revocado (nadie lo des-revoca, ni el dueño). La API solo tiene `UPDATE (revoked_at)`. Revocar dos veces devuelve `already_done`. Los grants no se borran (disparadores `BEFORE DELETE` y `BEFORE TRUNCATE`).
+- **Auditoría de acceso:** `access_audit` es de solo agregar en dos capas, como `events`: la API solo tiene `SELECT` e `INSERT` por columnas (sin `occurred_at`) y los disparadores de `kernel.reject_access_audit_change()` fallan con `restrict_violation` incluso para el dueño. Un superusuario puede deshabilitarlos con DDL deliberado.
 - **Compromiso:** `due_at` y `status` son obligatorios; `fulfilled_amount` nunca supera `amount`.
 - **Permiso:** toda fila escrita tiene un actor (`actor_participant_id` o equivalente); no existen escrituras anónimas.
 - **Movimiento:** al crear o modificar un compromiso con vencimiento se crea o reprograma su `timer` en la misma transacción.
@@ -369,3 +377,4 @@ Un socio paga 50.000 COP en efectivo de un plan de 100.000; queda debiendo 50.00
 
 - [ADR-0001 · El kernel no conoce ningún mundo](../../05-decisiones/0001-kernel-sin-mundo.md)
 - [ADR-0009 · Libro de movimientos de doble partida](../../05-decisiones/0009-libro-de-movimientos.md)
+- [ADR-0029 · Otorgante entre espacios y reglas contra la escalada de privilegios](../../05-decisiones/0029-otorgante-entre-espacios-y-escalada.md)

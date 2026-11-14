@@ -165,7 +165,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-grants-05 · Guardar roles, grants, capacidades activas y auditoría de acceso
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-kernel-grants-05`.
+- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-grants-05`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero las tablas de roles, grants, capacidades activas por espacio y `access_audit`,
@@ -242,7 +242,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-resources-07 · Definir recursos y cuentas
 
-- **Estado:** En revisión. **Tamaño:** S. **Rama:** `feature/HU-kernel-resources-07`.
+- **Estado:** Terminada. **Tamaño:** S. **Rama:** `feature/HU-kernel-resources-07`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero definir recursos y cuentas dentro de un espacio,
