@@ -195,19 +195,22 @@ func TestOutboxValidTransitionsStillWork(t *testing.T) {
 func TestOutboxIdentityColumnsImmutable(t *testing.T) {
 	t.Parallel()
 	admin, api := outboxSetup(t)
-	seq := newOutboxEvent(t, admin, eventSpaceA)
 	other := newOutboxEvent(t, admin, eventSpaceA)
-	seedOutbox(t, admin, seq, eventSpaceA, "internal", seedFree)
-	before := outboxSnapshot(t, admin, seq, "internal")
+	// The row is held and the change otherwise a valid send, so the identity
+	// rule is the only thing that can stop it.
+	const send = `status = 'sent', delivered_at = now(), claim_token = NULL, claimed_until = NULL, `
 	for _, set := range []string{
 		fmt.Sprintf("event_seq = %d", other), `space_id = '` + eventSpaceB + `'`, `subscriber = 'ai'`, `created_at = now() - interval '1 day'`,
 	} {
-		apiErr, adminErr := asRoles(t, admin, api, updateRow(seq, set))
+		seq := newOutboxEvent(t, admin, eventSpaceA)
+		seedOutbox(t, admin, seq, eventSpaceA, "internal", seedClaimed)
+		before := outboxSnapshot(t, admin, seq, "internal")
+		apiErr, adminErr := asRoles(t, admin, api, updateRow(seq, send+set))
 		requireRule(t, "API "+set, apiErr, "42501", "")
 		requireRule(t, "administrator "+set, adminErr, "23001", "")
-	}
-	if after := outboxSnapshot(t, admin, seq, "internal"); after != before {
-		t.Errorf("the row changed: %q -> %q", before, after)
+		if after := outboxSnapshot(t, admin, seq, "internal"); after != before {
+			t.Errorf("%s: the row changed: %q -> %q", set, before, after)
+		}
 	}
 }
 
@@ -423,6 +426,25 @@ func TestOutboxAPICannotDisableTriggersOrChangeRole(t *testing.T) {
 	}
 	if after := outboxSnapshot(t, admin, seq, "internal"); after != before {
 		t.Errorf("the row changed: %q -> %q", before, after)
+	}
+}
+
+// TestOutboxHasNothingToOverride guards OVERRIDING SYSTEM VALUE: the table has
+// no identity or generated column, so there is nothing to override, and the
+// clause does not widen what the API role may write.
+func TestOutboxHasNothingToOverride(t *testing.T) {
+	t.Parallel()
+	admin, api := outboxSetup(t)
+	if got := count(t, admin, `SELECT count(*) FROM information_schema.columns WHERE table_schema = 'kernel'
+		AND table_name = 'outbox' AND (is_identity = 'YES' OR is_generated <> 'NEVER')`); got != 0 {
+		t.Errorf("%d identity or generated columns in the outbox, want none", got)
+	}
+	seq := newOutboxEvent(t, admin, eventSpaceA)
+	err := runTx(t, api, eventSpaceA, stmt{`INSERT INTO kernel.outbox (event_seq, space_id, subscriber, next_attempt_at, status, attempts)
+		OVERRIDING SYSTEM VALUE VALUES ($1, kernel.current_space_id(), 'internal', now(), 'sent', 4)`, []any{seq}})
+	requireRule(t, "OVERRIDING SYSTEM VALUE naming status", err, "42501", "")
+	if got := count(t, admin, `SELECT count(*) FROM kernel.outbox`); got != 0 {
+		t.Errorf("%d rows were written, want none", got)
 	}
 }
 
