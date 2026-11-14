@@ -34,6 +34,15 @@ var forbiddenWords = []string{
 	"restaurant",
 }
 
+// stateImportPath is the package that persists kernel state. Only the engine
+// may import it (ADR-0035): every other writer would be a road around the
+// permission check.
+const stateImportPath = "github.com/nexusthrive/nexusthrive/kernel/state"
+
+// stateImporterDirs are the directories, relative to the repository root and
+// in slash form, whose non-test files may import kernel/state.
+var stateImporterDirs = []string{"kernel/state", "kernel/execution"}
+
 // selfFile is excluded from the scan because it names the forbidden words.
 const selfFile = "architecture_test.go"
 
@@ -249,4 +258,133 @@ func splitWords(name string) []string {
 	}
 	flush()
 	return words
+}
+
+// stateImportViolations reports the imports of kernel/state, or of a package
+// under it, in a non-test file whose path (relative to the repository root, in
+// slash form) is outside the directories that may import it. A directory
+// counts only as a whole path segment: kernel/executionx is not
+// kernel/execution.
+func stateImportViolations(path string, file *ast.File) []string {
+	if strings.HasSuffix(path, "_test.go") {
+		return nil
+	}
+	for _, dir := range stateImporterDirs {
+		if strings.HasPrefix(path, dir+"/") {
+			return nil
+		}
+	}
+	var violations []string
+	for _, spec := range file.Imports {
+		imported, err := strconv.Unquote(spec.Path.Value)
+		if err != nil {
+			continue
+		}
+		if imported == stateImportPath || strings.HasPrefix(imported, stateImportPath+"/") {
+			violations = append(violations, imported)
+		}
+	}
+	return violations
+}
+
+// TestOnlyExecutionImportsState guards the road around the permission check:
+// outside kernel/state and kernel/execution no non-test Go file of the
+// repository, platform, distributions and services included, imports
+// kernel/state.
+func TestOnlyExecutionImportsState(t *testing.T) {
+	root := ".."
+	fileSet := token.NewFileSet()
+	scanned := map[string]bool{}
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			switch entry.Name() {
+			case ".git", "node_modules", "vendor":
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		relative = filepath.ToSlash(relative)
+		parsed, err := parser.ParseFile(fileSet, path, nil, parser.ImportsOnly|parser.SkipObjectResolution)
+		if err != nil {
+			return err
+		}
+		scanned[relative] = true
+		for _, violation := range stateImportViolations(relative, parsed) {
+			t.Errorf("%s: only kernel/execution may import %q", relative, violation)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("scan the repository: %v", err)
+	}
+	// The scan must see the importer that is allowed and the layers that are
+	// forbidden, or it proves nothing.
+	for _, want := range []string{"kernel/execution/engine.go", "kernel/state/exchange.go", "kernel/capability/authorizer.go", "services/api/cmd/api/main.go"} {
+		if !scanned[want] {
+			t.Errorf("the scan did not reach %s", want)
+		}
+	}
+}
+
+// TestStateImportRuleDetectsViolations proves the rule above is not vacuous:
+// synthetic sources placed at different paths are reported or accepted as the
+// rule says.
+func TestStateImportRuleDetectsViolations(t *testing.T) {
+	const importing = `package sample
+
+import "github.com/nexusthrive/nexusthrive/kernel/state"
+
+var _ = state.InSpace
+`
+	const aliased = `package sample
+
+import _ "github.com/nexusthrive/nexusthrive/kernel/state"
+`
+	const subpackage = `package sample
+
+import . "github.com/nexusthrive/nexusthrive/kernel/state/internal"
+`
+	const harmless = `package sample
+
+import "github.com/nexusthrive/nexusthrive/kernel/model"
+`
+	cases := []struct {
+		name   string
+		path   string
+		source string
+		want   int
+	}{
+		{"capability imports state", "kernel/capability/authorizer.go", importing, 1},
+		{"platform imports state", "platform/staff/staff.go", importing, 1},
+		{"a distribution imports state", "distributions/business/base/base.go", importing, 1},
+		{"a service imports state", "services/api/cmd/api/main.go", importing, 1},
+		{"blank import", "kernel/laws/laws.go", aliased, 1},
+		{"dot import of a subpackage", "kernel/laws/laws.go", subpackage, 1},
+		{"a directory that only starts like the engine", "kernel/executionx/engine.go", importing, 1},
+		{"a directory that only starts like state", "kernel/statex/state.go", importing, 1},
+		{"a file at the root of kernel", "kernel/doc.go", importing, 1},
+		{"the engine", "kernel/execution/engine.go", importing, 0},
+		{"state itself", "kernel/state/exchange.go", importing, 0},
+		{"a test file", "kernel/capability/authorizer_test.go", importing, 0},
+		{"a harmless import", "kernel/capability/authorizer.go", harmless, 0},
+	}
+	for _, c := range cases {
+		parsed, err := parser.ParseFile(token.NewFileSet(), "sample.go", c.source, parser.ImportsOnly)
+		if err != nil {
+			t.Fatalf("%s: parse: %v", c.name, err)
+		}
+		if got := stateImportViolations(c.path, parsed); len(got) != c.want {
+			t.Errorf("%s: %d violations %v, want %d", c.name, len(got), got, c.want)
+		}
+	}
 }
