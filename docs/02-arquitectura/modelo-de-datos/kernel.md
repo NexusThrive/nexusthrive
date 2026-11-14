@@ -162,9 +162,9 @@ erDiagram
         uuid id PK
         uuid space_id FK
         text kind "money, unit, time, access"
-        text code "COP, UND, MIN"
+        text code "COP, UND, MIN; mayúsculas"
         text name
-        int scale "decimales permitidos"
+        int scale "decimales permitidos, de 0 a 18"
     }
     ACCOUNTS {
         uuid id PK
@@ -176,6 +176,7 @@ erDiagram
         text code
         text name
         text status "open, closed"
+        timestamptz closed_at "coherente con status"
     }
     EXCHANGES {
         uuid id PK
@@ -345,6 +346,7 @@ erDiagram
 - **Memoria:** `events`, `entries` y `fulfillments` no admiten `UPDATE` ni `DELETE`; un error se corrige con un intercambio cuyo `reverses_exchange_id` apunta al original.
 - **Eventos:** `type` son dos o más segmentos en minúsculas separados por punto (`kernel.space.created`) y no lleva sufijo de versión, porque la versión es la columna `version`. `payload` es un objeto JSON; su validación con JSON Schema llega en B3. `seq` es `GENERATED ALWAYS`: único, creciente por orden de asignación, con huecos tras un rollback, y no es el orden de confirmación (ADR-0028). Una lectura "desde `seq = n`" es inclusiva y devuelve solo eventos confirmados del espacio actual en orden ascendente; el consumidor guarda como cursor el último `seq` más uno, reanuda con traslape y deduplica por `id`. Un evento sin actor se rechaza, salvo `actor_kind = system`; el actor, si es un participante, debe pertenecer al mismo espacio (clave foránea compuesta `(actor_participant_id, space_id)` hacia `participants (id, space_id)`).
 - **Inmutabilidad de eventos:** dos capas. El rol de la API tiene `SELECT` sobre la tabla e `INSERT` solo por columnas (todas menos `seq`, así que tampoco puede fijarlo con `OVERRIDING SYSTEM VALUE` ni con `COPY`), y la RLS solo tiene políticas `SELECT` e `INSERT`. Además, un disparador por fila (`UPDATE`, `DELETE`) y otro por sentencia (`TRUNCATE`) llaman a `kernel.reject_event_change()`, que falla con `restrict_violation` incluso para el dueño y el administrador, y aunque un permiso se conceda por error. Un superusuario puede deshabilitar el disparador con DDL deliberado (ADR-0028).
+- **Recursos y cuentas:** `resources.code` va en mayúsculas (`^[A-Z][A-Z0-9_]{0,31}$`), es único por `(space_id, code)` y `scale` es un entero de 0 a 18. El recurso es inmutable para la API (sin `UPDATE`): cambiar `scale` o `kind` con asientos corrompería el libro. `accounts.name` y `accounts.code` son obligatorios y el código es único por `(space_id, holder_participant_id, code)`. `closed_at` es obligatorio si y solo si `status = closed`. Toda referencia a datos de espacio es una clave foránea compuesta con `space_id`, porque la comprobación de claves ignora la RLS: `(holder_participant_id, space_id)` hacia `participants`, `(resource_id, space_id)` hacia `resources` y `(parent_account_id, space_id, resource_id)` hacia `accounts`, de modo que la cuenta madre comparte espacio y recurso. Una cuenta nace abierta (la API no tiene `INSERT` sobre `status` ni `closed_at`), pasa una sola vez de `open` a `closed` y no se reabre: un disparador por fila (`kernel.reject_account_reopen()`, `restrict_violation`) lo impide incluso al dueño. Los asientos referenciarán `accounts (id, space_id, resource_id)` y un disparador de `entries` rechazará las cuentas cerradas bajo `FOR SHARE` (HU-kernel-exchanges-08).
 - **Compromiso:** `due_at` y `status` son obligatorios; `fulfilled_amount` nunca supera `amount`.
 - **Permiso:** toda fila escrita tiene un actor (`actor_participant_id` o equivalente); no existen escrituras anónimas.
 - **Movimiento:** al crear o modificar un compromiso con vencimiento se crea o reprograma su `timer` en la misma transacción.
