@@ -420,7 +420,7 @@ Cada historia las hereda y no las repite en detalle.
   quiero un motor de ejecución que verifique permiso y escriba libro, compromiso, evento y outbox juntos o ninguno,
   para que ninguna operación deje estados a medias.
 - **Criterios de aceptación:**
-  1. Dado un actor con `kernel.exchange.write` y `kernel.commitment.write`, cuando se ejecuta una operación de prueba que registra un intercambio, crea un compromiso, escribe un evento y una fila de outbox `internal`, entonces las cuatro escrituras existen tras el `COMMIT`, con el mismo `request_id`.
+  1. Dado un actor con `kernel.exchange.write` y `kernel.commitment.write`, cuando se ejecuta una operación de prueba que registra un intercambio, crea un compromiso, escribe un evento y una fila de outbox `internal`, entonces las cuatro escrituras existen tras el `COMMIT`; el evento lleva el `request_id` de la operación y es el ancla de la trazabilidad: la fila de outbox cuelga del evento por `event_seq` y el `payload` del evento nombra los identificadores del intercambio y del compromiso (reformulado con aprobación del responsable; `exchanges` y `commitments` no tienen columna `request_id`).
   2. Dado el mismo caso, cuando la escritura del compromiso falla, entonces no queda ni intercambio, ni asientos, ni evento, ni outbox.
   3. Dado el mismo caso, cuando la escritura del outbox falla, entonces no queda nada de lo anterior.
   4. Dado el mismo caso, cuando la escritura del intercambio viola la conservación al confirmar, entonces no queda ningún compromiso, evento ni outbox.
