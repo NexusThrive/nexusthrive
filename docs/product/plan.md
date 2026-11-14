@@ -84,7 +84,7 @@ Secuenciales obligatorias: 01 -> 02 -> 03 al inicio y 13 -> 14 -> 15 al final.
 | Arnés de pruebas de integración | 02 (lo crea), todas | Estable desde 02; los cambios van en PR propio. |
 | Catálogo de permisos | 06 (lo define), 10, 11, 12, 13 (lo usan) | 06 fija las 13 claves; las historias previas no inventan claves. |
 | Paquete de eventos y outbox | 09, 10, 12, 13 | Interfaz de escritura de evento + outbox definida en 09/10 y consumida por 12 y 13. |
-| Tablas `exchanges` y `entries` | 08, 11 (`commitment_id` en asientos), 14 (`idempotency_key`) | 11 añade la columna en su migración; 14 no cambia el esquema de `exchanges`. |
+| Tablas `exchanges` y `entries` | 08, 11 (cumplimientos en `fulfillments`), 14 (`idempotency_key`) | 11 no añade `commitment_id` a `entries` (ADR-0033: `fulfillments` es la única fuente de verdad); 14 no cambia el esquema de `exchanges`. |
 | Errores tipados y `docs/02-arquitectura/contrato.md` | 03, 05, 06, 14 | 14 añade `idempotency_conflict`; evitar ediciones simultáneas del archivo. |
 | `docs/02-arquitectura/kernel.md` | 12 (nota sin programador), 15 (nota sin programador y acceso del staff) | Una sola redacción; 15 revisa que no se contradiga. |
 | `docs/02-arquitectura/hoja-de-ruta.md` y `docs/07-ingenieria/testing.md` | 02 | Solo 02 los edita. |
