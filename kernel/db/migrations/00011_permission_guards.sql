@@ -53,7 +53,7 @@ CREATE TRIGGER grants_guard_platform_only BEFORE INSERT OR UPDATE OF extra_permi
 -- A closed space is terminal: it is not reopened and its closing date is not
 -- erased or changed, by anyone. The date of closing is the clock of the
 -- database, as revoked_at is for grants, so a writer cannot forge it. A space
--- that is not closed carries no closing date. Suspension is not terminal and
+-- that is not closed carries no closing date, also when it is inserted. Suspension is not terminal and
 -- stays reversible until the platform layer decides who may reactivate.
 -- +goose StatementBegin
 CREATE FUNCTION kernel.guard_space_closed() RETURNS trigger
@@ -61,11 +61,16 @@ LANGUAGE plpgsql
 SET search_path = pg_catalog, pg_temp
 AS $$
 BEGIN
-  IF OLD.status = 'closed' THEN
-    IF NEW.status IS DISTINCT FROM OLD.status OR NEW.closed_at IS DISTINCT FROM OLD.closed_at THEN
-      RAISE EXCEPTION 'a closed space stays closed' USING ERRCODE = 'restrict_violation';
+  -- OLD exists only on UPDATE, so the terminal rule is nested, not combined.
+  IF TG_OP = 'UPDATE' THEN
+    IF OLD.status = 'closed' THEN
+      IF NEW.status IS DISTINCT FROM OLD.status OR NEW.closed_at IS DISTINCT FROM OLD.closed_at THEN
+        RAISE EXCEPTION 'a closed space stays closed' USING ERRCODE = 'restrict_violation';
+      END IF;
+      RETURN NEW;
     END IF;
-  ELSIF NEW.status = 'closed' THEN
+  END IF;
+  IF NEW.status = 'closed' THEN
     NEW.closed_at := now();
   ELSIF NEW.closed_at IS NOT NULL THEN
     RAISE EXCEPTION 'only a closed space has a closing date' USING ERRCODE = 'restrict_violation';
@@ -75,7 +80,7 @@ END
 $$;
 -- +goose StatementEnd
 
-CREATE TRIGGER spaces_guard_closed BEFORE UPDATE ON kernel.spaces
+CREATE TRIGGER spaces_guard_closed BEFORE INSERT OR UPDATE ON kernel.spaces
   FOR EACH ROW EXECUTE FUNCTION kernel.guard_space_closed();
 
 -- +goose Down

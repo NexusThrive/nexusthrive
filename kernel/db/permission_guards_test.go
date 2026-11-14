@@ -343,3 +343,39 @@ func schemaSnapshot(t *testing.T, conn *sql.DB) map[string][]string {
 	}
 	return out
 }
+
+// TestSpaceInsertCannotForgeClosingDate covers the insert path of the closing
+// guard: not even the administrator can create a closed space with a chosen
+// closing date, or an open space that carries one.
+func TestSpaceInsertCannotForgeClosingDate(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	const insert = `INSERT INTO kernel.spaces (id, kind, name, slug, status, closed_at) VALUES ($1, 'business', 'S', $2, $3, $4)`
+
+	const closedID = "01900000-0000-7000-8000-000000000a01"
+	if _, err := admin.Exec(insert, closedID, "insert-closed", "closed", "2001-01-01T00:00:00Z"); err != nil {
+		t.Fatalf("inserting a closed space: %v", err)
+	}
+	if got := count(t, admin, `SELECT count(*) FROM kernel.spaces WHERE id = $1 AND closed_at > now() - interval '1 minute' AND closed_at <= now()`, closedID); got != 1 {
+		t.Error("a closed space inserted with a forged date did not get the database clock")
+	}
+	if _, err := admin.Exec(`INSERT INTO kernel.spaces (id, kind, name, slug, status) VALUES ($1, 'business', 'S', 'insert-closed-nodate', 'closed')`,
+		"01900000-0000-7000-8000-000000000a02"); err != nil {
+		t.Errorf("inserting a closed space without a date: %v", err)
+	}
+	if got := count(t, admin, `SELECT count(*) FROM kernel.spaces WHERE slug = 'insert-closed-nodate' AND closed_at IS NOT NULL`); got != 1 {
+		t.Error("a closed space inserted without a date has no closing date")
+	}
+
+	for _, status := range []string{"active", "provisioning", "suspended"} {
+		_, err := admin.Exec(insert, "01900000-0000-7000-8000-000000000a03", "insert-open-"+status, status, "2001-01-01T00:00:00Z")
+		requireCode(t, "open space with a closing date, "+status, err, restrictViolation)
+	}
+	if got := count(t, admin, `SELECT count(*) FROM kernel.spaces WHERE slug LIKE 'insert-open-%'`); got != 0 {
+		t.Errorf("%d rejected spaces left a row", got)
+	}
+	if _, err := admin.Exec(`INSERT INTO kernel.spaces (id, kind, name, slug) VALUES ($1, 'business', 'S', 'insert-plain')`,
+		"01900000-0000-7000-8000-000000000a04"); err != nil {
+		t.Errorf("a plain insert was rejected: %v", err)
+	}
+}
