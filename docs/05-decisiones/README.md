@@ -44,6 +44,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0023](0023-urls-y-dominios.md) | URLs y dominios | Aceptada |
 | [0024](0024-herramienta-de-migraciones.md) | Goose como herramienta de migraciones en SQL puro | Aceptada |
 | [0025](0025-redis-diferido.md) | Redis diferido hasta que haya varias instancias de la API | Aceptada |
+| [0026](0026-idempotencia-por-registro.md) | Idempotencia por registro: un registro de solo agregar por ejecución, huella canónica y bloqueo asesor | Aceptada |
 | [0027](0027-roles-y-rls.md) | Roles de base de datos y RLS con SET LOCAL | Aceptada |
 | [0028](0028-orden-de-eventos.md) | Eventos de solo agregar: inmutabilidad en dos capas y orden de `seq` | Aceptada |
 | [0029](0029-otorgante-entre-espacios-y-escalada.md) | Otorgante entre espacios y reglas contra la escalada de privilegios | Aceptada |
