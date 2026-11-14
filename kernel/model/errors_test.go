@@ -38,3 +38,11 @@ func TestErrorMessageAndUnwrap(t *testing.T) {
 		t.Errorf("Error() = %q", got)
 	}
 }
+
+// TestAlreadyDoneCodeValue pins the wire value of the already_done code.
+func TestAlreadyDoneCodeValue(t *testing.T) {
+	t.Parallel()
+	if model.CodeAlreadyDone != "already_done" {
+		t.Errorf("CodeAlreadyDone = %q", model.CodeAlreadyDone)
+	}
+}
