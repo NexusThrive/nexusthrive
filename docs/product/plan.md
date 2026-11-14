@@ -102,7 +102,7 @@ No hay historias bloqueadas. Acciones de seguimiento, no bloqueantes:
 | Aceptar ADR-0024 antes de cualquier código de migración | Responsable del producto | Inicio de 01 |
 | Aceptar ADR-0026 (y enmienda de ADR-0004) antes del código de idempotencia | Responsable del producto | Inicio de 14 |
 
-Inconsistencia a corregir por el Requirements Analyst: la tabla "Verificación de Definition of Ready" del backlog aún marca "Sin TBD = pendiente" en HU-kernel-timers-12 y HU-kernel-idempotency-14, mientras sus estados dicen Lista porque P1 y P2 están resueltas. Además, los encabezados de sus criterios dicen "se confirman al desbloquear". Este plan las trata como listas por indicación del equipo; el analista debe actualizar la tabla y los encabezados.
+Corregida: la tabla "Verificación de Definition of Ready" del backlog marca HU-kernel-timers-12 y HU-kernel-idempotency-14 como listas ("sí" en "Sin TBD"), porque P1 y P2 están resueltas, y el plan las trata como listas.
 
 ## Riesgos
 

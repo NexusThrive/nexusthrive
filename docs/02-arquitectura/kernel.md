@@ -41,7 +41,7 @@ El camino de toda operación, venga de una cara, de la consola, de una IA o de n
 1. Entra por una **puerta** con un token o una llave.
 2. La puerta resuelve identidad, espacio y participante y arma el `Actor`; el permiso y la capacidad activa los verifica `Capability` dentro de la transacción del motor, antes de cualquier escritura ([ADR-0032](../05-decisiones/0032-catalogo-de-permisos-y-verificacion.md), [ADR-0035](../05-decisiones/0035-motor-de-ejecucion.md)).
 3. La **extensión** dueña de la operación la traduce a piezas del kernel.
-4. `Execution Engine` abre una transacción, verifica el permiso y ejecuta. La idempotencia se declara y se valida al registrar; aplicarla por clave llega con idempotency-14.
+4. `Execution Engine` abre una transacción, verifica el permiso y ejecuta. Una operación idempotente entra por `RunIdempotent`: con la clave y la huella de la solicitud, devuelve la respuesta guardada o ejecuta y guarda su registro en la misma transacción ([ADR-0026](../05-decisiones/0026-idempotencia-por-registro.md)).
 5. `State` escribe intercambios, compromisos, eventos y outbox en esa misma transacción.
 6. `Coordination` programa temporizadores y despacha las señales cuando la transacción confirma.
 
@@ -73,6 +73,8 @@ El actor `system` salta solo el paso 3. Para `write` y `money`, `Check` toma `FO
 
 Si el manejador falla o entra en pánico, la transacción se deshace: un pánico sale como `*PanicError` sin tipo (su mensaje solo nombra la operación) (B3 lo traduce a una respuesta genérica sin mensaje). Un error de base que el manejador trague no confirma. Los fallos de las restricciones diferidas al `COMMIT` salen como `rule_violation`; un privilegio faltante (`42501`) nunca se disfraza. No hay reintentos.
 
+**Idempotencia.** Una operación declarada `Idempotent` (obligatorio para `money`) corre solo por `Engine.RunIdempotent`; `Run` la rechaza con `invalid_input`. La llamada trae `IdempotencyKey` (`^[A-Za-z0-9._:-]{1,128}$`) y `Request` (el cuerpo recibido: lo llenará B3; el motor calcula la huella y no lo guarda). Antes de abrir nada se validan la clave y el cuerpo canónico (`invalid_input`); dentro de la transacción se verifican los permisos y solo después se toma el bloqueo asesor de (espacio, clave) hasta el `COMMIT`. Con un registro vigente: la misma huella (operación, actor y cuerpo canónico) devuelve la respuesta guardada, byte a byte, sin correr el manejador (`Replayed`); otra huella devuelve `idempotency_conflict` sin escribir. Sin registro, corre el manejador (`ResultHandler`, que devuelve un objeto JSON de hasta 64 KiB) y guarda el registro en la misma transacción; un fallo, un pánico o un `COMMIT` fallido no dejan registro y la misma clave se puede reintentar. El registro vence a las 24 horas por el menor de los relojes (inyectable y de la base); tras el vencimiento la ejecución nueva inserta la generación siguiente, sin `UPDATE` ni `DELETE`. El motor deriva la clave de cada intercambio (`<ejecución>:<n>`) y la `Tx` rechaza la que traiga el manejador (enmienda del [ADR-0030](../05-decisiones/0030-libro-de-doble-partida.md)).
+
 Las operaciones del propio kernel son `kernel.timer.fire` y `kernel.outbox.claim` (ambas `write`: un espacio suspendido las pausa). Solo se llaman por `Engine.FireDueTimers` y `Engine.ClaimOutbox` con un manejador fijado por el motor: `Run` rechaza con `invalid_input` cualquier nombre del espacio de nombres `kernel`.
 
 **Límite y precondiciones de B3.** El motor es código: quien tenga el pool puede saltárselo. En M1 solo el kernel lo tiene, y una prueba de arquitectura impide que algo fuera de `kernel/state` y `kernel/execution` importe `kernel/state`. Las puertas y extensiones de B3 reciben solo el `Engine`, construyen el `Actor` solo desde un token validado (nunca `ActorSystem` desde una petición) y no exponen `ClaimOutbox`, `MarkOutboxSent` ni `MarkOutboxFailed`. Detalle en [ADR-0035](../05-decisiones/0035-motor-de-ejecucion.md).
@@ -102,4 +104,5 @@ El componente de ejecución procesa operaciones autorizadas. Cada operación se 
 - [ADR-0001 · El kernel no conoce ningún mundo](../05-decisiones/0001-kernel-sin-mundo.md)
 - [ADR-0009 · Libro de movimientos de doble partida](../05-decisiones/0009-libro-de-movimientos.md)
 - [ADR-0032 · Catálogo de permisos y verificación](../05-decisiones/0032-catalogo-de-permisos-y-verificacion.md)
+- [ADR-0026 · Idempotencia por registro](../05-decisiones/0026-idempotencia-por-registro.md)
 - [ADR-0035 · Motor de ejecución](../05-decisiones/0035-motor-de-ejecucion.md)
