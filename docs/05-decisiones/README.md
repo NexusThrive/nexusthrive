@@ -52,6 +52,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0032](0032-catalogo-de-permisos-y-verificacion.md) | Catálogo de permisos y verificación: orden de errores, bloqueo y límite del actor afirmado | Aceptada |
 | [0033](0033-compromisos-estado-derivado-y-asiento-unico.md) | Compromisos: estado derivado, concurrencia por bloqueo de fila, monto cumplido verificado y cumplimientos inmutables | Aceptada |
 | [0034](0034-vencimiento-de-compromisos-por-timer.md) | Vencimiento de compromisos por timer: `expired` solo por cascada desde un timer disparado, con el reloj de la base como techo | Aceptada |
+| [0035](0035-motor-de-ejecucion.md) | Motor de ejecución: una operación, una transacción, verificación previa y `Tx` mínima sin SQL crudo | Aceptada |
 
 ## Pendientes
 
