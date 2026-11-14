@@ -268,8 +268,7 @@ func TestAppendCommitmentLivesAndDiesWithTheTransaction(t *testing.T) {
 	}
 	// Two operations in one transaction commit together.
 	var created model.Commitment
-	var entry string
-	entry = c.credit(t, "k1", "40.00")
+	entry := c.credit(t, "k1", "40.00")
 	err = state.InSpace(ctx, c.api, spaceA, func(ctx context.Context, tx *sql.Tx) error {
 		var err error
 		if created, err = state.AppendCommitment(ctx, tx, c.actor, c.newCommitment(t, "40.00")); err != nil {
