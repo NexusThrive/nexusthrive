@@ -604,9 +604,9 @@ func TestGrantTriggersPinSearchPath(t *testing.T) {
 	t.Parallel()
 	admin := dbtest.Database(t)
 	got := stringColumn(t, admin, `SELECT p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-		WHERE n.nspname = 'kernel' AND p.proname IN ('guard_grant_update', 'reject_space_kind_change', 'valid_permission_list', 'reject_grant_delete', 'reject_access_audit_change')
+		WHERE n.nspname = 'kernel' AND p.proname IN ('guard_grant_update', 'reject_api_platform_space', 'reject_space_kind_change', 'valid_permission_list', 'reject_grant_delete', 'reject_access_audit_change')
 		AND p.proconfig IS NOT NULL AND 'search_path=pg_catalog, pg_temp' = ANY (p.proconfig) ORDER BY 1`)
-	want := []string{"guard_grant_update", "reject_access_audit_change", "reject_grant_delete", "reject_space_kind_change", "valid_permission_list"}
+	want := []string{"guard_grant_update", "reject_access_audit_change", "reject_api_platform_space", "reject_grant_delete", "reject_space_kind_change", "valid_permission_list"}
 	if !slices.Equal(got, want) {
 		t.Errorf("functions with a pinned search_path = %v, want %v", got, want)
 	}
@@ -715,4 +715,84 @@ func TestSelfPromotionToPlatformIsImpossible(t *testing.T) {
 	err = apiExecInSpace(t, api, gSpaceA, `INSERT INTO kernel.grants (id, space_id, participant_id, role_id, granted_by, granted_by_space_id, granted_by_space_kind)
 		VALUES ($1, $2, $3, $4, $5, $2, 'platform')`, gGrantNew, gSpaceA, gPartA2, gRoleA, gPartA1)
 	requireCode(t, "grant claiming the platform kind", err, "23503")
+}
+
+const (
+	gFakePlatform = "01900000-0000-7000-8000-0000000005a1"
+	gFakeStaff    = "01900000-0000-7000-8000-0000000005a2"
+)
+
+// TestAPICannotInsertPlatformSpace reproduces the full attack: the API role
+// chooses its own session context, inserts a new platform space, creates a
+// participant in it and uses it as grantor and audit actor. The first INSERT
+// must already fail.
+func TestAPICannotInsertPlatformSpace(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+	seedGrantFixtures(t, admin)
+
+	err := apiExecInSpace(t, api, gFakePlatform,
+		`INSERT INTO kernel.spaces (id, kind, name, slug) VALUES ($1, 'platform', 'Fake', 'fake-platform')`, gFakePlatform)
+	requireCode(t, "API inserting a platform space", err, "23001")
+
+	// The rest of the chain cannot even start: the space does not exist.
+	tx, err := api.Begin()
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`SELECT set_config('kernel.space_id', $1, true)`, gFakePlatform); err != nil {
+		t.Fatalf("set space: %v", err)
+	}
+	_, err = tx.Exec(`INSERT INTO kernel.spaces (id, kind, name, slug) VALUES ($1, 'platform', 'Fake', 'fake-platform')`, gFakePlatform)
+	requireCode(t, "platform insert in a long transaction", err, "23001")
+	if got := count(t, admin, `SELECT count(*) FROM kernel.spaces WHERE kind = 'platform'`); got != 1 {
+		t.Errorf("platform spaces = %d, want only the seeded one", got)
+	}
+}
+
+// TestAPICanStillInsertOrdinarySpaces checks the regression: the API role
+// provisions business, community and personal spaces.
+func TestAPICanStillInsertOrdinarySpaces(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+
+	for i, kind := range []string{"business", "community", "personal"} {
+		id := fmt.Sprintf("01900000-0000-7000-8000-0000000005b%d", i)
+		if err := apiExecInSpace(t, api, id,
+			`INSERT INTO kernel.spaces (id, kind, name, slug) VALUES ($1, $2, 'Ordinary', $3)`, id, kind, "ordinary-"+kind); err != nil {
+			t.Errorf("API inserting a %s space: %v", kind, err)
+		}
+	}
+}
+
+// TestAdministratorCanInsertPlatformSpace: platform spaces are provisioned by
+// the owner or administrator at bootstrap, which the trigger lets through.
+func TestAdministratorCanInsertPlatformSpace(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	if _, err := admin.Exec(`INSERT INTO kernel.spaces (id, kind, name, slug) VALUES ($1, 'platform', 'P', 'admin-platform')`, gFakePlatform); err != nil {
+		t.Errorf("administrator inserting a platform space: %v", err)
+	}
+}
+
+// TestAPIInsertOnSpacesIsByColumn: the API role cannot set the columns the
+// kernel fixes itself when it creates a space.
+func TestAPIInsertOnSpacesIsByColumn(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+
+	for i, column := range []string{"status", "suspended_at", "suspended_reason", "closed_at", "created_at"} {
+		values := map[string]string{
+			"status": "'active'", "suspended_at": "now()", "suspended_reason": "'x'", "closed_at": "now()", "created_at": "now()",
+		}
+		id := fmt.Sprintf("01900000-0000-7000-8000-0000000005c%d", i)
+		err := apiExecInSpace(t, api, id, fmt.Sprintf(
+			`INSERT INTO kernel.spaces (id, kind, name, slug, %s) VALUES ($1, 'business', 'X', $2, %s)`, column, values[column]),
+			id, "col-"+column)
+		requireCode(t, "API inserting "+column, err, "42501")
+	}
 }

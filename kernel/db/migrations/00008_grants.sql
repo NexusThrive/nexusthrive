@@ -238,6 +238,40 @@ CREATE TRIGGER grants_no_truncate BEFORE TRUNCATE ON kernel.grants
 REVOKE UPDATE ON kernel.spaces FROM nexusthrive_api;
 GRANT UPDATE (name, status, suspended_at, suspended_reason, closed_at) ON kernel.spaces TO nexusthrive_api;
 
+-- The same holds for insertion. The row policy of spaces accepts any row whose
+-- id is the current space, and the API role chooses that setting, so it could
+-- create a space of kind platform and use it as grantor or audit actor. Spaces
+-- of kind platform are provisioned at bootstrap by the owner of the migrations
+-- or the administrator, never by the execution role. INSERT is also granted by
+-- column, leaving out status, created_at and the suspension and closing
+-- columns, which the kernel sets itself.
+REVOKE INSERT ON kernel.spaces FROM nexusthrive_api;
+GRANT INSERT (id, kind, name, slug, parent_space_id, locale, timezone, currency)
+  ON kernel.spaces TO nexusthrive_api;
+
+-- The condition is current_user = 'nexusthrive_api': current_user is the role
+-- in effect, so it is true for a direct connection of the role and after SET
+-- ROLE, including a superuser that switches to it. pg_has_role(..., 'member')
+-- is not used because it is true for every superuser, which would block the
+-- bootstrap. The API role cannot switch to another role, so it cannot dodge it.
+-- +goose StatementBegin
+CREATE FUNCTION kernel.reject_api_platform_space() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog, pg_temp
+AS $$
+BEGIN
+  IF NEW.kind = 'platform' AND current_user = 'nexusthrive_api' THEN
+    RAISE EXCEPTION 'platform spaces are provisioned at bootstrap, not by the API role'
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  RETURN NEW;
+END
+$$;
+-- +goose StatementEnd
+
+CREATE TRIGGER spaces_no_api_platform BEFORE INSERT ON kernel.spaces
+  FOR EACH ROW EXECUTE FUNCTION kernel.reject_api_platform_space();
+
 -- +goose StatementBegin
 CREATE FUNCTION kernel.reject_space_kind_change() RETURNS trigger
 LANGUAGE plpgsql
@@ -272,6 +306,10 @@ CREATE TRIGGER access_audit_no_truncate BEFORE TRUNCATE ON kernel.access_audit
   FOR EACH STATEMENT EXECUTE FUNCTION kernel.reject_access_audit_change();
 
 -- +goose Down
+DROP TRIGGER spaces_no_api_platform ON kernel.spaces;
+DROP FUNCTION kernel.reject_api_platform_space();
+REVOKE INSERT ON kernel.spaces FROM nexusthrive_api;
+GRANT INSERT ON kernel.spaces TO nexusthrive_api;
 DROP TRIGGER spaces_kind_immutable ON kernel.spaces;
 DROP FUNCTION kernel.reject_space_kind_change();
 REVOKE UPDATE ON kernel.spaces FROM nexusthrive_api;

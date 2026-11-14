@@ -28,3 +28,6 @@ Observaciones no bloqueantes de las revisiones que no entran en la historia dond
 | 22 | grants-05 | `space_capabilities` no tiene `UPDATE`: suspender o reactivar una capacidad es otra historia. | Historia de capacidades |
 | 23 | grants-05 | Un grant vencido pero no revocado bloquea otorgar de nuevo el mismo rol (índice parcial); hay que revocar primero. Decidir si la ejecución revoca al vencer. | `execution-13` |
 | 24 | grants-05 | Resuelto en la misma historia: `kind` de `spaces` es inmutable (privilegio `UPDATE` por columnas y disparador, ADR-0029). | Resuelto |
+| 25 | grants-05 | `nexusthrive_api` es un rol global del clúster: si `kernel/state` y `kernel/db` corren en paralelo, una prueba de contraseña puede dejarle LOGIN y hacer fallar `TestAPIRoleIsLimited`. En CI no ocurre (base nueva). | Pulido al cierre de M1 |
+| 26 | grants-05 | Nada impide reactivar un espacio cerrado (`closed` a `active`) ni limpiar `closed_at` con UPDATE de columnas del rol de la API. Falta una regla de transición de estado. | Ciclo de vida de espacios (B4) o `permissions-06` |
+| 27 | grants-05 | Resuelto en la misma historia: el `INSERT` del rol de la API es por columnas y un disparador impide crear espacios `platform` con ese rol (ADR-0029). | Resuelto |

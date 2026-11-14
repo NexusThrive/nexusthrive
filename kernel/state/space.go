@@ -31,6 +31,9 @@ type NewSpace struct {
 // It is the internal bootstrap operation: only the system actor may call it,
 // because public creation of spaces belongs to the platform layer.
 //
+// A space of kind platform is provisioned at bootstrap with the administrator
+// connection; through the API role it is permission_denied (ADR-0029).
+//
 // The id is generated here so the transaction can run as the new space; the
 // row then satisfies its own isolation policy.
 func CreateSpace(ctx context.Context, pool *sql.DB, actor model.Actor, in NewSpace) (string, error) {
@@ -77,6 +80,8 @@ func translateSpaceError(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
+		case "23001":
+			return model.NewError(model.CodePermissionDenied, "platform spaces are provisioned at bootstrap, not through the API role", err)
 		case "23505":
 			return model.NewError(model.CodeRuleViolation, "space slug is already taken", err)
 		case "23514", "22P02":
