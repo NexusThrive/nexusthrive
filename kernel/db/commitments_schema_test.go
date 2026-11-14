@@ -481,7 +481,7 @@ func TestCommitmentsForcedRLSAndGrants(t *testing.T) {
 		}
 	}
 	if got, want := privilegeSet(t, admin, "commitments"),
-		expectPrivileges(commitmentColumns, commitmentInsertColumns, []string{"fulfilled_amount", "canceled_reason"}); !slices.Equal(got, want) {
+		expectPrivileges(commitmentColumns, commitmentInsertColumns, []string{"fulfilled_amount", "canceled_reason", "due_at", "status"}); !slices.Equal(got, want) {
 		t.Errorf("commitments privileges = %v, want %v", got, want)
 	}
 	if got, want := privilegeSet(t, admin, "fulfillments"),

@@ -582,11 +582,7 @@ func (c commitmentFixtures) closedCommitments(t *testing.T) map[model.Commitment
 	if _, err := state.CancelCommitment(context.Background(), c.api, c.actor, spaceA, canceled.ID, "stopped"); err != nil {
 		t.Fatalf("cancel: %v", err)
 	}
-	expired := c.create(t, "40.00")
-	// Expiry belongs to the timer story; the owner of the tables is its only writer today.
-	if _, err := c.admin.Exec(`UPDATE kernel.commitments SET status = 'expired' WHERE id = $1`, expired.ID); err != nil {
-		t.Fatalf("expire: %v", err)
-	}
+	expired := c.expire(t, "40.00")
 	return map[model.CommitmentStatus]string{
 		model.CommitmentStatusFulfilled: fulfilled.ID, model.CommitmentStatusCanceled: canceled.ID, model.CommitmentStatusExpired: expired.ID,
 	}

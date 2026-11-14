@@ -353,7 +353,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-commitments-11 · Crear, cumplir y cancelar compromisos
 
-- **Estado:** En revisión. **Tamaño:** L. **Rama:** `feature/HU-kernel-commitments-11`.
+- **Estado:** Terminada. **Tamaño:** L. **Rama:** `feature/HU-kernel-commitments-11`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero compromisos con vencimiento obligatorio que se cumplan con asientos y no superen su monto,
@@ -385,7 +385,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-timers-12 · Crear timers con el compromiso y vencerlos con reloj inyectable
 
-- **Estado:** Lista (P1 resuelta: se escribe el evento `kernel.commitment.expired` v1 y no hay cumplimiento tardío). **Tamaño:** M. **Rama:** `feature/HU-kernel-timers-12`.
+- **Estado:** En revisión (P1 resuelta: se escribe el evento `kernel.commitment.expired` v1 y no hay cumplimiento tardío). **Tamaño:** M. **Rama:** `feature/HU-kernel-timers-12`.
 - **Pregunta que la desbloquea:** P1 (evento al vencer y cumplimiento tardío de un compromiso `expired`).
 - **Historia:**
   Como ingeniero de NexusThrive,

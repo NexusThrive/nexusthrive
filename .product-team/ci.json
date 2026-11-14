@@ -1,5 +1,5 @@
 {
-  "lint": "test -z \"$(gofmt -l kernel platform distributions services)\" && go vet $(go list -m -f '{{.Dir}}/...' | tr '\\n' ' ')",
+  "lint": "test -z \"$(gofmt -l kernel platform distributions services)\" && go vet $(go list -m -f '{{.Dir}}/...' | tr '\\n' ' ') && GOTOOLCHAIN=go1.24.7 go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 $(go list -m -f '{{.Dir}}/...' | tr '\\n' ' ')",
   "lint_file": "gofmt -l {file}",
   "test": "go test $(go list -m -f '{{.Dir}}/...' | tr '\\n' ' ')"
 }

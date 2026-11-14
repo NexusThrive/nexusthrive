@@ -221,7 +221,7 @@ erDiagram
     RESOURCES ||--o{ COMMITMENTS : "en"
     COMMITMENTS ||--o{ FULFILLMENTS : "se cumple con"
     ENTRIES ||--o{ FULFILLMENTS : "aporta"
-    COMMITMENTS ||--o{ TIMERS : "despierta"
+    COMMITMENTS ||--o| TIMERS : "vence con"
 
     COMMITMENTS {
         uuid id PK
@@ -233,7 +233,7 @@ erDiagram
         numeric amount
         numeric fulfilled_amount "derivado de fulfillments"
         timestamptz starts_at
-        timestamptz due_at "obligatorio"
+        timestamptz due_at "obligatorio; solo se reprograma hacia el futuro"
         text status "open, fulfilled, canceled, expired; derivado"
         text origin_ref "referencia a la distribución: business.sale/uuid"
         text canceled_reason
@@ -251,14 +251,13 @@ erDiagram
         timestamptz created_at
     }
     TIMERS {
-        uuid id PK
+        uuid id PK "igual al id del compromiso"
         uuid space_id FK
         uuid commitment_id FK
-        text signal_type "business.membership.expiring.v1"
-        timestamptz fire_at
-        jsonb payload
-        text status "scheduled, fired, canceled"
-        timestamptz fired_at
+        timestamptz fire_at "igual a due_at mientras está scheduled"
+        text status "scheduled, fired, canceled; derivado"
+        timestamptz fired_at "lo fija el kernel"
+        timestamptz created_at "lo fija el kernel"
     }
     SCHEDULER_RUNS {
         uuid id PK
@@ -368,10 +367,11 @@ erDiagram
 - **Permisos solo de plataforma y espacios cerrados** (ADR-0032, migración 00011): `kernel.platform_only_permissions()` lista las claves que solo un espacio `platform` puede tener (hoy `kernel.capability.write`) y el disparador `kernel.guard_platform_only_permissions()` rechaza con `restrict_violation`, en `INSERT` y en `UPDATE` de la lista, un rol (`roles.permissions`) o un grant (`grants.extra_permissions`) de otro espacio que la incluya; falla cerrado (un espacio ilegible no es `platform`) y vale para todos, también para el dueño. `kernel.guard_space_closed()` hace terminal el estado `closed`: nadie reabre el espacio ni borra o cambia `closed_at`, y al cerrar fija `closed_at := now()` (no falsificable); un espacio que no está cerrado no lleva `closed_at`. Una suspensión sí se revierte con el `UPDATE (status)` del rol de la API hasta que B3 y B4 certifiquen al actor. Las tres funciones fijan `search_path = pg_catalog, pg_temp` y ninguna es `SECURITY DEFINER`. El catálogo de claves (`model.KernelCatalog()`) vive en Go: SQL solo conoce el formato y la lista de plataforma, y una prueba ata ambas.
 - **Rol `owner`:** `state.CreateStandardRoles` crea, con el actor `system`, el rol `owner` (`system = true`) con diez claves y nunca `kernel.capability.write`, `kernel.timer.process` ni `kernel.outbox.claim`. Ningún código lo trata como autoridad: es solo una lista. Repetirlo es `rule_violation`.
 - **Auditoría de acceso:** `access_audit` es de solo agregar en dos capas, como `events`: la API solo tiene `SELECT` e `INSERT` por columnas (sin `occurred_at`) y los disparadores de `kernel.reject_access_audit_change()` fallan con `restrict_violation` incluso para el dueño. Un superusuario puede deshabilitarlos con DDL deliberado.
-- **Compromiso** (ADR-0033, migración 00012): `due_at` y `status` son obligatorios y no tienen valor por defecto; `fulfilled_amount` nunca supera `amount` (`CHECK`). El kernel deriva el estado, `fulfilled_amount` y `closed_at`: el rol de la API inserta solo con `status = open` (`kernel.guard_commitment_insert()` rechaza otro valor y cualquier `fulfilled_amount`, `closed_at` o `canceled_reason` falsos con `restrict_violation`, también al dueño, y fija `created_at`) y no tiene `UPDATE` sobre `status`, `closed_at` ni la identidad. `kernel.guard_commitment_update()` rechaza todo cambio de un compromiso cerrado (`fulfilled`, `canceled`, `expired`) y admite un solo efecto por sentencia sobre uno abierto: `fulfilled_amount` igual a la suma de `fulfillments` (si alcanza `amount` pasa a `fulfilled`), `canceled_reason` de nulo a un motivo (pasa a `canceled`) o `status = expired` (gancho de timers-12); fija `closed_at := now()`. `due_at` es inmutable hasta timers-12. El rol de la API tiene `UPDATE (fulfilled_amount, canceled_reason)` porque los disparadores corren con sus derechos, y la comprobación diferida `commitments_fulfilled_sum` verifica al confirmar que `fulfilled_amount` es la suma (falla cerrado si la transacción cambió de espacio). La escala del monto sigue la del recurso (`commitments_amount_scale`), el deudor es distinto del acreedor y las claves foráneas compuestas son `(debtor_participant_id, space_id)`, `(creditor_participant_id, space_id)`, `(created_by_participant_id, space_id)` y `(resource_id, space_id)`. `scale` y `kind` de un recurso con compromisos no cambian.
+- **Compromiso** (ADR-0033, migración 00012): `due_at` y `status` son obligatorios y no tienen valor por defecto; `fulfilled_amount` nunca supera `amount` (`CHECK`). El kernel deriva el estado, `fulfilled_amount` y `closed_at`: el rol de la API inserta solo con `status = open` (`kernel.guard_commitment_insert()` rechaza otro valor y cualquier `fulfilled_amount`, `closed_at` o `canceled_reason` falsos con `restrict_violation`, también al dueño, y fija `created_at`) y no tiene `UPDATE` sobre `status`, `closed_at` ni la identidad. `kernel.guard_commitment_update()` rechaza todo cambio de un compromiso cerrado (`fulfilled`, `canceled`, `expired`) y admite un solo efecto por sentencia sobre uno abierto: `fulfilled_amount` igual a la suma de `fulfillments` (si alcanza `amount` pasa a `fulfilled`), `canceled_reason` de nulo a un motivo (pasa a `canceled`) `due_at` hacia el futuro o `status = expired` solo por la cascada de un timer (ver Timers); fija `closed_at := now()`. `due_at` se reprograma desde timers-12 (ver Timers). El rol de la API tiene `UPDATE (fulfilled_amount, canceled_reason, due_at, status)` porque los disparadores corren con sus derechos, y la comprobación diferida `commitments_fulfilled_sum` verifica al confirmar que `fulfilled_amount` es la suma (falla cerrado si la transacción cambió de espacio). La escala del monto sigue la del recurso (`commitments_amount_scale`), el deudor es distinto del acreedor y las claves foráneas compuestas son `(debtor_participant_id, space_id)`, `(creditor_participant_id, space_id)`, `(created_by_participant_id, space_id)` y `(resource_id, space_id)`. `scale` y `kind` de un recurso con compromisos no cambian.
 - **Cumplimiento** (ADR-0033): `fulfillments` es de solo agregar (`kernel.reject_ledger_change()`, también `TRUNCATE` en cascada) y los compromisos no se borran (`kernel.reject_commitment_removal()`). `kernel.guard_fulfillment_insert()` toma `SELECT ... FOR NO KEY UPDATE` sobre el compromiso, de modo que dos cumplimientos, o un cumplimiento y una cancelación, se serializan y el segundo relee lo confirmado; luego exige compromiso abierto (`fulfillments_commitment_open`), asiento del mismo espacio y recurso, positivo, de una cuenta del acreedor (`fulfillments_entry_creditor`), fuera de un intercambio de compensación (`fulfillments_entry_reversal`), por el monto completo del asiento (`fulfillments_amount_entry`) y dentro de lo pendiente (`fulfillments_within_pending`). Un asiento se aplica una vez (`UNIQUE (entry_id)`). Las claves `(commitment_id, space_id, resource_id)` y `(entry_id, space_id, resource_id)` impiden mezclar espacios o recursos aunque falte el disparador.
+- **Timers** (ADR-0034, migración 00013): cada compromiso tiene un timer de vencimiento con su mismo `id` (`kernel.timers`, con RLS forzada, `UNIQUE` parcial `timers_one_scheduled_key` y clave foránea compuesta `(commitment_id, space_id)`). Lo crea el disparador `commitments_timer_create` y lo mueven y cancelan `commitments_timer_sync`, para todo escritor. Un compromiso llega a `expired` solo por cascada: `kernel.timers_guard_update()` deja pasar `scheduled` a `fired` únicamente si el compromiso está abierto y `fire_at <= now()` (reloj de la base) y fija `fired_at`; `timers_expire_commitment` expira el compromiso y `guard_commitment_update()` lo acepta solo con `due_at <= now()` y un timer del compromiso disparado en esta misma transacción. Un timer terminal no cambia, no se borra ni se trunca (`kernel.reject_timer_removal()`, también en cascada) y `fired_at` y `created_at` no están en ningún grant. Reprogramar (`due_at`) exige un instante estrictamente futuro (`commitments_reschedule_past`). La restricción diferida `timers_coherent` comprueba al confirmar, para todo escritor, que un compromiso abierto tiene exactamente un timer `scheduled` en `due_at`, que uno cerrado no tiene ninguno y que un timer `fired` va con un compromiso `expired` y un evento `kernel.commitment.expired` v1 del espacio con `subject_ref = 'kernel.commitment/<id>'` (falla cerrado si la transacción cambió de espacio). No existen `signal_type` ni `payload`: los recordatorios previos al vencimiento quedan fuera de alcance.
 - **Permiso:** toda fila escrita tiene un actor (`actor_participant_id` o equivalente); no existen escrituras anónimas.
-- **Movimiento:** al crear o modificar un compromiso con vencimiento se crea o reprograma su `timer` en la misma transacción.
+- **Movimiento:** al crear o reprogramar un compromiso con vencimiento se crea o mueve su `timer` en la misma transacción (disparador de la base), y al cerrarlo se cancela. Al vencer, `state.FireDueTimers` dispara el timer, expira el compromiso y escribe `kernel.commitment.expired` y su fila de outbox `internal` en una sola transacción.
 - **Aislamiento:** RLS por `space_id` en todas las tablas con datos de espacio, con `ENABLE` y `FORCE`. La política compara con `kernel.current_space_id()`, que lee el parámetro `kernel.space_id` fijado por transacción (`set_config(..., true)`, equivalente a `SET LOCAL`); sin valor no hay filas ni error. En `spaces` la política compara `id`. La API se conecta como `nexusthrive_api`, un rol sin superusuario, sin `BYPASSRLS` y sin ser dueño de objetos (ADR-0027). La función fija su `search_path` (`pg_catalog, pg_temp`) y una migración rechaza el rol si tiene `SUPERUSER`, `BYPASSRLS`, `CREATEROLE`, `CREATEDB` o `REPLICATION`. `identities` no tiene `space_id`: una política `SELECT` la muestra solo si existe un participante suyo en el espacio actual, y una política `INSERT` permite crearla antes de que tenga participante; la API no puede actualizarla ni borrarla. En `participants`, `UPDATE` se limita a `status` y `archived_at`, y un índice único parcial `(space_id, identity_id)` donde `identity_id` no es nulo garantiza un participante por identidad en cada espacio.
 
 ## Ejemplo
@@ -384,7 +384,7 @@ Un socio paga 50.000 COP en efectivo de un plan de 100.000; queda debiendo 50.00
 | `exchanges` | `business.payment`, idempotente por la clave de la recepción |
 | `entries` | +50.000 en la cuenta caja del negocio · −50.000 en la cuenta por cobrar del socio |
 | `fulfillments` | 50.000 aplicados a la deuda (`fulfilled_amount` = 50.000) |
-| `timers` | Señal `debt.overdue` en 5 días |
+| `timers` | Timer de vencimiento en 5 días; al dispararse, la deuda pasa a `expired` |
 | `events` + `outbox` | `business.payment.received` (versión 1) pendiente para n8n |
 
 ## Decisiones relacionadas
