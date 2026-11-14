@@ -61,7 +61,9 @@ func scanCommitment(row rowScanner) (model.Commitment, error) {
 // Invalid input and a denied actor write nothing and leave the transaction
 // usable; a database error leaves it aborted and the caller must roll it back.
 // The state, the fulfilled amount and the closing time are never written here:
-// the kernel derives them.
+// the kernel derives them. The database also creates the expiry timer of the
+// commitment in the same statement, at its due date (ADR-0034), so a commitment
+// with a due date in the past expires at the first firing round.
 func AppendCommitment(ctx context.Context, tx *sql.Tx, actor model.Actor, in model.NewCommitment) (model.Commitment, error) {
 	if err := validateExchangeActor(actor); err != nil {
 		return model.Commitment{}, err
@@ -344,6 +346,10 @@ func translateCommitmentError(operation string, err error) error {
 			return model.NewError(model.CodeRuleViolation, "the entry is already applied to a commitment", err)
 		case "commitments_space_id_fkey", "fulfillments_space_id_fkey":
 			return model.NewError(model.CodeNotFound, "the space does not exist", err)
+		case "commitments_reschedule_past":
+			return model.NewError(model.CodeRuleViolation, "a commitment can only be rescheduled to a time in the future", err)
+		case "timers_one_scheduled_key", "timers_commitment_fkey":
+			return model.NewError(model.CodeRuleViolation, "the commitment must have exactly one scheduled timer in this space", err)
 		case "commitments_amount_scale":
 			return model.NewError(model.CodeInvalidInput, "the amount has more decimals than the scale of its resource", err)
 		}
