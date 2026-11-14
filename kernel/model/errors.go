@@ -22,6 +22,9 @@ const (
 	CodeNotFound Code = "not_found"
 	// CodePermissionDenied marks an actor that may not perform the operation.
 	CodePermissionDenied Code = "permission_denied"
+	// CodeAlreadyDone marks a request whose effect already holds, such as
+	// revoking a grant that is already revoked. Nothing changes.
+	CodeAlreadyDone Code = "already_done"
 )
 
 // Error is a typed contract error. Message is safe to show to callers; Err

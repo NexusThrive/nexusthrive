@@ -219,3 +219,27 @@ func TestCreateSpaceRejectsNonSystemActor(t *testing.T) {
 		t.Errorf("rows = %d, want 0", got)
 	}
 }
+
+// TestCreateSpacePlatformThroughAPIRoleIsPermissionDenied: platform spaces are
+// provisioned at bootstrap, never by the execution role. The administrator
+// connection can create one.
+func TestCreateSpacePlatformThroughAPIRoleIsPermissionDenied(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+	in := state.NewSpace{Kind: model.SpaceKindPlatform, Name: "Platform", Slug: "platform-x"}
+
+	_, err := state.CreateSpace(context.Background(), api, system, in)
+	requireCode(t, err, model.CodePermissionDenied)
+	if got := count(t, admin, `SELECT count(*) FROM kernel.spaces`); got != 0 {
+		t.Errorf("spaces = %d, want 0", got)
+	}
+	if _, err := state.CreateSpace(context.Background(), admin, system, in); err != nil {
+		t.Errorf("CreateSpace as the administrator: %v", err)
+	}
+	for _, kind := range []model.SpaceKind{model.SpaceKindBusiness, model.SpaceKindCommunity, model.SpaceKindPersonal} {
+		if _, err := state.CreateSpace(context.Background(), api, system, state.NewSpace{Kind: kind, Name: "N", Slug: "ok-" + string(kind)}); err != nil {
+			t.Errorf("CreateSpace %s: %v", kind, err)
+		}
+	}
+}
