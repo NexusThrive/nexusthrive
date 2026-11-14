@@ -129,10 +129,17 @@ func TestAPIRoleIsLimited(t *testing.T) {
 	if privileges(`SELECT has_schema_privilege($1, 'kernel', 'CREATE')`, db.APIRole) {
 		t.Error("API role must not have CREATE on schema kernel")
 	}
-	for _, privilege := range []string{"SELECT", "INSERT", "UPDATE"} {
+	for _, privilege := range []string{"SELECT", "INSERT"} {
 		if !privileges(`SELECT has_table_privilege($1, 'kernel.spaces', $2)`, db.APIRole, privilege) {
 			t.Errorf("API role needs %s on kernel.spaces", privilege)
 		}
+	}
+	// UPDATE is granted by column only (state columns, never kind or id).
+	if privileges(`SELECT has_table_privilege($1, 'kernel.spaces', 'UPDATE')`, db.APIRole) {
+		t.Error("API role must not have table-wide UPDATE on kernel.spaces")
+	}
+	if !privileges(`SELECT has_column_privilege($1, 'kernel.spaces', 'name', 'UPDATE')`, db.APIRole) {
+		t.Error("API role needs UPDATE on kernel.spaces.name")
 	}
 	for _, privilege := range []string{"DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"} {
 		if privileges(`SELECT has_table_privilege($1, 'kernel.spaces', $2)`, db.APIRole, privilege) {

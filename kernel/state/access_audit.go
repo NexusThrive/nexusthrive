@@ -18,8 +18,9 @@ const maxAuditListLimit = 1000
 // v7. Only the system actor may call it until permissions arrive. Entries are
 // append-only: there is no operation to change or remove one.
 //
-// The actor lives in NewAccessAudit.ActorSpaceID, usually a platform space,
-// while the entry belongs to the audited space spaceID. A reason and a request
+// The actor lives in NewAccessAudit.ActorSpaceID, which must be a platform
+// space or spaceID itself (ADR-0029), while the entry belongs to the audited
+// space spaceID. A reason and a request
 // id are mandatory and not blank. An actor, or a grant, that does not exist
 // where it says is rule_violation.
 func RecordAccessAudit(ctx context.Context, pool *sql.DB, actor model.Actor, spaceID string, in model.NewAccessAudit) (string, error) {
@@ -27,6 +28,10 @@ func RecordAccessAudit(ctx context.Context, pool *sql.DB, actor model.Actor, spa
 		return "", model.NewError(model.CodePermissionDenied, "only the system actor records access audit entries", nil)
 	}
 	if err := validateNewAccessAudit(in); err != nil {
+		return "", err
+	}
+	actorKind, err := spaceKind(ctx, pool, in.ActorSpaceID)
+	if err != nil {
 		return "", err
 	}
 	id, err := uuid.NewV7()
@@ -37,9 +42,9 @@ func RecordAccessAudit(ctx context.Context, pool *sql.DB, actor model.Actor, spa
 	err = InSpace(ctx, pool, spaceID, func(ctx context.Context, tx *sql.Tx) error {
 		_, err := tx.ExecContext(ctx,
 			`INSERT INTO kernel.access_audit
-			   (id, space_id, actor_participant_id, actor_space_id, action, subject_ref, reason, request_id, grant_id)
-			 VALUES ($1, kernel.current_space_id(), $2, $3, $4, $5, $6, $7, $8)`,
-			id.String(), in.ActorParticipantID, in.ActorSpaceID, string(in.Action),
+			   (id, space_id, actor_participant_id, actor_space_id, actor_space_kind, action, subject_ref, reason, request_id, grant_id)
+			 VALUES ($1, kernel.current_space_id(), $2, $3, $4, $5, $6, $7, $8, $9)`,
+			id.String(), in.ActorParticipantID, in.ActorSpaceID, actorKind, string(in.Action),
 			nullIfEmpty(in.SubjectRef), in.Reason, in.RequestID, nullIfEmpty(in.GrantID))
 		return err
 	})

@@ -27,4 +27,4 @@ Observaciones no bloqueantes de las revisiones que no entran en la historia dond
 | 21 | grants-05 | El tope de duración de un acceso de soporte no está definido (solo se exige `expires_at`); proponer un máximo. | B4 |
 | 22 | grants-05 | `space_capabilities` no tiene `UPDATE`: suspender o reactivar una capacidad es otra historia. | Historia de capacidades |
 | 23 | grants-05 | Un grant vencido pero no revocado bloquea otorgar de nuevo el mismo rol (índice parcial); hay que revocar primero. Decidir si la ejecución revoca al vencer. | `execution-13` |
-| 24 | grants-05 | La API tiene `UPDATE` sobre `spaces` y `kind` es mutable. La clave `(id, kind)` lo bloquea mientras un grant lo referencie, pero mutar `kind` debería prohibirse. | Historia de espacios |
+| 24 | grants-05 | Resuelto en la misma historia: `kind` de `spaces` es inmutable (privilegio `UPDATE` por columnas y disparador, ADR-0029). | Resuelto |

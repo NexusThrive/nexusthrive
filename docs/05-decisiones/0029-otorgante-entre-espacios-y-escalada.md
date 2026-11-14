@@ -15,6 +15,10 @@ HU-kernel-grants-05 crea `roles`, `grants`, `space_capabilities` y `access_audit
 
 **Referencia del otorgante.** `grants` guarda `granted_by`, `granted_by_space_id` y `granted_by_space_kind`, los tres nulos o los tres presentes. Dos claves foráneas compuestas los atan a los datos reales: `(granted_by, granted_by_space_id)` hacia `participants (id, space_id)` y `(granted_by_space_id, granted_by_space_kind)` hacia `spaces (id, kind)`, para lo cual `spaces` recibe `UNIQUE (id, kind)`. El cliente no puede declarar un `kind` falso ni un otorgante inexistente. Una restricción de alcance exige que el otorgante sea del mismo espacio del grant o de un espacio `platform`; ningún espacio de negocio otorga en otro. `space_capabilities` usa las mismas columnas (`enabled_by*`) y las mismas reglas.
 
+**Actor de auditoría.** `access_audit` aplica la misma regla de alcance: lleva `actor_space_kind`, atado a `spaces (id, kind)` por una clave compuesta, y un `CHECK` exige que el actor sea del espacio auditado o de un espacio `platform`. Un participante de otro espacio de negocio no puede auditar.
+
+**El `kind` de un espacio no cambia.** Las reglas anteriores dependen del `kind`. El rol de la API solo tiene `UPDATE` por columnas de estado en `spaces` (`name`, `status`, `suspended_at`, `suspended_reason`, `closed_at`; sin `id`, `kind`, `slug`, `created_at` ni `parent_space_id`), y un disparador `kernel.reject_space_kind_change()` rechaza con `restrict_violation` cualquier cambio de `kind`, incluso del dueño o con el permiso concedido por error. Sin esto, una sesión podía ascender su propio espacio a `platform` y otorgarse acceso sin motivo ni vencimiento.
+
 **Acceso de soporte.** Es todo grant cuyo otorgante vive en un espacio `platform` distinto del espacio del grant. Exige `reason` no vacío y `expires_at` no nulo, garantizado por un `CHECK` de la tabla y validado antes en Go con `invalid_input`. El alta de staff dentro del propio espacio `platform` no es soporte y queda libre. Todo grant exige que el otorgante no sea el propio receptor (`CHECK`).
 
 **Reglas de escalada** (obligatorias para permissions-06 y la ejecución):
@@ -46,7 +50,7 @@ HU-kernel-grants-05 crea `roles`, `grants`, `space_capabilities` y `access_audit
 ### Negativas
 
 - `grants` y `space_capabilities` llevan dos columnas más cada una.
-- `spaces.kind` no puede cambiar mientras un grant lo referencie (`ON UPDATE NO ACTION`).
+- `spaces.kind` es inmutable (disparador y privilegios por columna); el rol de la API ya no puede actualizar `slug` ni `parent_space_id`, y una historia que lo necesite lo concederá de forma explícita.
 
 ### Riesgos
 
@@ -55,7 +59,7 @@ HU-kernel-grants-05 crea `roles`, `grants`, `space_capabilities` y `access_audit
 
 ## Cumplimiento
 
-Pruebas contra PostgreSQL real: inserciones directas como administrador y como API con `kind` falso, otorgante de otro espacio de negocio y soporte sin motivo o sin vencimiento; autootorgamiento. La prueba de escalada con actores distintos de `system` llega con permissions-06.
+Pruebas contra PostgreSQL real: inserciones directas como administrador y como API con `kind` falso, otorgante de otro espacio de negocio y soporte sin motivo o sin vencimiento; autootorgamiento, ascenso del propio espacio a `platform` y actor de auditoría de otro espacio de negocio. La prueba de escalada con actores distintos de `system` llega con permissions-06.
 
 ## Referencias
 

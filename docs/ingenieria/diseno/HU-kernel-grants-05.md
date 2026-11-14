@@ -116,3 +116,8 @@ Todas primero y rojas; usan `dbtest.Database` y `dbtest.APIPool`; fallan, no se 
 
 ## Fuera de alcance
 Verificación de permisos y catálogo (permissions-06), eventos de otorgar y revocar (13), actualizar o suspender capacidades, expiración automática por proceso, bypass de RLS del staff y uso real de `access_audit` (B4), `invitations`, `api_keys`, pantallas, tope de duración del soporte.
+
+## Ajustes tras la revisión de calidad
+
+- **`kind` inmutable (H1):** el rol de la API perdió el `UPDATE` de tabla sobre `kernel.spaces` y conserva solo `UPDATE (name, status, suspended_at, suspended_reason, closed_at)`. Un disparador `kernel.reject_space_kind_change()` (`search_path` fijo, `restrict_violation`) impide cambiar `kind` a cualquiera. Cierra la autopromoción a `platform` que anulaba la regla 10. Reemplaza el riesgo "`kind` de espacio mutable" de arriba; el seguimiento 24 queda resuelto. Los cambios van en la migración 00008.
+- **Actor de auditoría (H3):** `access_audit` suma `actor_space_kind`, con clave compuesta `(actor_space_id, actor_space_kind)` hacia `spaces (id, kind)` y el `CHECK access_audit_actor_scope` (actor del espacio auditado o de un espacio `platform`). `RecordAccessAudit` lee el `kind` del espacio del actor.

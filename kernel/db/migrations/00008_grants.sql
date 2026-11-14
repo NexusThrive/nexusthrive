@@ -116,14 +116,21 @@ CREATE TABLE kernel.access_audit (
   space_id uuid NOT NULL REFERENCES kernel.spaces (id),
   actor_participant_id uuid NOT NULL,
   actor_space_id uuid NOT NULL,
+  actor_space_kind text NOT NULL,
   action text NOT NULL CONSTRAINT access_audit_action_check CHECK (action IN ('read', 'write')),
   subject_ref text CHECK (subject_ref IS NULL OR btrim(subject_ref) <> ''),
   reason text NOT NULL CHECK (btrim(reason) <> ''),
   request_id text NOT NULL CHECK (btrim(request_id) <> ''),
   grant_id uuid,
   occurred_at timestamptz NOT NULL DEFAULT now(),
+  -- The actor belongs to the audited space or to a platform space, and the
+  -- declared kind is tied to the real one by the key to spaces.
+  CONSTRAINT access_audit_actor_scope CHECK (
+    actor_space_id = space_id OR actor_space_kind = 'platform'),
   CONSTRAINT access_audit_actor_fkey FOREIGN KEY (actor_participant_id, actor_space_id)
     REFERENCES kernel.participants (id, space_id),
+  CONSTRAINT access_audit_actor_kind_fkey FOREIGN KEY (actor_space_id, actor_space_kind)
+    REFERENCES kernel.spaces (id, kind),
   -- MATCH SIMPLE: without a grant the key is not checked.
   CONSTRAINT access_audit_grant_fkey FOREIGN KEY (grant_id, space_id)
     REFERENCES kernel.grants (id, space_id)
@@ -175,7 +182,7 @@ GRANT UPDATE (revoked_at) ON kernel.grants TO nexusthrive_api;
 GRANT INSERT (space_id, capability_key, source, enabled_by, enabled_by_space_id,
               enabled_by_space_kind, reason)
   ON kernel.space_capabilities TO nexusthrive_api;
-GRANT INSERT (id, space_id, actor_participant_id, actor_space_id, action, subject_ref,
+GRANT INSERT (id, space_id, actor_participant_id, actor_space_id, actor_space_kind, action, subject_ref,
               reason, request_id, grant_id)
   ON kernel.access_audit TO nexusthrive_api;
 
@@ -224,6 +231,28 @@ CREATE TRIGGER grants_no_delete BEFORE DELETE ON kernel.grants
 CREATE TRIGGER grants_no_truncate BEFORE TRUNCATE ON kernel.grants
   FOR EACH STATEMENT EXECUTE FUNCTION kernel.reject_grant_delete();
 
+-- The kind of a space decides who may grant and audit in it, so it never
+-- changes. The API role keeps UPDATE only on the state columns of a space
+-- (privilege layer), and the trigger refuses a change of kind for everyone,
+-- even for the owner or a privilege granted by mistake (trigger layer).
+REVOKE UPDATE ON kernel.spaces FROM nexusthrive_api;
+GRANT UPDATE (name, status, suspended_at, suspended_reason, closed_at) ON kernel.spaces TO nexusthrive_api;
+
+-- +goose StatementBegin
+CREATE FUNCTION kernel.reject_space_kind_change() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog, pg_temp
+AS $$
+BEGIN
+  RAISE EXCEPTION 'the kind of a space cannot change' USING ERRCODE = 'restrict_violation';
+END
+$$;
+-- +goose StatementEnd
+
+CREATE TRIGGER spaces_kind_immutable BEFORE UPDATE OF kind ON kernel.spaces
+  FOR EACH ROW WHEN (OLD.kind IS DISTINCT FROM NEW.kind)
+  EXECUTE FUNCTION kernel.reject_space_kind_change();
+
 -- Audit entries are append-only in two layers, as events are (ADR-0028): no
 -- privilege for the API role, and these triggers for everyone else.
 -- +goose StatementBegin
@@ -243,6 +272,10 @@ CREATE TRIGGER access_audit_no_truncate BEFORE TRUNCATE ON kernel.access_audit
   FOR EACH STATEMENT EXECUTE FUNCTION kernel.reject_access_audit_change();
 
 -- +goose Down
+DROP TRIGGER spaces_kind_immutable ON kernel.spaces;
+DROP FUNCTION kernel.reject_space_kind_change();
+REVOKE UPDATE ON kernel.spaces FROM nexusthrive_api;
+GRANT UPDATE ON kernel.spaces TO nexusthrive_api;
 DROP TABLE kernel.access_audit;
 DROP TABLE kernel.space_capabilities;
 DROP TABLE kernel.grants;

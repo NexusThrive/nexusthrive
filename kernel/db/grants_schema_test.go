@@ -53,8 +53,8 @@ func seedGrantFixtures(t *testing.T, admin *sql.DB) {
 		{`INSERT INTO kernel.roles (id, space_id, key, name, permissions, system) VALUES ($1, $2, 'owner', 'Owner', ARRAY['test.read'], true)`, []any{gRoleB, gSpaceB}},
 		{`INSERT INTO kernel.roles (id, space_id, key, name, permissions, system) VALUES ($1, $2, 'staff', 'Staff', ARRAY['test.read'], true)`, []any{gRolePlat, gSpacePlat}},
 		{`INSERT INTO kernel.grants (id, space_id, participant_id, role_id) VALUES ($1, $2, $3, $4)`, []any{gGrantA, gSpaceA, gPartA1, gRoleA}},
-		{`INSERT INTO kernel.access_audit (id, space_id, actor_participant_id, actor_space_id, action, reason, request_id)
-		  VALUES ($1, $2, $3, $4, 'read', 'support ticket', 'req-1')`, []any{gAudit, gSpaceA, gStaff, gSpacePlat}},
+		{`INSERT INTO kernel.access_audit (id, space_id, actor_participant_id, actor_space_id, actor_space_kind, action, reason, request_id)
+		  VALUES ($1, $2, $3, $4, 'platform', 'read', 'support ticket', 'req-1')`, []any{gAudit, gSpaceA, gStaff, gSpacePlat}},
 	} {
 		if _, err := admin.Exec(stmt.query, stmt.args...); err != nil {
 			t.Fatalf("seed %q: %v", stmt.query, err)
@@ -406,8 +406,8 @@ func TestAccessAuditCheckConstraints(t *testing.T) {
 	// The identifiers are fixed test constants, so the statements are built
 	// with them inline and every case can leave different columns out.
 	row := func(actor, action, subject, reason, request, grant string) string {
-		return fmt.Sprintf(`INSERT INTO kernel.access_audit (id, space_id, actor_participant_id, actor_space_id, action, subject_ref, reason, request_id, grant_id)
-			VALUES ('%s', '%s', %s, '%s', %s, %s, %s, %s, %s)`, gAuditNew, gSpaceA, actor, gSpacePlat, action, subject, reason, request, grant)
+		return fmt.Sprintf(`INSERT INTO kernel.access_audit (id, space_id, actor_participant_id, actor_space_id, actor_space_kind, action, subject_ref, reason, request_id, grant_id)
+			VALUES ('%s', '%s', %s, '%s', 'platform', %s, %s, %s, %s, %s)`, gAuditNew, gSpaceA, actor, gSpacePlat, action, subject, reason, request, grant)
 	}
 	staff := "'" + gStaff + "'"
 	for name, c := range map[string]struct{ query, want string }{
@@ -444,7 +444,7 @@ var expectedInsertColumns = map[string][]string{
 		"id", "participant_id", "reason", "role_id", "space_id"},
 	"space_capabilities": {"capability_key", "enabled_by", "enabled_by_space_id", "enabled_by_space_kind",
 		"reason", "source", "space_id"},
-	"access_audit": {"action", "actor_participant_id", "actor_space_id", "grant_id", "id", "reason",
+	"access_audit": {"action", "actor_participant_id", "actor_space_id", "actor_space_kind", "grant_id", "id", "reason",
 		"request_id", "space_id", "subject_ref"},
 }
 
@@ -604,10 +604,115 @@ func TestGrantTriggersPinSearchPath(t *testing.T) {
 	t.Parallel()
 	admin := dbtest.Database(t)
 	got := stringColumn(t, admin, `SELECT p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-		WHERE n.nspname = 'kernel' AND p.proname IN ('guard_grant_update', 'valid_permission_list', 'reject_grant_delete', 'reject_access_audit_change')
+		WHERE n.nspname = 'kernel' AND p.proname IN ('guard_grant_update', 'reject_space_kind_change', 'valid_permission_list', 'reject_grant_delete', 'reject_access_audit_change')
 		AND p.proconfig IS NOT NULL AND 'search_path=pg_catalog, pg_temp' = ANY (p.proconfig) ORDER BY 1`)
-	want := []string{"guard_grant_update", "reject_access_audit_change", "reject_grant_delete", "valid_permission_list"}
+	want := []string{"guard_grant_update", "reject_access_audit_change", "reject_grant_delete", "reject_space_kind_change", "valid_permission_list"}
 	if !slices.Equal(got, want) {
 		t.Errorf("functions with a pinned search_path = %v, want %v", got, want)
 	}
+}
+
+// TestAccessAuditActorScope guards the scope of an audit actor: it lives in a
+// platform space or in the audited space itself, and the declared kind is the
+// real one.
+func TestAccessAuditActorScope(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	seedGrantFixtures(t, admin)
+
+	const insert = `INSERT INTO kernel.access_audit (id, space_id, actor_participant_id, actor_space_id, actor_space_kind, action, reason, request_id)
+		VALUES ($1, $2, $3, $4, $5, 'read', 'why', 'req-9')`
+	for name, c := range map[string]struct{ actor, space, kind, want string }{
+		"business actor claiming business": {gPartB, gSpaceB, "business", "23514"},
+		"business actor claiming platform": {gPartB, gSpaceB, "platform", "23503"},
+		"platform actor claiming business": {gStaff, gSpacePlat, "business", "23514"},
+		"actor not in the declared space":  {gPartA1, gSpacePlat, "platform", "23503"},
+	} {
+		_, err := admin.Exec(insert, gAuditNew, gSpaceA, c.actor, c.space, c.kind)
+		requireCode(t, name, err, c.want)
+	}
+	if _, err := admin.Exec(insert, gAuditNew, gSpaceA, gStaff, gSpacePlat, "platform"); err != nil {
+		t.Errorf("a platform actor must be accepted: %v", err)
+	}
+	if _, err := admin.Exec(insert, "01900000-0000-7000-8000-000000000543", gSpaceA, gPartA1, gSpaceA, "business"); err != nil {
+		t.Errorf("an actor of the audited space must be accepted: %v", err)
+	}
+}
+
+// TestSpacesIdentityColumnsCannotBeChangedByAPI guards the privilege layer:
+// the API role updates only the state columns of a space.
+func TestSpacesIdentityColumnsCannotBeChangedByAPI(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+	seedGrantFixtures(t, admin)
+
+	for _, query := range []string{
+		`UPDATE kernel.spaces SET kind = 'platform' WHERE id = $1`,
+		`UPDATE kernel.spaces SET id = '01900000-0000-7000-8000-0000000005ff' WHERE id = $1`,
+		`UPDATE kernel.spaces SET slug = 'renamed' WHERE id = $1`,
+		`UPDATE kernel.spaces SET created_at = now() WHERE id = $1`,
+		`UPDATE kernel.spaces SET parent_space_id = id WHERE id = $1`,
+	} {
+		requireCode(t, query, apiExecInSpace(t, api, gSpaceA, query, gSpaceA), "42501")
+	}
+	if err := apiExecInSpace(t, api, gSpaceA, `UPDATE kernel.spaces SET name = 'Renamed' WHERE id = $1`, gSpaceA); err != nil {
+		t.Errorf("updating the name must stay allowed: %v", err)
+	}
+	got := stringColumn(t, admin, `SELECT column_name FROM information_schema.column_privileges
+		WHERE table_schema = 'kernel' AND table_name = 'spaces' AND grantee = 'nexusthrive_api'
+		AND privilege_type = 'UPDATE' ORDER BY 1`)
+	want := []string{"closed_at", "name", "status", "suspended_at", "suspended_reason"}
+	if !slices.Equal(got, want) {
+		t.Errorf("API update columns on spaces = %v, want %v", got, want)
+	}
+}
+
+// TestSpaceKindIsImmutableForEveryone guards the trigger layer: nobody changes
+// the kind of a space, not even the owner or with the privilege granted by mistake.
+func TestSpaceKindIsImmutableForEveryone(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+	seedGrantFixtures(t, admin)
+
+	_, err := admin.Exec(`UPDATE kernel.spaces SET kind = 'platform' WHERE id = $1`, gSpaceB)
+	requireCode(t, "administrator changing kind", err, "23001")
+	if _, err := admin.Exec(`GRANT UPDATE (kind) ON kernel.spaces TO nexusthrive_api`); err != nil {
+		t.Fatalf("grant: %v", err)
+	}
+	err = apiExecInSpace(t, api, gSpaceA, `UPDATE kernel.spaces SET kind = 'platform' WHERE id = $1`, gSpaceA)
+	requireCode(t, "API with the privilege granted by mistake", err, "23001")
+	if got := count(t, admin, `SELECT count(*) FROM kernel.spaces WHERE kind = 'business'`); got != 2 {
+		t.Errorf("business spaces = %d, want 2", got)
+	}
+	if _, err := admin.Exec(`UPDATE kernel.spaces SET name = 'ok' WHERE id = $1`, gSpaceB); err != nil {
+		t.Errorf("other updates stay allowed: %v", err)
+	}
+}
+
+// TestSelfPromotionToPlatformIsImpossible reproduces the full attack: a
+// session of a business space promotes its own space and then grants itself
+// support access without reason or expiry.
+func TestSelfPromotionToPlatformIsImpossible(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+	seedGrantFixtures(t, admin)
+
+	tx, err := api.Begin()
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`SELECT set_config('kernel.space_id', $1, true)`, gSpaceA); err != nil {
+		t.Fatalf("set space: %v", err)
+	}
+	_, err = tx.Exec(`UPDATE kernel.spaces SET kind = 'platform' WHERE id = $1`, gSpaceA)
+	requireCode(t, "promotion", err, "42501")
+	tx.Rollback()
+
+	err = apiExecInSpace(t, api, gSpaceA, `INSERT INTO kernel.grants (id, space_id, participant_id, role_id, granted_by, granted_by_space_id, granted_by_space_kind)
+		VALUES ($1, $2, $3, $4, $5, $2, 'platform')`, gGrantNew, gSpaceA, gPartA2, gRoleA, gPartA1)
+	requireCode(t, "grant claiming the platform kind", err, "23503")
 }

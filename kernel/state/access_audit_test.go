@@ -171,3 +171,31 @@ func TestRolesGrantsCapabilitiesAuditIsolationBetweenSpaces(t *testing.T) {
 		t.Errorf("active grants = %d, want 1", got)
 	}
 }
+
+// TestRecordAccessAuditActorScope: an actor of another business space cannot
+// audit space A, while a platform actor and an actor of A itself can.
+func TestRecordAccessAuditActorScope(t *testing.T) {
+	t.Parallel()
+	admin, api, staff := grantSetup(t)
+	ctx := context.Background()
+	outsider := mustParticipant(t, api, spaceB, newPerson("", "Outsider"))
+	insider := mustParticipant(t, api, spaceA, newPerson("", "Insider"))
+
+	in := supportAudit(outsider)
+	in.ActorSpaceID = spaceB
+	_, err := state.RecordAccessAudit(ctx, api, system, spaceA, in)
+	if code, ok := model.CodeOf(err); !ok || (code != model.CodeInvalidInput && code != model.CodeRuleViolation) {
+		t.Errorf("business actor of another space: error = %v", err)
+	}
+	if got := count(t, admin, `SELECT count(*) FROM kernel.access_audit`); got != 0 {
+		t.Errorf("entries = %d, want 0", got)
+	}
+	if _, err := state.RecordAccessAudit(ctx, api, system, spaceA, supportAudit(staff)); err != nil {
+		t.Errorf("platform actor: %v", err)
+	}
+	same := supportAudit(insider)
+	same.ActorSpaceID = spaceA
+	if _, err := state.RecordAccessAudit(ctx, api, system, spaceA, same); err != nil {
+		t.Errorf("actor of the audited space: %v", err)
+	}
+}
