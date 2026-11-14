@@ -255,9 +255,9 @@ func TestCapabilityEnableSources(t *testing.T) {
 		}
 		requireCode(t, "business owner with source "+string(s), enable(w.spaceA, businessOwner, in), model.CodePermissionDenied)
 	}
-	// Staff of the platform space acting in a customer space is not resolvable
+	// Staff of the platform space acting in an ordinary space is not resolvable
 	// there until the platform layer defines support access (B4).
-	requireCode(t, "staff in a customer space", enable(w.spaceA, staff, admin(staff, platform)), model.CodePermissionDenied)
+	requireCode(t, "staff in an ordinary space", enable(w.spaceA, staff, admin(staff, platform)), model.CodePermissionDenied)
 
 	// The system actor enables any source.
 	for _, s := range []model.CapabilitySource{model.CapabilitySourcePackage, model.CapabilitySourceAI, model.CapabilitySourceCode} {

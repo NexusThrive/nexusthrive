@@ -263,7 +263,7 @@ func APIPool(t testing.TB, admin *sql.DB) *sql.DB {
 	if err != nil {
 		t.Fatalf("parse connection config: %v", err)
 	}
-	// SET ROLE needs no login of the limited role, only membership of it, which
+	// SET ROLE needs no login of the limited role, only being a member of it, which
 	// the administrator has as a superuser. B6 tests a real login.
 	connector := stdlib.GetConnector(*config, stdlib.OptionAfterConnect(func(ctx context.Context, conn *pgx.Conn) error {
 		_, err := conn.Exec(ctx, "SET ROLE "+pgx.Identifier{db.APIRole}.Sanitize())

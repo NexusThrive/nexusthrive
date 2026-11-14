@@ -417,7 +417,7 @@ func TestOutboxAPICannotDisableTriggersOrChangeRole(t *testing.T) {
 	// A table lock would let one caller stall every writer; it needs a
 	// privilege the API role lacks, and it only exists inside a transaction.
 	requireRule(t, "LOCK TABLE", runTx(t, dbtest.APIPool(t, admin), "", stmt{`LOCK TABLE kernel.outbox IN ACCESS EXCLUSIVE MODE`, nil}), "42501", "")
-	// Moving to the owner needs membership in it; the API role has none, so a
+	// Moving to the owner needs to be a member of it; the API role has none, so a
 	// session that is only the API role cannot become the owner.
 	var member bool
 	if err := admin.QueryRow(`SELECT pg_has_role($1, c.relowner, 'USAGE') FROM pg_class c

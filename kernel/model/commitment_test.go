@@ -72,7 +72,7 @@ func TestNewCommitmentValidateRejectsBadInput(t *testing.T) {
 
 func TestValidateCancelReason(t *testing.T) {
 	t.Parallel()
-	if err := model.ValidateCancelReason("customer asked"); err != nil {
+	if err := model.ValidateCancelReason("creditor asked"); err != nil {
 		t.Errorf("ValidateCancelReason(valid) = %v", err)
 	}
 	for name, reason := range map[string]string{"empty": "", "blank": "  \t", "long": strings.Repeat("r", 501)} {
