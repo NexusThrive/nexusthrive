@@ -28,7 +28,7 @@ func builtinOperations() []Operation {
 // and outbox rows in the same transaction. A failure returns an empty result.
 func (e *Engine) FireDueTimers(ctx context.Context, call Call, limit int) (model.TimerRun, error) {
 	var run model.TimerRun
-	err := e.Run(ctx, call, operationTimerFire, func(ctx context.Context, tx *Tx) error {
+	err := e.run(ctx, call, operationTimerFire, func(ctx context.Context, tx *Tx) error {
 		var err error
 		run, err = tx.fireDueTimers(ctx, limit)
 		return err
@@ -45,7 +45,7 @@ func (e *Engine) FireDueTimers(ctx context.Context, call Call, limit int) (model
 // returns no rows.
 func (e *Engine) ClaimOutbox(ctx context.Context, call Call, s model.Subscriber, limit int) ([]model.OutboxRow, error) {
 	var rows []model.OutboxRow
-	err := e.Run(ctx, call, operationOutboxClaim, func(ctx context.Context, tx *Tx) error {
+	err := e.run(ctx, call, operationOutboxClaim, func(ctx context.Context, tx *Tx) error {
 		var err error
 		rows, err = tx.claimOutbox(ctx, s, limit)
 		return err

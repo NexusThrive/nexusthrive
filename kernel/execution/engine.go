@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"runtime/debug"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -98,7 +99,20 @@ func NewRequestID() string {
 // The errors of the handler and of the database come out classified (see
 // classify): typed errors untouched, a panic as *PanicError, and nothing is
 // retried.
-func (e *Engine) Run(ctx context.Context, call Call, name string, fn Handler) (err error) {
+func (e *Engine) Run(ctx context.Context, call Call, name string, fn Handler) error {
+	// The operations of the kernel run only through the entry points of the
+	// engine, with a handler the engine fixes. Any name that reads as the
+	// kernel namespace once case and blanks are ignored is refused with the
+	// same answer as an unregistered one, before anything opens.
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(name)), kernelNamespace) {
+		return model.NewError(model.CodeInvalidInput, fmt.Sprintf("operation %q is not registered", name), nil)
+	}
+	return e.run(ctx, call, name, fn)
+}
+
+// run is Run without the refusal of kernel names. It is not exported: only the
+// built-in entry points of the engine reach it.
+func (e *Engine) run(ctx context.Context, call Call, name string, fn Handler) (err error) {
 	op, canonical, err := e.prepare(call, name, fn)
 	if err != nil {
 		return err
@@ -159,6 +173,6 @@ func (e *Engine) execute(ctx context.Context, conn *sql.Tx, call Call, op Operat
 			return err
 		}
 	}
-	tx := &Tx{conn: conn, clock: e.auth.Clock(), op: op, call: call}
+	tx := &Tx{life: &txLife{}, conn: conn, clock: e.auth.Clock(), op: op, call: call}
 	return tx.run(ctx, fn)
 }

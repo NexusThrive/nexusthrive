@@ -46,6 +46,8 @@ func TestNewEngineRejectsInvalidOperations(t *testing.T) {
 		{"name with a trailing newline", valid(func(o *Operation) { o.Name = "test.read\n" })},
 		{"name with a space", valid(func(o *Operation) { o.Name = "test.read ledger" })},
 		{"name with a version-like empty segment", valid(func(o *Operation) { o.Name = "test..read" })},
+		{"kernel namespace in capitals", valid(func(o *Operation) { o.Name = "KERNEL.read_ledger" })},
+		{"kernel namespace with a leading space", valid(func(o *Operation) { o.Name = " kernel.read_ledger" })},
 		{"name under the kernel namespace", valid(func(o *Operation) { o.Name = "kernel.read_ledger" })},
 		{"namespace that starts with kernel", valid(func(o *Operation) { o.Name = "kernelx.read_ledger" })},
 		{"name of a built-in operation", valid(func(o *Operation) { o.Name = "kernel.timer.fire" })},

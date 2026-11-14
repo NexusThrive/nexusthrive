@@ -25,10 +25,11 @@ type PanicError struct {
 	Stack []byte
 }
 
-// Error names the operation and the value. The stack is left out so that it
-// cannot reach a caller by accident.
+// Error names the operation only. The value and the stack stay in their fields
+// for logs: the value may hold sensitive data and must not reach a caller by
+// accident.
 func (e *PanicError) Error() string {
-	return fmt.Sprintf("operation %s panicked: %v", e.Operation, e.Value)
+	return fmt.Sprintf("operation %s panicked", e.Operation)
 }
 
 // classify gives the error of a run its final shape, in this order: a typed

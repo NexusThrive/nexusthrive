@@ -141,3 +141,42 @@ func TestClaimOutboxNeedsClaimPermission(t *testing.T) {
 	_, err = w.engine.ClaimOutbox(context.Background(), call(system, w.spaceA), "nobody", 10)
 	requireCode(t, "unknown subscriber", err, model.CodeInvalidInput)
 }
+
+// TestRunRefusesKernelOperationsByName guards that the exported Run cannot
+// call the operations of the kernel with a handler of the caller: an actor
+// that holds kernel.timer.process or kernel.outbox.claim must not be able to
+// write events of the kernel namespace through them. Names that only look
+// like the kernel namespace are not registered and are refused too. The
+// engine's own entry points keep working.
+func TestRunRefusesKernelOperationsByName(t *testing.T) {
+	t.Parallel()
+	w := newWorld(t)
+	f := w.ledger(w.spaceA)
+	w.pastCommitment(w.spaceA, f)
+	processor := w.holder(w.spaceA, "processor", model.PermissionTimerProcess, model.PermissionOutboxClaim)
+	before := w.snapshot()
+	calls := 0
+
+	for _, name := range []string{operationTimerFire, operationOutboxClaim, "KERNEL.timer.fire", " kernel.timer.fire", "kernel.timer.fire ", "Kernel.outbox.claim", "kernel.other"} {
+		err := w.engine.Run(context.Background(), call(processor, w.spaceA), name, func(ctx context.Context, tx *Tx) error {
+			calls++
+			_, err := tx.AppendEvent(ctx, EventInput{Type: model.EventTypeCommitmentExpired, Version: 1, Payload: []byte(`{}`)}, model.SubscriberInternal)
+			return err
+		})
+		requireCode(t, name, err, model.CodeInvalidInput)
+	}
+	if calls != 0 {
+		t.Errorf("a handler of the caller ran %d times under a kernel name", calls)
+	}
+	if changed := w.changed(before); len(changed) != 0 {
+		t.Errorf("refused kernel names changed %v", changed)
+	}
+
+	// The engine's own paths still work for the system actor.
+	if run, err := w.engine.FireDueTimers(context.Background(), call(system, w.spaceA), 10); err != nil || len(run.Fired) != 1 {
+		t.Errorf("FireDueTimers = %+v (%v), want one fired", run, err)
+	}
+	if _, err := w.engine.ClaimOutbox(context.Background(), call(processor, w.spaceA), model.SubscriberInternal, 10); err != nil {
+		t.Errorf("ClaimOutbox: %v", err)
+	}
+}

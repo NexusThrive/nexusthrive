@@ -31,15 +31,21 @@ type EventInput struct {
 // the handler runs: after that every method fails with rule_violation. It
 // carries the verified actor, the space and the request id of the call.
 type Tx struct {
-	// mu serializes the use of the Tx and the closing of it, so that a
-	// goroutine that outlives the handler cannot write while the transaction
-	// commits.
+	// life is shared by every copy of the Tx, so that closing the original
+	// closes a copy made by value inside the handler too.
+	life  *txLife
+	conn  *sql.Tx
+	clock model.Clock
+	op    Operation
+	call  Call
+}
+
+// txLife is the lifetime of a Tx: its mutex serializes the use of the Tx and
+// the closing of it, so that a goroutine that outlives the handler cannot
+// write while the transaction commits.
+type txLife struct {
 	mu     sync.Mutex
 	closed bool
-	conn   *sql.Tx
-	clock  model.Clock
-	op     Operation
-	call   Call
 }
 
 // SpaceID returns the space of the call.
@@ -60,16 +66,16 @@ func (t *Tx) run(ctx context.Context, fn Handler) error {
 
 // close marks the Tx as finished. It waits for a method that is still running.
 func (t *Tx) close() {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.closed = true
+	t.life.mu.Lock()
+	defer t.life.mu.Unlock()
+	t.life.closed = true
 }
 
 // begin takes the lock and refuses a closed Tx. The caller unlocks.
 func (t *Tx) begin() error {
-	t.mu.Lock()
-	if t.closed {
-		t.mu.Unlock()
+	t.life.mu.Lock()
+	if t.life.closed {
+		t.life.mu.Unlock()
 		return model.NewError(model.CodeRuleViolation, "the transaction of the operation has ended", nil)
 	}
 	return nil
@@ -103,7 +109,7 @@ func (t *Tx) RecordExchange(ctx context.Context, in model.NewExchange) (model.Ex
 	if err := t.begin(); err != nil {
 		return model.Exchange{}, err
 	}
-	defer t.mu.Unlock()
+	defer t.life.mu.Unlock()
 	if err := t.requireDeclared(model.PermissionExchangeWrite); err != nil {
 		return model.Exchange{}, err
 	}
@@ -120,7 +126,7 @@ func (t *Tx) CreateCommitment(ctx context.Context, in model.NewCommitment) (mode
 	if err := t.begin(); err != nil {
 		return model.Commitment{}, err
 	}
-	defer t.mu.Unlock()
+	defer t.life.mu.Unlock()
 	if err := t.requireDeclared(model.PermissionCommitmentWrite); err != nil {
 		return model.Commitment{}, err
 	}
@@ -138,7 +144,7 @@ func (t *Tx) AppendEvent(ctx context.Context, in EventInput, subs ...model.Subsc
 	if err := t.begin(); err != nil {
 		return model.Event{}, err
 	}
-	defer t.mu.Unlock()
+	defer t.life.mu.Unlock()
 	if t.op.Risk == model.RiskRead {
 		return model.Event{}, model.NewError(model.CodePermissionDenied, "a read operation cannot write events", nil)
 	}
@@ -157,7 +163,7 @@ func (t *Tx) ReadEvents(ctx context.Context, fromSeq int64, limit int) ([]model.
 	if err := t.begin(); err != nil {
 		return nil, err
 	}
-	defer t.mu.Unlock()
+	defer t.life.mu.Unlock()
 	if err := t.requireDeclared(model.PermissionEventRead); err != nil {
 		return nil, err
 	}
@@ -170,7 +176,7 @@ func (t *Tx) fireDueTimers(ctx context.Context, limit int) (model.TimerRun, erro
 	if err := t.begin(); err != nil {
 		return model.TimerRun{}, err
 	}
-	defer t.mu.Unlock()
+	defer t.life.mu.Unlock()
 	return state.FireDueTimersTx(ctx, t.conn, t.clock, t.call.Actor, limit)
 }
 
@@ -180,6 +186,6 @@ func (t *Tx) claimOutbox(ctx context.Context, s model.Subscriber, limit int) ([]
 	if err := t.begin(); err != nil {
 		return nil, err
 	}
-	defer t.mu.Unlock()
+	defer t.life.mu.Unlock()
 	return state.ClaimOutboxTx(ctx, t.conn, t.clock, s, limit)
 }

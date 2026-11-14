@@ -545,8 +545,8 @@ func TestRunRecoversPanic(t *testing.T) {
 // TestPanicErrorHidesTheStack guards the message of a PanicError.
 func TestPanicErrorHidesTheStack(t *testing.T) {
 	t.Parallel()
-	err := &PanicError{Operation: "test.op", Value: "x", Stack: []byte("goroutine 1 [running]")}
-	if got := err.Error(); !strings.Contains(got, "test.op") || !strings.Contains(got, "x") || strings.Contains(got, "goroutine") {
+	err := &PanicError{Operation: "test.op", Value: "secret-token", Stack: []byte("goroutine 1 [running]")}
+	if got := err.Error(); !strings.Contains(got, "test.op") || strings.Contains(got, "secret-token") || strings.Contains(got, "goroutine") {
 		t.Errorf("Error() = %q", got)
 	}
 	if errors.Unwrap(err) != nil {

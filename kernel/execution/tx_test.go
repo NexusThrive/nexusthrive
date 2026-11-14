@@ -206,3 +206,26 @@ func TestReadOperationCannotWrite(t *testing.T) {
 		t.Errorf("a read operation changed %v", changed)
 	}
 }
+
+// TestTxCopyIsClosedToo guards that a Tx copied by value inside the handler
+// shares the state of the original: once the call ends the copy is closed as
+// well and cannot write in the window before the commit.
+func TestTxCopyIsClosedToo(t *testing.T) {
+	t.Parallel()
+	w := newWorld(t)
+	holder := w.writer(w.spaceA, "holder")
+	var copied Tx
+	err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+		copied = *tx
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	before := w.snapshot()
+	_, err = copied.AppendEvent(context.Background(), EventInput{Type: "test.thing", Version: 1, Payload: json.RawMessage(`{}`)}, model.SubscriberInternal)
+	requireCode(t, "event through a copy", err, model.CodeRuleViolation)
+	if changed := w.changed(before); len(changed) != 0 {
+		t.Errorf("a copy of the Tx wrote %v", changed)
+	}
+}
