@@ -242,7 +242,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-resources-07 · Definir recursos y cuentas
 
-- **Estado:** Lista. **Tamaño:** S. **Rama:** `feature/HU-kernel-resources-07`.
+- **Estado:** En revisión. **Tamaño:** S. **Rama:** `feature/HU-kernel-resources-07`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero definir recursos y cuentas dentro de un espacio,
@@ -299,7 +299,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-events-09 · Registrar eventos de solo agregar con secuencia
 
-- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-events-09`.
+- **Estado:** Terminada. **Tamaño:** M. **Rama:** `feature/HU-kernel-events-09`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero un registro de eventos de solo agregar con número de secuencia,
