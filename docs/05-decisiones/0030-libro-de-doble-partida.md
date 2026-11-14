@@ -48,7 +48,7 @@ La ley de conservación dice que el valor no se crea ni se destruye: cada interc
 
 ### Negativas
 
-- Un intercambio admite como máximo 100 asientos: el disparador de asientos recorre los de su intercambio y su coste es cuadrático.
+- Un intercambio admite como máximo 100 asientos, en Go y en la base (`exchanges_max_entries`): la comprobación de balance corre una vez por asiento y recorre los de su intercambio, así que su coste es cuadrático y el conteo se detiene en 101 para acotarlo.
 - Restaurar un respaldo exige deshabilitar los disparadores con un superusuario (B6).
 - El actor lo afirma la aplicación: la base solo garantiza que existe en el espacio.
 

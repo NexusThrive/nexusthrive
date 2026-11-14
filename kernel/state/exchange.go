@@ -303,8 +303,8 @@ func translateExchangeError(operation string, err error) error {
 			return model.NewError(model.CodeAlreadyDone, "the exchange is already reversed", err)
 		case "exchanges_reverses_fkey", "exchanges_space_id_fkey", "entries_space_id_fkey":
 			return model.NewError(model.CodeNotFound, "the space or the reversed exchange does not exist", err)
-		case "entries_amount_scale":
-			return model.NewError(model.CodeInvalidInput, "the amount has more decimals than the scale of its resource", err)
+		case "entries_amount_scale", "exchanges_max_entries":
+			return model.NewError(model.CodeInvalidInput, "the exchange data is out of range: too many decimals for the scale or too many entries", err)
 		}
 		switch pgErr.Code {
 		case "23514", "22P02":

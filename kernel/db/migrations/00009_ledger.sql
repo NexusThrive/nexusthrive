@@ -198,10 +198,18 @@ BEGIN
     target := NEW.exchange_id;
   END IF;
 
-  SELECT count(*) INTO total FROM kernel.entries WHERE exchange_id = target;
+  -- The count stops at 101 so that the cost of this check, which runs once per
+  -- entry, stays bounded whatever an insert writes.
+  SELECT count(*) INTO total FROM (
+    SELECT 1 FROM kernel.entries WHERE exchange_id = target LIMIT 101
+  ) AS bounded;
   IF total < 2 THEN
     RAISE EXCEPTION 'an exchange needs at least two entries'
       USING ERRCODE = 'integrity_constraint_violation', CONSTRAINT = 'exchanges_min_entries';
+  END IF;
+  IF total > 100 THEN
+    RAISE EXCEPTION 'an exchange has at most 100 entries'
+      USING ERRCODE = 'integrity_constraint_violation', CONSTRAINT = 'exchanges_max_entries';
   END IF;
 
   IF EXISTS (

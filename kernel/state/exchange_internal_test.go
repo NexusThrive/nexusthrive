@@ -34,6 +34,7 @@ func TestTranslateExchangeError(t *testing.T) {
 		{"minimum entries", "23000", "exchanges_min_entries", model.CodeRuleViolation},
 		{"mirror", "23000", "exchanges_reversal_mirror", model.CodeRuleViolation},
 		{"scale", "23000", "entries_amount_scale", model.CodeInvalidInput},
+		{"too many entries", "23000", "exchanges_max_entries", model.CodeInvalidInput},
 		{"check", "23514", "entries_amount_check", model.CodeInvalidInput},
 		{"malformed text", "22P02", "", model.CodeInvalidInput},
 		{"no space", "23502", "", model.CodeRuleViolation},

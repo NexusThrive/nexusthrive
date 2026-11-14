@@ -366,6 +366,33 @@ func TestZeroNaNInfinityAmountsRejected(t *testing.T) {
 	}
 }
 
+// TestExchangeEntryCountIsBoundedByDatabase guards the cost of the balance
+// check: it runs once per entry, so the database itself refuses more than 100
+// entries in an exchange, whatever the caller validated.
+func TestExchangeEntryCountIsBoundedByDatabase(t *testing.T) {
+	t.Parallel()
+	admin := dbtest.Database(t)
+	api := dbtest.APIPool(t, admin)
+	seedExchangeFixtures(t, admin)
+
+	build := func(key string, entries int) []stmt {
+		id := newID(t)
+		stmts := []stmt{exchangeStmt(id, ledgerSpaceA, key)}
+		for i := 0; i < entries; i++ {
+			amount := "1.00"
+			if i%2 == 1 {
+				amount = "-1.00"
+			}
+			stmts = append(stmts, entryStmt(t, id, ledgerSpaceA, ledgerAccountA, ledgerResourceA, amount))
+		}
+		return stmts
+	}
+	if err := runTx(t, api, ledgerSpaceA, build("k-100", 100)...); err != nil {
+		t.Errorf("100 entries must commit: %v", err)
+	}
+	requireRule(t, "102 entries", runTx(t, api, ledgerSpaceA, build("k-102", 102)...), "23000", "exchanges_max_entries")
+}
+
 // TestEntryScaleEnforcedByDatabase guards criterion 6 for the API role by SQL:
 // the scale of the resource decides, by value, and the stored amount is the
 // canonical one.
