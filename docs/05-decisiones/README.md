@@ -60,6 +60,8 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | Tema | Bloquea |
 |---|---|
 | Licencia comercial de n8n para usar credenciales de clientes | Fase N3 |
-| Crear las cuentas de Render, Supabase, Vercel y DNS del dominio (ADR-0019) | Despliegue de staging (M2) |
+| Crear las cuentas de Clerk, Supabase (staging y production), Vercel, acceso a Dokploy y DNS del dominio (ADR-0019, ADR-0023) | Despliegue de staging (M2) |
+| Decidir si se prohíbe compensar una compensación y si se endurece el autocumplimiento de compromisos (seguimientos 35 y 56) | Después de M1 |
+| Retención de registros de idempotencia y de timers (seguimientos 63 y 68) | B6 |
 | Confirmar precios y límites provisionales de los planes (ADR-0022) | Wompi en producción |
 | Lista de tiendas piloto | Piloto |
