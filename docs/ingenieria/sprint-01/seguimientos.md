@@ -22,3 +22,9 @@ Observaciones no bloqueantes de las revisiones que no entran en la historia dond
 | 16 | events-09 | `TestEventsAPIRoleCannotSetSeq` itera sobre un `map` (orden no determinista, sin efecto en el resultado). | Pulido al cierre de M1 |
 | 17 | resources-07 | Un disparador en exchanges-08 debe impedir cambiar `scale` o `kind` de un recurso cuando existan asientos (la API ya no puede, pero el dueño sí). | exchanges-08 |
 | 18 | resources-07 | Abrir una cuenta para un titular archivado y cerrar una cuenta con hijas abiertas no está prohibido; decidir si se prohíbe. | exchanges-08 o posterior |
+| 19 | resources-07 | `closed_at` es falsificable al cerrar una cuenta (el rol de la API puede escribir cualquier fecha). El kernel debe fijar `NEW.closed_at := now()` en el paso de `open` a `closed`, con una prueba con el rol de la API. | `exchanges-08` |
+| 20 | grants-05 | La prueba de escalada real (otorgante sin `kernel.grant.write` o con menos permisos) y el uso de `access_audit` llegan con permissions-06 y B4. | `permissions-06` y B4 |
+| 21 | grants-05 | El tope de duración de un acceso de soporte no está definido (solo se exige `expires_at`); proponer un máximo. | B4 |
+| 22 | grants-05 | `space_capabilities` no tiene `UPDATE`: suspender o reactivar una capacidad es otra historia. | Historia de capacidades |
+| 23 | grants-05 | Un grant vencido pero no revocado bloquea otorgar de nuevo el mismo rol (índice parcial); hay que revocar primero. Decidir si la ejecución revoca al vencer. | `execution-13` |
+| 24 | grants-05 | La API tiene `UPDATE` sobre `spaces` y `kind` es mutable. La clave `(id, kind)` lo bloquea mientras un grant lo referencie, pero mutar `kind` debería prohibirse. | Historia de espacios |
