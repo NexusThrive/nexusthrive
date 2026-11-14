@@ -61,7 +61,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-migrations-01 · Crear el esquema kernel con una sola orden
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-kernel-migrations-01`.
+- **Estado:** Terminada. **Tamaño:** M. **Rama:** `feature/HU-kernel-migrations-01`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero decidir la herramienta de migraciones y poder crear el esquema `kernel` desde cero con una sola orden,
@@ -138,7 +138,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-participants-04 · Registrar identidades y participantes por espacio
 
-- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-participants-04`.
+- **Estado:** Terminada. **Tamaño:** M. **Rama:** `feature/HU-kernel-participants-04`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero identidades únicas y participantes que pertenezcan a un espacio,
@@ -299,7 +299,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-events-09 · Registrar eventos de solo agregar con secuencia
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-kernel-events-09`.
+- **Estado:** En revisión. **Tamaño:** M. **Rama:** `feature/HU-kernel-events-09`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero un registro de eventos de solo agregar con número de secuencia,
