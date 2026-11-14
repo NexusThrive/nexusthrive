@@ -2,6 +2,22 @@
 
 Observaciones no bloqueantes de las revisiones que no entran en la historia donde se hallaron. Cada una indica dónde se resuelve.
 
+## Estado al cierre de M1
+
+Cada seguimiento aparece en su destino principal (algunos en más de uno). La columna final de la tabla de abajo conserva el texto original de cada fila.
+
+| Destino | Seguimientos | Qué significa |
+| --- | --- | --- |
+| Hechos en M1 | 3, 7, 11, 15, 17, 19, 20, 24, 27, 44, 49, 50, 53, 55, 59, 62; parciales: 26 (`closed` es terminal; reactivar `suspended` queda en 47), 36, 42 y 45 (solo el permiso) | Resueltos por código, pruebas o enmienda de ADR; no requieren acción |
+| Comportamiento fijado con prueba, decisión pendiente por ADR | 4, 35, 56, 58 | La prueba documenta el comportamiento actual aceptado; falta decidir si se cambia |
+| Antes del despliegue de staging (M2) | 1, 2 | Contraseña del rol de la API sin dejarla en logs; inicio de sesión real con el rol limitado |
+| B3 (puertas, Clerk, API, MCP, webhooks) | 6, 12, 13, 28, 29, 33, 39, 41, 46, 47, 64, 69, 70, 72 | Actor certificado desde un token, contratos de eventos, consumo por cursor, `Call.Request`, código reintentable |
+| B4 (plataforma y soporte) | 21, 43, 47 | Tope del acceso de soporte, reabrir filas `dead` del outbox, reactivar espacios suspendidos |
+| B6 (endurecimiento) | 2, 10, 31, 40, 43, 63, 68, 71 | Auditoría de DDL, respaldo y restauración, retención de timers e idempotencia, inicio de sesión real del rol |
+| Proceso programador (M4 o antes) | 60, 61 | Nada dispara temporizadores en producción todavía |
+| ADR o decisión posterior a M1 | 5, 18, 22, 23, 30, 48, 51, 52, 54, 73 | Reactivar participantes, capacidades suspendidas, compensaciones con cuentas cerradas, distribuciones |
+| Pulido y deuda de prueba | 8, 9, 14, 16, 25, 32, 34, 37, 38, 57, 65, 66, 67, 74 a 79 | Sin riesgo de seguridad; se atienden al pasar por el código |
+
 | # | Origen | Seguimiento | Se resuelve en |
 | --- | --- | --- | --- |
 | 1 | spaces-03 | La contraseña del rol de la API (`API_DB_PASSWORD`) puede quedar en los logs del servidor al aplicarse con `ALTER ROLE`. El ADR-0027 propone calcular el verificador SCRAM en Go. Una variable vacía no revoca un LOGIN ya concedido. | Antes del despliegue de staging (M2) |
@@ -77,3 +93,9 @@ Observaciones no bloqueantes de las revisiones que no entran en la historia dond
 | 71 | idempotency-14 | El rol de la API es el proceso del kernel (seguimiento 42): puede insertar en su propio espacio un registro falso, que solo provoca conflicto o repite una respuesta inventada para esa clave; no cruza espacios. Una prueba documenta el límite. | B6 (login real del rol) |
 | 72 | idempotency-14 | La segunda solicitud con la misma clave espera todo el manejador del ganador (bloqueo asesor hasta el `COMMIT`). El `ctx` de la puerta debe acotar la espera (tiempo máximo y, si hace falta, límite de solicitudes simultáneas por clave). | B3 |
 | 73 | idempotency-14 | Fuera de alcance de la historia: idempotencia de operaciones `read` o `write` no declaradas (`RunIdempotent` rechaza una operación `read`), respuestas de más de 64 KiB y reversiones (`AppendReversal` no se expone por `Tx`). | Backlog posterior a M1 |
+| 74 | laws-15 | La guardia contra omisiones no detecta un `return` dentro de un `else`, un bloque, un `for` o un `switch` de un `TestLaw*` (solo el primer statement y el `if` de nivel superior). Marcar cualquier `return` fuera de una función literal. | Pulido |
+| 75 | laws-15 | La sobreescritura de siembra de `idempotency_records` en `isolation_seed_test.go` es código muerto en el flujo actual (el registro lo escribe la operación idempotente al sembrar); la cobertura real existe, pero quitar la entrada no hace fallar la prueba. | Pulido |
+| 76 | proceso | Se acumulan bases temporales `kernel_test_*` en el PostgreSQL local (12 vistas al cierre): el barrido de `dbtest` no limpia todo lo que debiera. Higiene, sin riesgo de seguridad. | Pulido, M2 |
+| 77 | idempotency-14 y laws-15 | Dos comentarios con una línea demasiado larga (`kernel/execution/engine.go`, doc de `RunIdempotent`, y `kernel/laws/apirole_test.go`, comentario de `apiRoleFindings`). | Pulido |
+| 78 | laws-15 | El escaneo de vocabulario no detecta palabras de negocio concatenadas en minúscula (por ejemplo `customerid`); el límite está documentado en el comentario del escaneo. | Pulido |
+| 79 | proceso | `go.work.sum` aparece sin seguimiento en el árbol de trabajo (lo genera la herramienta de Go); decidir si se versiona o se ignora. | Pulido |

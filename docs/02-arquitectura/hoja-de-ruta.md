@@ -44,7 +44,7 @@ El MVP vendible es Thrive Business para tiendas, solo en web ([ADR-0017](../05-d
 
 | Hito | Fase | Entrega |
 |---|---|---|
-| M1 | B2 | Núcleo del kernel |
+| M1 | B2 | Núcleo del kernel (terminado en el sprint S01; ver el informe en `docs/ingenieria/sprint-01/reporte.md`) |
 | M2 | B3 | Puertas completas y staging en línea |
 | M3 | — | Sistema de diseño mejorado y armazón |
 | M4 | B4 | Plataforma MVP y cobro con Wompi |

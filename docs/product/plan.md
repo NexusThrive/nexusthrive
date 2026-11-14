@@ -15,7 +15,7 @@ Funcionalidad: Núcleo del kernel (M1 = B2). Backlog: `docs/product/backlog/nucl
 | Concepto | Cantidad |
 |---|---|
 | Historias | 15 |
-| Listas | 15 |
+| Terminadas | 15 |
 | Bloqueadas | 0 |
 | En curso | 0 |
 

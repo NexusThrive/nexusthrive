@@ -1,6 +1,6 @@
 # Reporte del sprint S01
 
-Estado: EN CURSO
+Estado: COMPLETADO
 
 Fase: M1 (B2), núcleo del kernel. Backlog: `docs/product/backlog/nucleo-del-kernel.md`.
 
@@ -19,6 +19,55 @@ Fase: M1 (B2), núcleo del kernel. Backlog: `docs/product/backlog/nucleo-del-ker
 | HU-kernel-commitments-11 | terminada | #20 | 2 | ADR-0033 (compromisos: estado derivado, concurrencia por bloqueo de fila, monto cumplido verificado y cumplimientos inmutables). Migración 00012; la numeración siguiente parte de 00013 (0026 sigue reservado a idempotency-14). Lecturas del responsable: el criterio 2 se resuelve insertando solo `status = open`; el criterio 4 se prueba con una base desechable con el disparador deshabilitado, porque el disparador responde antes con `restrict_violation`; reglas más estrictas para el asiento aplicado (positivo, de una cuenta del acreedor, fuera de una compensación, aplicado una sola vez y completo); columnas añadidas respecto del ER (`created_by_participant_id`, `created_at`, `space_id` y `resource_id` en `fulfillments`), deudor distinto del acreedor y escala por recurso; se sigue el modelo de cuatro estados; `entries.commitment_id` se descarta. La clave foránea de `fulfillments` hacia `entries` hace que un `TRUNCATE` simple sobre `entries` falle con `0A000` antes del disparador; `exchanges_schema_test.go` lo refleja y prueba el disparador sin esa clave. Abre los seguimientos 51 a 55. `task docs:check` no se pudo verificar localmente por Chrome. Requirió dos rondas: la segunda por un aviso de staticcheck que el CI ejecutaba y la compuerta local no (seguimiento 59). |
 | HU-kernel-timers-12 | terminada | #21 | 1 | ADR-0034 (vencimiento de compromisos por timer: `expired` solo por cascada desde un timer disparado, con el reloj de la base como techo). Migración 00013; la numeración siguiente parte de 00014 (0026 sigue reservado a idempotency-14). Lecturas del responsable (se aceptan las seis recomendaciones de la nota): `due_at` deja de ser inmutable y se reprograma solo hacia el futuro; el reloj inyectable no puede ir por delante del de la base (`LEAST(reloj, now())`) y las pruebas usan compromisos con fechas pasadas; `signal_type` y `payload` no se crean; "reclamar" es disparar, sin arrendamiento; un `due_at` pasado se admite al crear y vence en el primer disparo; el evento va solo al suscriptor `internal`. Desviaciones: reprogramar exige un instante estrictamente futuro (`due_at > now()`, no `>=`) para que no se pueda reprogramar a `now()` y disparar en la misma transacción; el paso de disparo repite el techo del reloj para no disparar un timer que una reprogramación movió después del escaneo; índice parcial `events_expired_subject_idx` para la comprobación al confirmar; la migración crea los timers de los compromisos abiertos que ya existían. Cierra los seguimientos 53, 55 y 59 y abre del 60 al 64. En producción nada dispara timers hasta el proceso programador. `task docs:check` no se pudo verificar localmente por Chrome. |
 | HU-kernel-execution-13 | terminada | #22 | 2 | ADR-0035 (motor de ejecución: una operación, una transacción, verificación previa en la misma transacción y `Tx` mínima sin SQL crudo). Sin migración: la numeración siguiente sigue en 00014 (0026 sigue reservado a idempotency-14). Lecturas del responsable (se aceptan las seis recomendaciones de la nota): el `request_id` vive en el evento y el outbox cuelga de él por `event_seq`; `Permissions` es una lista y `Check` corre por cada clave; las variantes `Append*` de `state` dejan de exigir el actor `system` y los envoltorios con pool lo siguen exigiendo; la idempotencia solo se declara y se valida (idempotency-14 la implementa); un pánico es un `*PanicError` sin tipo que B3 traduce a un error genérico; `closed` también da `space_suspended`. Desviaciones: el cambio de `state` va antes del motor en el orden de commits porque el motor lo necesita; una escritura fuera del espacio de nombres de la operación es `rule_violation`; una persona con `kernel.timer.process` sigue recibiendo `permission_denied` porque `FireDueTimersTx` conserva la exigencia del actor `system`. Cierra los seguimientos 20, 42 (en parte), 44, 45 (el permiso), 49, 50 y 62; difiere 23, 33, 58 y 60; 28 y 29 quedan con el límite documentado para B3. Prueba de arquitectura que prohíbe importar `kernel/state` fuera de `kernel/state` y `kernel/execution`. `task docs:check` no se pudo verificar localmente por Chrome. Requirió dos rondas por un hallazgo de seguridad. |
-| HU-kernel-idempotency-14 | en revisión | #23 | 1 | ADR-0026 (idempotencia por registro) y enmiendas de ADR-0004 y ADR-0030. Migración 00014. Se aceptan las cinco recomendaciones de la nota: clave del libro derivada por el motor, `created_at` con reloj inyectable acotado, `Call.Request` obligatorio (lo llena B3), respuesta objeto JSON de hasta 64 KiB y corrección de la fila del plan. Abre los seguimientos 68 a 73. |
+| HU-kernel-idempotency-14 | terminada | #23 | 2 | ADR-0026 (idempotencia por registro) y enmiendas de ADR-0004 y ADR-0030. Migración 00014. Se aceptan las cinco recomendaciones de la nota: clave del libro derivada por el motor, `created_at` con reloj inyectable acotado, `Call.Request` obligatorio (lo llena B3), respuesta objeto JSON de hasta 64 KiB y corrección de la fila del plan. Abre los seguimientos 68 a 73. Segunda ronda por un hallazgo de la revisión: no había cota inferior para `created_at` y un reloj atrasado o en cero hacía nacer registros ya vencidos (doble cobro); se añadió la ventana de tolerancia de 5 minutos en la base y en el motor. |
+| HU-kernel-laws-15 | terminada | #24 | 2 | Cierre de M1: una prueba por ley con guardia contra omisiones, aislamiento dinámico sobre todas las tablas con `space_id` leídas del catálogo (con sobreescritura de siembra por tabla), atributos del rol de la API, extremo a extremo con fallo inyectado en siete escrituras y escaneo de vocabulario prohibido. Segunda ronda por dos hallazgos de la revisión: el sembrador no podía crear filas válidas de `idempotency_records` (la afirmación del PR de que cubriría tablas nuevas sin cambios era falsa) y la prueba testigo de la base vacía no consultaba la base migrada. Sin migración. |
 
 Preparación del ciclo: PR #9 (compuerta local).
+
+## Resumen del sprint
+
+| Dato | Valor |
+| --- | --- |
+| Historias | 15 de 15 terminadas, PR #10 a #24 fusionados en `sprint/S01` |
+| Rondas | 23 en total: 8 historias a la primera, 6 en dos rondas y 1 (`grants-05`) en tres |
+| Migraciones | 00001 a 00014 en el esquema `kernel` |
+| Decisiones | ADR-0017 a ADR-0035 (los de este sprint: 0024 a 0035; la numeración 0026 se reservó a la idempotencia) |
+| Pruebas del kernel | 627 aprobadas, 0 fallidas, 0 omitidas en la última verificación de QA; CI en verde (`go` con staticcheck, `migrations`, `docs`) |
+
+## Criterio de terminado de M1
+
+Se cumple con pruebas automáticas en CI:
+
+- Las cinco leyes tienen pruebas en `kernel/laws`, protegidas por una guardia que falla ante `t.Skip`, `testing.Short` o una prueba vacía.
+- Un intercambio y un compromiso se escriben en una sola transacción con su evento y su fila de outbox (motor `kernel/execution`); con un fallo inyectado en cualquiera de las siete escrituras no queda nada.
+- El aislamiento entre espacios se prueba sobre todas las tablas con `space_id` leídas del catálogo de PostgreSQL: RLS activa y forzada, política de lectura y de escritura por espacio, cero filas sin espacio fijado; una tabla nueva sin política hace fallar el CI.
+- El rol de la API no tiene `SUPERUSER`, `BYPASSRLS`, `CREATEROLE`, `CREATEDB`, `REPLICATION` ni `LOGIN`, no es dueño de objetos y no pertenece a otros roles.
+- Una operación de dinero repetida con la misma clave devuelve la respuesta guardada y no duplica el libro; la misma clave con otro cuerpo devuelve `idempotency_conflict`.
+
+## Defectos que la verificación independiente evitó
+
+Casi todas las historias tuvieron al menos un hallazgo real que no estaba en la lista de ataques del desarrollador y que se corrigió antes de fusionar:
+
+- El rol de la API podía fijar a mano el número de secuencia de un evento (`OVERRIDING SYSTEM VALUE`) y romper el orden de todos los espacios.
+- Un espacio de negocio podía cambiarse el tipo a `platform` (o crear uno nuevo) y otorgarse acceso de soporte sin motivo ni vencimiento.
+- El administrador podía insertar un espacio cerrado con una fecha de cierre falsa (la guarda solo cubría `UPDATE`).
+- El motor aceptaba un manejador ajeno bajo el nombre de una operación del kernel y permitía falsificar eventos `kernel.*`.
+- Sin cota inferior para `created_at`, un reloj atrasado hacía nacer registros de idempotencia ya vencidos (doble cobro).
+- Dos pruebas del cierre eran decorativas o no cubrían la tabla de idempotencia; se rehicieron.
+
+## Límites aceptados en M1 (documentados en ADR y seguimientos)
+
+- El actor de cada operación lo afirma la capa de aplicación: el kernel comprueba que ese participante tenga permiso, no quién hizo la llamada. En B3 el actor debe salir solo de un token validado y las puertas deben recibir únicamente el motor, nunca el pool de la base (precondiciones en el ADR-0035).
+- Nada dispara los temporizadores en producción hasta el proceso programador (M4 o antes): existe la función de disparo, probada con reloj inyectable.
+- Quien tenga el rol dueño de las tablas o un superusuario puede deshabilitar disparadores con DDL; se cubre con auditoría de DDL en B6.
+- Las pruebas usan `SET ROLE` y no un inicio de sesión real con el rol limitado; hay que ejercitarlo en staging.
+
+## Lo que necesita el responsable
+
+1. **Fusionar el PR `sprint/S01` a `main`** (único paso humano de M1).
+2. **Confirmar las lecturas que se tomaron por el responsable,** listadas en el cuerpo de cada PR bajo "Readings pending the owner's confirmation": criterio 5 de `spaces-03` y supuesto A7 (formato de `slug`); criterio 4 de `grants-05` (se aplica solo cuando el otorgante viene de otro espacio de plataforma); el quinto fallo pasa a `dead` en `outbox-10`; las lecturas de `permissions-06`, `exchanges-08`, `commitments-11`, `timers-12`, `execution-13` e `idempotency-14`. El criterio 1 de `execution-13` ya se reformuló con su aprobación.
+3. **Decisiones pendientes que piden un ADR** (en `seguimientos.md`): compensar una compensación (35), autocumplimiento de compromisos (56), retención de registros de idempotencia y de timers (63 y 68).
+4. **Cuentas y claves para M2** (puertas y staging): Clerk (cuenta y claves de desarrollo), dos proyectos de Supabase (staging y production), Vercel (y decidir su plan para uso comercial), acceso al servidor con Dokploy, y el DNS de `nexusthrive.com.co` para `staging`, `staging-api`, `app` y `console`. Para producción, más adelante: Render. Los precios y límites de los planes siguen como `provisional` hasta confirmarlos antes de activar Wompi en producción (ADR-0022).
+4b. El PR #1 (documentación del inicio, ya cerrado) tiene dos menciones a una herramienta en su descripción; `AGENTS.md` pide que no existan. Se dejó sin tocar a la espera de decisión.
+
+Última actualización: cierre del sprint S01.

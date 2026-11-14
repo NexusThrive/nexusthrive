@@ -444,7 +444,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-idempotency-14 · Repetir una operación con la misma clave sin duplicar
 
-- **Estado:** En revisión (P2 resuelta: se añade el código tipado `idempotency_conflict`; se escribe antes el ADR-0026 y se actualizan ADR-0004 y `contrato.md`). **Tamaño:** M. **Rama:** `feature/HU-kernel-idempotency-14`.
+- **Estado:** Terminada (P2 resuelta: se añade el código tipado `idempotency_conflict`; se escribe antes el ADR-0026 y se actualizan ADR-0004 y `contrato.md`). **Tamaño:** M. **Rama:** `feature/HU-kernel-idempotency-14`.
 - **Pregunta que la desbloquea:** P2 (código de error cuando la misma clave llega con otro cuerpo).
 - **Historia:**
   Como ingeniero de NexusThrive,
@@ -474,7 +474,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-laws-15 · Cerrar M1 con las cinco leyes y la prueba de extremo a extremo
 
-- **Estado:** Lista (su ejecución espera a las historias previas). **Tamaño:** M. **Rama:** `feature/HU-kernel-laws-15`.
+- **Estado:** Terminada. **Tamaño:** M. **Rama:** `feature/HU-kernel-laws-15`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero una suite consolidada de las cinco leyes y del aislamiento sobre todas las tablas de M1,
