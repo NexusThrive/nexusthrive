@@ -273,3 +273,17 @@ func TestCapabilityEnableSources(t *testing.T) {
 	w.setStatus(w.spaceA, "suspended")
 	requireCode(t, "suspended space", enable(w.spaceA, system, source(model.CapabilitySourceCode)), model.CodeSpaceSuspended)
 }
+
+// TestCapabilityWriteIsBlockedInSuspendedPlatformSpace shows the platform-only
+// key obeys the state of the space like any write permission.
+func TestCapabilityWriteIsBlockedInSuspendedPlatformSpace(t *testing.T) {
+	t.Parallel()
+	w := newWorld(t)
+	platform := w.space("platform", "world-platform")
+	staff := w.holder(platform, "staff", model.PermissionCapabilityWrite)
+
+	requireAllowed(t, "active platform space", w.check(platform, staff, req(model.PermissionCapabilityWrite)))
+	w.setStatus(platform, "suspended")
+	requireCode(t, "suspended platform space", w.check(platform, staff, req(model.PermissionCapabilityWrite)), model.CodeSpaceSuspended)
+	requireCode(t, "suspended platform space, system", w.check(platform, system, req(model.PermissionCapabilityWrite)), model.CodeSpaceSuspended)
+}
