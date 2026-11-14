@@ -39,9 +39,9 @@ flowchart LR
 El camino de toda operación, venga de una cara, de la consola, de una IA o de n8n:
 
 1. Entra por una **puerta** con un token o una llave.
-2. `Capability` resuelve identidad, espacio y participante, y verifica permiso y capacidad activa.
+2. La puerta resuelve identidad, espacio y participante y arma el `Actor`; el permiso y la capacidad activa los verifica `Capability` dentro de la transacción del motor, antes de cualquier escritura ([ADR-0032](../05-decisiones/0032-catalogo-de-permisos-y-verificacion.md), [ADR-0035](../05-decisiones/0035-motor-de-ejecucion.md)).
 3. La **extensión** dueña de la operación la traduce a piezas del kernel.
-4. `Execution Engine` abre una transacción, revisa la idempotencia y ejecuta.
+4. `Execution Engine` abre una transacción, verifica el permiso y ejecuta. La idempotencia se declara y se valida al registrar; aplicarla por clave llega con idempotency-14.
 5. `State` escribe intercambios, compromisos, eventos y outbox en esa misma transacción.
 6. `Coordination` programa temporizadores y despacha las señales cuando la transacción confirma.
 
@@ -61,9 +61,21 @@ Si cualquier paso falla, no queda nada a medias.
 | 4. Espacio `suspended` o `closed` y permiso `write` o `money` | `provisioning` cuenta como `active` | `space_suspended` |
 | 5. Capacidad declarada que no está `active` | | `capability_inactive` |
 
-El actor `system` salta solo el paso 3. Para `write` y `money`, `Check` toma `FOR SHARE` sobre los grants leídos y sobre la fila del espacio: una revocación o suspensión concurrente espera a que termine la transacción. Las funciones `CheckRoleCreatable`, `CheckGrantable`, `CheckRevocable` y `CheckCapabilityEnable` aplican las reglas de escalada del ADR-0029; las operaciones las llaman en `execution-13`.
+El actor `system` salta solo el paso 3. Para `write` y `money`, `Check` toma `FOR SHARE` sobre los grants leídos y sobre la fila del espacio: una revocación o suspensión concurrente espera a que termine la transacción. Las funciones `CheckRoleCreatable`, `CheckGrantable`, `CheckRevocable` y `CheckCapabilityEnable` aplican las reglas de escalada del ADR-0029; las operaciones que gestionan roles, grants y capacidades las llamarán cuando pasen por el motor (hoy el motor no las expone).
 
 **Límite de confianza en M1:** el actor lo afirma la capa de aplicación. `Check` prueba que ese participante tiene permiso, no que quien llama sea ese participante; la puerta de B3 construye el `Actor` solo desde un token validado. Un espacio `closed` es terminal (disparador) y `kernel.capability.write` solo existe en espacios `platform` (disparador): ver [modelo de datos](modelo-de-datos/kernel.md).
+
+## Motor de ejecución
+
+`execution.Engine` es el único camino de producción para escribir. Una operación se declara en Go (`execution.Operation`): nombre con espacio de nombres, lista de permisos (se verifica cada clave), capacidad opcional, riesgo (igual al mayor de sus permisos) e idempotencia (obligatoria si el riesgo es `money`). `NewEngine` valida todas al arrancar y se niega a registrar una declaración inválida: nombre repetido o con prefijo `kernel.`, permiso fuera del catálogo, riesgo menor que el de sus permisos o dinero sin idempotencia.
+
+`Run` valida la llamada (identificador de solicitud acotado, operación registrada, espacio UUID no nulo), abre la transacción con el espacio fijado, convierte en solo lectura las operaciones `read`, verifica cada permiso con `Authorizer.Check` **en esa misma transacción y antes de escribir** (sus bloqueos duran hasta el `COMMIT`: una revocación o suspensión concurrente espera) y entrega al manejador una `Tx` mínima. La `Tx` no expone SQL: solo `RecordExchange`, `CreateCommitment`, `AppendEvent` (con su outbox) y `ReadEvents`, cada una condicionada a que la operación haya declarado su permiso y al espacio de nombres de la operación (una extensión no puede escribir `kernel.commitment.expired`). El actor y el `request_id` salen de la llamada: el evento los lleva, y el outbox cuelga del evento por `event_seq`. Una `Tx` usada tras terminar devuelve `rule_violation`.
+
+Si el manejador falla o entra en pánico, la transacción se deshace: un pánico sale como `*PanicError` sin tipo (B3 lo traduce a una respuesta genérica sin mensaje). Un error de base que el manejador trague no confirma. Los fallos de las restricciones diferidas al `COMMIT` salen como `rule_violation`; un privilegio faltante (`42501`) nunca se disfraza. No hay reintentos.
+
+Las operaciones del propio kernel son `kernel.timer.fire` y `kernel.outbox.claim` (ambas `write`: un espacio suspendido las pausa).
+
+**Límite y precondiciones de B3.** El motor es código: quien tenga el pool puede saltárselo. En M1 solo el kernel lo tiene, y una prueba de arquitectura impide que algo fuera de `kernel/state` y `kernel/execution` importe `kernel/state`. Las puertas y extensiones de B3 reciben solo el `Engine`, construyen el `Actor` solo desde un token validado (nunca `ActorSystem` desde una petición) y no exponen `ClaimOutbox`, `MarkOutboxSent` ni `MarkOutboxFailed`. Detalle en [ADR-0035](../05-decisiones/0035-motor-de-ejecucion.md).
 
 ## Compromisos
 
@@ -71,9 +83,9 @@ Un compromiso es una obligación de un deudor a un acreedor sobre un recurso, co
 
 ## Temporizadores y vencimiento
 
-Cada compromiso tiene un timer de vencimiento que la base crea con el compromiso, mueve al reprogramar `due_at` (solo hacia el futuro, con `state.RescheduleCommitment`) y cancela al cumplir o cancelar. Un compromiso solo llega a `expired` cuando su timer vence según el reloj de la base: `state.FireDueTimers` (una transacción) bloquea los compromisos candidatos (`FOR NO KEY UPDATE SKIP LOCKED`, sin arrendamiento: reclamar y disparar son uno), dispara los timers vencidos, deja el compromiso `expired` y escribe el evento `kernel.commitment.expired` v1 y su fila de outbox para el suscriptor `internal`. El reloj inyectable solo puede ir por detrás del de la base. El actor es `system`; verificar `kernel.timer.process` con `Authorizer.Check` queda para execution-13. Detalle y garantías en [ADR-0034](../05-decisiones/0034-vencimiento-de-compromisos-por-timer.md).
+Cada compromiso tiene un timer de vencimiento que la base crea con el compromiso, mueve al reprogramar `due_at` (solo hacia el futuro, con `state.RescheduleCommitment`) y cancela al cumplir o cancelar. Un compromiso solo llega a `expired` cuando su timer vence según el reloj de la base: `state.FireDueTimers` (una transacción) bloquea los compromisos candidatos (`FOR NO KEY UPDATE SKIP LOCKED`, sin arrendamiento: reclamar y disparar son uno), dispara los timers vencidos, deja el compromiso `expired` y escribe el evento `kernel.commitment.expired` v1 y su fila de outbox para el suscriptor `internal`. El reloj inyectable solo puede ir por detrás del de la base. En producción el camino es `execution.Engine.FireDueTimers` (operación `kernel.timer.fire`): verifica `kernel.timer.process` con `Authorizer.Check` en la misma transacción, exige el actor `system` y se pausa en un espacio suspendido. Detalle y garantías en [ADR-0034](../05-decisiones/0034-vencimiento-de-compromisos-por-timer.md).
 
-**Estado hoy: en producción nada dispara timers.** Falta el proceso programador: un proceso periódico en `services/api` que recorra los espacios activos (el despacho entre espacios que decidirá el ADR del seguimiento 39), llame por espacio a `FireDueTimers` con `model.SystemClock` y el actor `system`, registre `scheduler_runs`, verifique `kernel.timer.process` con `Authorizer.Check` (execution-13) y no se exponga por B3. Hasta entonces un compromiso vencido sigue `open`; llega con el programador (M4 o antes). Tampoco hay recordatorios previos al vencimiento, reintentos, evento de reprogramación (seguimiento 60) ni pausa por espacio suspendido (seguimiento 62).
+**Estado hoy: en producción nada dispara timers.** Falta el proceso programador: un proceso periódico en `services/api` que recorra los espacios activos (el despacho entre espacios que decidirá el ADR del seguimiento 39), llame por espacio a `FireDueTimers` con `model.SystemClock` y el actor `system`, registre `scheduler_runs` y no se exponga por B3. Hasta entonces un compromiso vencido sigue `open`; llega con el programador (M4 o antes). Tampoco hay recordatorios previos al vencimiento, reintentos ni evento de reprogramación (seguimiento 60).
 
 ## Reglas e invariantes
 
@@ -90,3 +102,4 @@ El componente de ejecución procesa operaciones autorizadas. Cada operación se 
 - [ADR-0001 · El kernel no conoce ningún mundo](../05-decisiones/0001-kernel-sin-mundo.md)
 - [ADR-0009 · Libro de movimientos de doble partida](../05-decisiones/0009-libro-de-movimientos.md)
 - [ADR-0032 · Catálogo de permisos y verificación](../05-decisiones/0032-catalogo-de-permisos-y-verificacion.md)
+- [ADR-0035 · Motor de ejecución](../05-decisiones/0035-motor-de-ejecucion.md)

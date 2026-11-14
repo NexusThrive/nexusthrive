@@ -22,6 +22,8 @@ Rules:
 - No business vocabulary in this module (`customer`, `invoice`, `sale`, `membership`…). An architecture test enforces it.
 - This module never imports `platform/` or `distributions/`. They register themselves through `extension/`.
 
-Current state of timers: `state.FireDueTimers` fires the due expiry timers of a space and expires their commitments; nothing calls it in production until the scheduler process exists (see `docs/02-arquitectura/kernel.md`, section "Temporizadores y vencimiento").
+Current state of the engine: `execution.Engine` runs every operation in one transaction. An operation is declared in Go with its permissions, capability, risk and idempotency; `Run` fixes the space, verifies every permission with `capability.Authorizer` inside the same transaction and before any write, and gives the handler a `Tx` with no raw SQL. Only `kernel/state` and `kernel/execution` may import `kernel/state` (an architecture test enforces it). Timers and the outbox are fired and claimed through `Engine.FireDueTimers` and `Engine.ClaimOutbox` (ADR-0035). Idempotency by key arrives with HU-kernel-idempotency-14.
+
+Current state of timers: `Engine.FireDueTimers` fires the due expiry timers of a space and expires their commitments; nothing calls it in production until the scheduler process exists (see `docs/02-arquitectura/kernel.md`, section "Temporizadores y vencimiento").
 
 Documentation (Spanish): `docs/02-arquitectura/kernel.md`.
