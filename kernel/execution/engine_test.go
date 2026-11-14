@@ -34,13 +34,13 @@ func TestRunChecksBeforeHandler(t *testing.T) {
 		"person without one":  {Kind: model.ActorPerson},
 		"unknown kind":        {Kind: "robot", ParticipantID: allowed.ParticipantID},
 	} {
-		err := w.engine.Run(context.Background(), call(actor, w.spaceA), moneyOperation.Name, f.handler(t, "k-"+name, &ran, nil))
+		err := w.runMoney(context.Background(), call(actor, w.spaceA), moneyOperation.Name, f.handler(t, &ran, nil))
 		requireCode(t, name, err, model.CodePermissionDenied)
 	}
 	if ran.calls != 0 {
 		t.Errorf("the handler ran %d times for denied calls, want 0", ran.calls)
 	}
-	if err := w.engine.Run(context.Background(), call(allowed, w.spaceA), moneyOperation.Name, f.handler(t, "k-control", &ran, nil)); err != nil {
+	if err := w.runMoney(context.Background(), call(allowed, w.spaceA), moneyOperation.Name, f.handler(t, &ran, nil)); err != nil {
 		t.Fatalf("control: %v", err)
 	}
 	if ran.calls != 1 {
@@ -82,8 +82,8 @@ func TestRunKeepsCheckLocksUntilCommit(t *testing.T) {
 	}
 
 	var ran steps
-	inner := f.handler(t, "k-locks", &ran, nil)
-	err = w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	inner := f.handler(t, &ran, nil)
+	err = w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		if err := suspend(); !lockNotAvailable(err) {
 			t.Errorf("suspending the space while the operation runs: error = %v, want lock_not_available", err)
 		}
@@ -112,7 +112,7 @@ func TestRunValidatesCall(t *testing.T) {
 	f := w.ledger(w.spaceA)
 	holder := w.writer(w.spaceA, "holder")
 	var ran steps
-	handler := f.handler(t, "k-call", &ran, nil)
+	handler := f.handler(t, &ran, nil)
 
 	invalid := map[string]struct {
 		call Call
@@ -135,16 +135,16 @@ func TestRunValidatesCall(t *testing.T) {
 		"empty operation":           {Call{Actor: holder, SpaceID: w.spaceA, RequestID: "r1"}, "", handler},
 	}
 	for name, c := range invalid {
-		requireCode(t, name, w.engine.Run(context.Background(), c.call, c.name, c.fn), model.CodeInvalidInput)
+		requireCode(t, name, w.runMoney(context.Background(), c.call, c.name, c.fn), model.CodeInvalidInput)
 	}
 	if ran.calls != 0 {
 		t.Errorf("the handler ran %d times for invalid calls, want 0", ran.calls)
 	}
 
 	// Controls: the longest request id and every allowed character pass.
-	for i, id := range []string{strings.Repeat("a", 128), "A.b_c:d-1", "0", NewRequestID()} {
-		err := w.engine.Run(context.Background(), Call{Actor: holder, SpaceID: w.spaceA, RequestID: id}, moneyOperation.Name,
-			f.handler(t, fmt.Sprintf("k-valid-%d", i), &ran, nil))
+	for _, id := range []string{strings.Repeat("a", 128), "A.b_c:d-1", "0", NewRequestID()} {
+		err := w.runMoney(context.Background(), Call{Actor: holder, SpaceID: w.spaceA, RequestID: id}, moneyOperation.Name,
+			f.handler(t, &ran, nil))
 		if err != nil {
 			t.Errorf("request id %q: %v", id, err)
 		}
@@ -161,7 +161,7 @@ func TestRunStampsActorAndRequestID(t *testing.T) {
 	var ran steps
 	c := Call{Actor: holder, SpaceID: w.spaceA, RequestID: "request-A.1"}
 
-	if err := w.engine.Run(context.Background(), c, moneyOperation.Name, f.handler(t, "k-stamp", &ran, nil)); err != nil {
+	if err := w.runMoney(context.Background(), c, moneyOperation.Name, f.handler(t, &ran, nil)); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	var actor, kind, requestID string
@@ -179,12 +179,17 @@ func TestRunStampsActorAndRequestID(t *testing.T) {
 		t.Errorf("commitments created by the actor = %d, want 1", got)
 	}
 
+	// A Call holds the body of the request, which cannot be compared with ==, so
+	// the three values the Tx exposes are compared one by one.
+	sameIdentity := func(seen Call) bool {
+		return seen.Actor == c.Actor && seen.SpaceID == c.SpaceID && seen.RequestID == c.RequestID
+	}
 	var seen Call
-	err := w.engine.Run(context.Background(), c, moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	err := w.runMoney(context.Background(), c, moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		seen = Call{Actor: tx.Actor(), SpaceID: tx.SpaceID(), RequestID: tx.RequestID()}
 		return nil
 	})
-	if err != nil || seen != c {
+	if err != nil || !sameIdentity(seen) {
 		t.Errorf("Tx accessors = %+v (%v), want %+v", seen, err, c)
 	}
 
@@ -192,11 +197,11 @@ func TestRunStampsActorAndRequestID(t *testing.T) {
 	// lowercase form whatever way the caller wrote the UUID.
 	upper := c
 	upper.SpaceID = strings.ToUpper(w.spaceA)
-	err = w.engine.Run(context.Background(), upper, moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	err = w.runMoney(context.Background(), upper, moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		seen = Call{Actor: tx.Actor(), SpaceID: tx.SpaceID(), RequestID: tx.RequestID()}
 		return nil
 	})
-	if err != nil || seen != c {
+	if err != nil || !sameIdentity(seen) {
 		t.Errorf("Tx accessors for an uppercase space id = %+v (%v), want %+v", seen, err, c)
 	}
 }
@@ -212,8 +217,8 @@ func TestRunSwallowedDatabaseErrorCannotCommit(t *testing.T) {
 	var ran steps
 	before := w.snapshot()
 
-	inner := f.handler(t, "k-swallow", &ran, nil)
-	err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	inner := f.handler(t, &ran, nil)
+	err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		if err := inner(ctx, tx); err != nil {
 			return err
 		}
@@ -244,7 +249,7 @@ func TestRunKeepsPrivilegeErrorsUntyped(t *testing.T) {
 	w := newWorld(t)
 	holder := w.writer(w.spaceA, "holder")
 
-	err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		_, err := tx.conn.ExecContext(ctx, `DELETE FROM kernel.resources`)
 		return err
 	})
@@ -272,7 +277,7 @@ func TestRunMapsRestrictViolationToPermissionDenied(t *testing.T) {
 		t.Fatalf("uuid: %v", err)
 	}
 
-	err = w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	err = w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		_, err := tx.conn.ExecContext(ctx,
 			`INSERT INTO kernel.roles (id, space_id, key, name, permissions) VALUES ($1, kernel.current_space_id(), 'cap', 'Cap', ARRAY['kernel.capability.write'])`,
 			id.String())
@@ -292,7 +297,7 @@ func TestRunDoesNotWrapTypedErrors(t *testing.T) {
 	w := newWorld(t)
 	holder := w.writer(w.spaceA, "holder")
 	run := func(fn Handler) error {
-		return w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, fn)
+		return w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, fn)
 	}
 
 	typed := model.NewError(model.CodeNotFound, "not here", nil)
@@ -315,7 +320,7 @@ func TestRunDoesNotWrapTypedErrors(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err = w.engine.Run(ctx, call(holder, w.spaceA), moneyOperation.Name, func(context.Context, *Tx) error { return nil })
+	err = w.runMoney(ctx, call(holder, w.spaceA), moneyOperation.Name, func(context.Context, *Tx) error { return nil })
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("canceled context: error = %v, want context.Canceled", err)
 	}
@@ -385,7 +390,7 @@ func TestRunTranslatesCommitFailure(t *testing.T) {
 		}},
 	}
 	for _, c := range cases {
-		err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, c.fn)
+		err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, c.fn)
 		requireCode(t, c.name, err, model.CodeRuleViolation)
 		if changed := w.changed(before); len(changed) != 0 {
 			t.Errorf("%s: the failed commit changed %v", c.name, changed)
@@ -403,7 +408,7 @@ func TestRunFixesSpaceBeforeAnyQuery(t *testing.T) {
 	w.person(w.spaceB, "elsewhere")
 	w.person(w.spaceB, "elsewhere two")
 
-	err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+	err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 		var setting string
 		if err := tx.conn.QueryRowContext(ctx, `SELECT current_setting('kernel.space_id')`).Scan(&setting); err != nil {
 			return err
@@ -457,7 +462,7 @@ func TestRunLeavesNoSpaceSettingOrOpenTransaction(t *testing.T) {
 		}
 		start := time.Now()
 		var ran steps
-		err := w.engine.Run(ctx, call(holder, w.spaceA), moneyOperation.Name, f.handler(t, "k-after-"+label, &ran, nil))
+		err := w.runMoney(ctx, call(holder, w.spaceA), moneyOperation.Name, f.handler(t, &ran, nil))
 		if err != nil || time.Since(start) > 2*time.Second {
 			t.Errorf("%s: a call after it failed or was slow: %v", label, err)
 		}
@@ -468,16 +473,16 @@ func TestRunLeavesNoSpaceSettingOrOpenTransaction(t *testing.T) {
 		t.Fatalf("read operation: %v", err)
 	}
 	inspect("read")
-	if err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, f.handler(t, "k-ok", &ran, nil)); err != nil {
+	if err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, f.handler(t, &ran, nil)); err != nil {
 		t.Fatalf("success: %v", err)
 	}
 	inspect("success")
-	err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(context.Context, *Tx) error { return errors.New("failed") })
+	err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(context.Context, *Tx) error { return errors.New("failed") })
 	if err == nil {
 		t.Fatal("the failing handler succeeded")
 	}
 	inspect("error")
-	err = w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(context.Context, *Tx) error { panic("boom") })
+	err = w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(context.Context, *Tx) error { panic("boom") })
 	var panicked *PanicError
 	if !errors.As(err, &panicked) {
 		t.Fatalf("panic: error = %v, want a PanicError", err)
@@ -505,10 +510,10 @@ func TestRunRecoversPanic(t *testing.T) {
 		{"a typed error", model.NewError(model.CodePermissionDenied, "forged denial", nil)},
 		{"nil", nil},
 	}
-	for i, c := range cases {
+	for _, c := range cases {
 		var ran steps
-		inner := f.handler(t, fmt.Sprintf("k-panic-%d", i), &ran, nil)
-		err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
+		inner := f.handler(t, &ran, nil)
+		err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, func(ctx context.Context, tx *Tx) error {
 			if err := inner(ctx, tx); err != nil {
 				return err
 			}
@@ -537,7 +542,7 @@ func TestRunRecoversPanic(t *testing.T) {
 	}
 
 	var ran steps
-	if err := w.engine.Run(context.Background(), call(holder, w.spaceA), moneyOperation.Name, f.handler(t, "k-after-panics", &ran, nil)); err != nil {
+	if err := w.runMoney(context.Background(), call(holder, w.spaceA), moneyOperation.Name, f.handler(t, &ran, nil)); err != nil {
 		t.Errorf("the engine is not usable after the panics: %v", err)
 	}
 }

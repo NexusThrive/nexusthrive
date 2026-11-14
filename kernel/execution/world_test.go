@@ -23,14 +23,19 @@ var system = model.Actor{Kind: model.ActorSystem}
 
 // fakeClock is a Clock the tests move by hand.
 type fakeClock struct {
-	mu  sync.Mutex
-	now time.Time
+	mu    sync.Mutex
+	now   time.Time
+	fixed bool
 }
 
-// Now returns the frozen time.
+// Now returns the time the test set, or the real time while none was set: a
+// clock far from the one of the database is refused by idempotent operations.
 func (c *fakeClock) Now() time.Time {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if !c.fixed {
+		return time.Now().UTC()
+	}
 	return c.now
 }
 
@@ -38,11 +43,8 @@ func (c *fakeClock) Now() time.Time {
 func (c *fakeClock) Set(at time.Time) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.now = at
+	c.now, c.fixed = at, true
 }
-
-// start is the instant every test clock begins at.
-var start = time.Date(2026, 11, 14, 12, 0, 0, 0, time.UTC)
 
 // moneyOperation is the operation of the tests: it needs two permissions,
 // moves value and declares idempotency.
@@ -71,7 +73,7 @@ func newWorld(t *testing.T, ops ...Operation) *world {
 	t.Helper()
 	admin := dbtest.Database(t)
 	api := dbtest.APIPool(t, admin)
-	clock := &fakeClock{now: start}
+	clock := &fakeClock{}
 	auth, err := capability.NewAuthorizer(model.KernelCatalog(), clock)
 	if err != nil {
 		t.Fatalf("NewAuthorizer: %v", err)
@@ -198,10 +200,12 @@ type steps struct {
 // handler returns the handler of moneyOperation: it records an exchange,
 // creates a commitment and appends an event with an outbox row, naming the ids
 // in the payload. The mutate function changes the inputs to make a step fail.
-func (f fixtures) handler(t *testing.T, key string, ran *steps, mutate func(*model.NewExchange, *model.NewCommitment)) Handler {
+// The exchange has no key: moneyOperation is idempotent, so the engine derives
+// it (ADR-0030, amendment).
+func (f fixtures) handler(t *testing.T, ran *steps, mutate func(*model.NewExchange, *model.NewCommitment)) Handler {
 	return func(ctx context.Context, tx *Tx) error {
 		ran.calls++
-		ex := model.NewExchange{Kind: "test.exchange", IdempotencyKey: key, Entries: []model.NewEntry{
+		ex := model.NewExchange{Kind: "test.exchange", Entries: []model.NewEntry{
 			{AccountID: f.to, ResourceID: f.resource, Amount: amount(t, "10.00")},
 			{AccountID: f.from, ResourceID: f.resource, Amount: amount(t, "10.00").Neg()},
 		}}
@@ -293,6 +297,28 @@ func requireCode(t *testing.T, label string, err error, want model.Code) {
 	if got, typed := model.CodeOf(err); !typed || got != want {
 		t.Fatalf("%s: error = %v, want code %s", label, err, want)
 	}
+}
+
+// runMoney runs an idempotent operation the way the tests of the engine did
+// before idempotency existed: with a fresh idempotency key and an empty body, so
+// that every call is a first execution, and with a Handler adapted to the
+// ResultHandler that RunIdempotent takes, so that the assertions of those tests
+// stay as they were. A nil handler stays nil.
+func (w *world) runMoney(ctx context.Context, c Call, name string, fn Handler) error {
+	if c.IdempotencyKey == "" {
+		c.IdempotencyKey = "key-" + NewRequestID()
+	}
+	if c.Request == nil {
+		c.Request = json.RawMessage(`{}`)
+	}
+	var wrapped ResultHandler
+	if fn != nil {
+		wrapped = func(ctx context.Context, tx *Tx) (json.RawMessage, error) {
+			return json.RawMessage(`{}`), fn(ctx, tx)
+		}
+	}
+	_, err := w.engine.RunIdempotent(ctx, c, name, wrapped)
+	return err
 }
 
 // call builds a call with a fresh request id.

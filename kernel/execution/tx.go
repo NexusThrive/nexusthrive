@@ -38,6 +38,12 @@ type Tx struct {
 	clock model.Clock
 	op    Operation
 	call  Call
+	// idempotent is true in an execution of RunIdempotent. The engine then names
+	// every exchange by executionID and a counter, and a handler may not.
+	idempotent  bool
+	executionID string
+	// exchanges counts the exchanges named so far; the mutex of life guards it.
+	exchanges int
 }
 
 // txLife is the lifetime of a Tx: its mutex serializes the use of the Tx and
@@ -60,6 +66,14 @@ func (t *Tx) RequestID() string { return t.call.RequestID }
 // run executes the handler and closes the Tx when it ends, whether it returned,
 // failed or panicked.
 func (t *Tx) run(ctx context.Context, fn Handler) error {
+	defer t.close()
+	return fn(ctx, t)
+}
+
+// runResult is run for a handler that also returns the response of the
+// operation. The Tx is closed when the handler ends, so the engine stores the
+// record after it with no handler left able to write.
+func (t *Tx) runResult(ctx context.Context, fn ResultHandler) (json.RawMessage, error) {
 	defer t.close()
 	return fn(ctx, t)
 }
@@ -105,6 +119,13 @@ func (t *Tx) requireNamespace(what, value string) error {
 // RecordExchange writes one exchange and its entries as the actor of the call.
 // The operation must have declared kernel.exchange.write, and the kind of the
 // exchange must start with the namespace of the operation.
+//
+// In an idempotent execution the engine names the exchange: its key is the id
+// of the execution, a colon and the number of the exchange in the execution
+// (ADR-0030, amendment). The handler gives no key, and one that does is refused
+// with invalid_input before anything is written, because the key of the client
+// lives in the idempotency record and a key reused by the ledger would collide
+// with the unique key of the ledger once the record expires.
 func (t *Tx) RecordExchange(ctx context.Context, in model.NewExchange) (model.Exchange, error) {
 	if err := t.begin(); err != nil {
 		return model.Exchange{}, err
@@ -115,6 +136,14 @@ func (t *Tx) RecordExchange(ctx context.Context, in model.NewExchange) (model.Ex
 	}
 	if err := t.requireNamespace("exchange kind", in.Kind); err != nil {
 		return model.Exchange{}, err
+	}
+	if t.idempotent {
+		if in.IdempotencyKey != "" {
+			return model.Exchange{}, model.NewError(model.CodeInvalidInput,
+				"an idempotent operation does not name its exchanges: the engine derives the key", nil)
+		}
+		t.exchanges++
+		in.IdempotencyKey = fmt.Sprintf("%s:%d", t.executionID, t.exchanges)
 	}
 	return state.AppendExchange(ctx, t.conn, t.call.Actor, in)
 }

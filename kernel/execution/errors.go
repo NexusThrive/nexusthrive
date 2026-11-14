@@ -35,7 +35,8 @@ func (e *PanicError) Error() string {
 // classify gives the error of a run its final shape, in this order: a typed
 // error passes without wrapping; a panic error passes; an error of the context
 // is wrapped without type; the restrict_violation of the database is
-// permission_denied; the failure of a deferred check at commit is
+// permission_denied; a uniqueness error of the idempotency records is
+// rule_violation; the failure of a deferred check at commit is
 // rule_violation; a missing privilege (42501) and a serialization failure or
 // deadlock (40001, 40P01) are wrapped without type, so that a real fault is
 // never disguised as a rule and nothing is retried, because the contract has
@@ -58,6 +59,14 @@ func classify(operation string, err error) error {
 	}
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
+		// A uniqueness error of the idempotency records is a rule the call
+		// broke, never a raw database error (ADR-0026).
+		if pgErr.Code == "23505" {
+			switch pgErr.ConstraintName {
+			case "idempotency_records_pkey", "idempotency_records_key_in_force", "idempotency_records_id_space_key":
+				return model.NewError(model.CodeRuleViolation, "an idempotency record already exists for this key", err)
+			}
+		}
 		switch pgErr.Code {
 		case "23001":
 			return model.NewError(model.CodePermissionDenied, "the space may not hold this permission or perform this write", err)

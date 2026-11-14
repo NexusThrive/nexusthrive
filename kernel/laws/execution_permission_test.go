@@ -38,7 +38,7 @@ func TestExecutionDeniedLeavesNoRows(t *testing.T) {
 	// The grant of the expiring actor lapses when the clock reaches its expiry.
 	w.clock.Set(expiry)
 
-	op := newOperation(t, f, "k-denied")
+	op := newOperation(t, f)
 	attempts := []struct {
 		name  string
 		actor model.Actor
@@ -72,8 +72,7 @@ func TestExecutionDeniedLeavesNoRows(t *testing.T) {
 	// An operation behind a capability the space does not have is refused,
 	// also for an actor with every permission, and runs once it is active.
 	billing := func() error {
-		return w.engine.Run(context.Background(),
-			execution.Call{Actor: allowed, SpaceID: w.spaceA, RequestID: "request-billing"}, billingOperation.Name, op.standard())
+		return w.runOperation(allowed, w.spaceA, "request-billing", billingOperation.Name, op.standard())
 	}
 	before := w.counts()
 	err := billing()
@@ -91,14 +90,15 @@ func TestExecutionDeniedLeavesNoRows(t *testing.T) {
 		t.Errorf("the operation with the capability active failed: %v", err)
 	}
 
-	// Positive control in the same space: the allowed actor writes the six
-	// tables of the operation and nothing else.
+	// Positive control in the same space: the allowed actor writes the seven
+	// tables of the operation (the six of the writes and the idempotency
+	// record) and nothing else.
 	before = w.counts()
-	if err := w.run(allowed, w.spaceA, "request-control", newOperation(t, f, "k-control").standard()); err != nil {
+	if err := w.run(allowed, w.spaceA, "request-control", newOperation(t, f).standard()); err != nil {
 		t.Fatalf("the allowed operation failed: %v", err)
 	}
-	if changed := diff(before, w.counts()); len(changed) != 6 {
-		t.Errorf("the allowed operation changed %v, want six tables", changed)
+	if changed := diff(before, w.counts()); len(changed) != 7 || changed["idempotency_records"] != 1 {
+		t.Errorf("the allowed operation changed %v, want seven tables, one of them the idempotency record", changed)
 	}
 }
 
@@ -111,7 +111,7 @@ func TestSystemActorOfAnotherSpaceWritesNothing(t *testing.T) {
 	w := newEngineWorld(t)
 	f := w.ledger(w.spaceA)
 	foreigner := w.person(w.spaceB, "foreigner")
-	op := newOperation(t, f, "k-system-foreign")
+	op := newOperation(t, f)
 
 	before := w.counts()
 	err := w.run(model.Actor{Kind: model.ActorSystem, ParticipantID: foreigner.ParticipantID}, w.spaceA, "request-system", op.standard())
@@ -133,10 +133,10 @@ func TestExecutionIsolatedBySpace(t *testing.T) {
 	fB := w.ledger(w.spaceB)
 	writerA := w.writer(w.spaceA, "writer_a")
 	writerB := w.writer(w.spaceB, "writer_b")
-	if err := w.run(writerA, w.spaceA, "request-a", newOperation(t, fA, "k-a").standard()); err != nil {
+	if err := w.run(writerA, w.spaceA, "request-a", newOperation(t, fA).standard()); err != nil {
 		t.Fatalf("operation in A: %v", err)
 	}
-	if err := w.run(writerB, w.spaceB, "request-b", newOperation(t, fB, "k-b").standard()); err != nil {
+	if err := w.run(writerB, w.spaceB, "request-b", newOperation(t, fB).standard()); err != nil {
 		t.Fatalf("operation in B: %v", err)
 	}
 
@@ -155,7 +155,7 @@ func TestExecutionIsolatedBySpace(t *testing.T) {
 	}
 
 	before := w.counts()
-	op := newOperation(t, fA, "k-cross")
+	op := newOperation(t, fA)
 	err = w.run(writerA, w.spaceA, "request-cross", func(ctx context.Context, tx *execution.Tx) error {
 		return op.stepCommitment(ctx, tx, fB.debtor)
 	})
@@ -175,7 +175,7 @@ func TestSuspendedSpaceBlocksWriteAndMoney(t *testing.T) {
 	w := newEngineWorld(t)
 	f := w.ledger(w.spaceA)
 	actor := w.writer(w.spaceA, "writer")
-	op := newOperation(t, f, "k-suspended")
+	op := newOperation(t, f)
 
 	for _, status := range []string{"suspended", "closed"} {
 		w.setStatus(w.spaceA, status)

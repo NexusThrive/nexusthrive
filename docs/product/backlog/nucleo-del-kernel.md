@@ -414,7 +414,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-execution-13 · Ejecutar cada operación en una sola transacción con permiso
 
-- **Estado:** En revisión. **Tamaño:** L. **Rama:** `feature/HU-kernel-execution-13`.
+- **Estado:** Terminada. **Tamaño:** L. **Rama:** `feature/HU-kernel-execution-13`.
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero un motor de ejecución que verifique permiso y escriba libro, compromiso, evento y outbox juntos o ninguno,
@@ -444,7 +444,7 @@ Cada historia las hereda y no las repite en detalle.
 
 ## HU-kernel-idempotency-14 · Repetir una operación con la misma clave sin duplicar
 
-- **Estado:** Lista (P2 resuelta: se añade el código tipado `idempotency_conflict`; se escribe antes el ADR-0026 y se actualizan ADR-0004 y `contrato.md`). **Tamaño:** M. **Rama:** `feature/HU-kernel-idempotency-14`.
+- **Estado:** En revisión (P2 resuelta: se añade el código tipado `idempotency_conflict`; se escribe antes el ADR-0026 y se actualizan ADR-0004 y `contrato.md`). **Tamaño:** M. **Rama:** `feature/HU-kernel-idempotency-14`.
 - **Pregunta que la desbloquea:** P2 (código de error cuando la misma clave llega con otro cuerpo).
 - **Historia:**
   Como ingeniero de NexusThrive,

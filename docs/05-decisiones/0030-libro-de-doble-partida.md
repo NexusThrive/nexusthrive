@@ -23,7 +23,7 @@ La ley de conservación dice que el valor no se crea ni se destruye: cada interc
 
 **Decimales.** En PostgreSQL, `numeric` con `CHECK` de rango (valor absoluto menor que 1e30); la escala se valida por recurso y el valor se guarda canónico (`round(amount, scale)`). En Go, `model.Amount` es un decimal exacto sobre `math/big` (hasta 30 dígitos enteros y 18 decimales, sin exponente, `NaN` ni signo `+`), sin dependencia nueva y sin `float`.
 
-**Identificación del intercambio.** `idempotency_key` es obligatoria y única por espacio (las operaciones de dinero siempre son idempotentes). Por ahora la clave repetida se rechaza; HU-kernel-idempotency-14 la cambiará por devolver el resultado original. El actor es un participante del mismo espacio, siempre presente.
+**Identificación del intercambio.** `idempotency_key` es obligatoria y única por espacio (las operaciones de dinero siempre son idempotentes). La clave repetida se rechaza como segunda barrera; la idempotencia de las operaciones la resuelve el motor (ver la enmienda de 2026-11-14). El actor es un participante del mismo espacio, siempre presente.
 
 ## Alternativas consideradas
 
@@ -68,3 +68,7 @@ Pruebas contra PostgreSQL real: conservación diferida y por recurso, intercambi
 - `docs/01-modelo/leyes.md`, leyes de conservación y de memoria
 - ADR-0009 (libro de movimientos), ADR-0027 (roles y RLS), ADR-0028 (eventos de solo agregar)
 - `docs/ingenieria/diseno/HU-kernel-exchanges-08.md`
+
+## Enmienda 2026-11-14 · La clave del intercambio la deriva el motor
+
+Dentro de una ejecución idempotente (ADR-0026), el motor deriva `exchanges.idempotency_key` como `<executionID>:<n>` (`executionID` es el UUID v7 de la ejecución y `n` un contador por ejecución) y `Tx.RecordExchange` rechaza con `invalid_input` la clave que traiga el manejador. La clave del cliente vive en `kernel.idempotency_records`, que vence a las 24 horas; si fuera también la del libro, una operación nueva tras el vencimiento chocaría con la unicidad eterna. La unicidad por espacio de `exchanges_idempotency_key` se conserva como defensa en profundidad: la repetición y el conflicto cortan antes del manejador, de modo que esa barrera solo atrapa a una misma ejecución que repita su clave. `Run`, sin idempotencia, conserva la clave del manejador.
