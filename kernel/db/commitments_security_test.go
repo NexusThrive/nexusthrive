@@ -18,7 +18,7 @@ func updateOf(id, set string) stmt {
 
 // closeCommitments brings three commitments of space A to each terminal state
 // and returns their ids by state. The fulfilled one is covered by a real entry;
-// the expired one is closed by the owner, the only writer of that state today.
+// the expired one by the way the kernel does it: a timer that fires and its event.
 func (e commitmentEnv) closeCommitments(t *testing.T) map[string]string {
 	t.Helper()
 	fulfilled := e.commit(t, ledgerSpaceA, "40.00")
@@ -30,10 +30,7 @@ func (e commitmentEnv) closeCommitments(t *testing.T) map[string]string {
 	if err := runTx(t, e.api, ledgerSpaceA, updateOf(canceled, `canceled_reason = 'asked to stop'`)); err != nil {
 		t.Fatalf("cancel: %v", err)
 	}
-	expired := e.commit(t, ledgerSpaceA, "10.00")
-	if err := runTx(t, e.admin, "", updateOf(expired, `status = 'expired'`)); err != nil {
-		t.Fatalf("expire: %v", err)
-	}
+	expired := e.expireCommitment(t, ledgerSpaceA, "10.00")
 	for status, id := range map[string]string{"fulfilled": fulfilled, "canceled": canceled, "expired": expired} {
 		if got, _, closed := commitmentState(t, e.admin, id); got != status || !closed {
 			t.Fatalf("commitment %s = %s closed %v", status, got, closed)
@@ -105,15 +102,21 @@ func TestAPICannotForgeStatusOrFulfilledAmount(t *testing.T) {
 }
 
 // TestAPICannotSetStatusOrExpire guards that no column that decides the state
-// can be updated by the API role.
+// can be chosen by the API role. status is updatable only so that the cascade of
+// a fired timer runs with its rights, and the guard refuses every write of it
+// that is not that cascade; closed_at has no privilege at all.
 func TestAPICannotSetStatusOrExpire(t *testing.T) {
 	t.Parallel()
 	e := newCommitmentEnv(t)
 	id := e.commit(t, ledgerSpaceA, "100.00")
-	for _, set := range []string{
-		`status = 'expired'`, `status = 'fulfilled'`, `status = 'canceled'`, `status = 'open'`,
-		`closed_at = now()`, `status = 'expired', closed_at = now()`,
-	} {
+	for _, set := range []string{`status = 'expired'`, `status = 'fulfilled'`, `status = 'canceled'`, `status = 'late'`} {
+		requireRule(t, set, runTx(t, e.api, ledgerSpaceA, updateOf(id, set)), "23001", "")
+	}
+	// Writing the state it already has changes nothing.
+	if err := runTx(t, e.api, ledgerSpaceA, updateOf(id, `status = 'open'`)); err != nil {
+		t.Errorf("status = 'open' on an open commitment: %v", err)
+	}
+	for _, set := range []string{`closed_at = now()`, `status = 'expired', closed_at = now()`} {
 		requireRule(t, set, runTx(t, e.api, ledgerSpaceA, updateOf(id, set)), "42501", "")
 	}
 	if status, _, _ := commitmentState(t, e.admin, id); status != "open" {
@@ -130,7 +133,7 @@ func TestAPICannotChangeIdentityColumns(t *testing.T) {
 	id := e.commit(t, ledgerSpaceA, "100.00")
 
 	sets := map[string]string{
-		"amount": `amount = 1`, "due_at": `due_at = now() + interval '1 year'`, "starts_at": `starts_at = now() - interval '1 year'`,
+		"amount": `amount = 1`, "starts_at": `starts_at = now() - interval '1 year'`,
 		"kind": `kind = 'test.other'`, "debtor": `debtor_participant_id = '` + ledgerParticipantA + `'`,
 		"creditor": `creditor_participant_id = '` + cmDebtorA + `'`, "resource": `resource_id = '` + ledgerResourceA2 + `'`,
 		"space": `space_id = '` + ledgerSpaceB + `'`, "origin": `origin_ref = 'test.origin/9'`,
@@ -192,26 +195,34 @@ func TestTerminalStatesAreFinal(t *testing.T) {
 	}
 }
 
-// TestExpiryStampsClosedAtAndIsOneEffect guards the hook the timer story will
-// use: an owner may expire an open commitment, the kernel stamps closed_at, and
-// the statement can do nothing else.
+// TestExpiryStampsClosedAtAndIsOneEffect guards the way a commitment expires:
+// the kernel stamps closed_at with the time of the database, and the write that
+// expires it can do nothing else. The cascade is turned off in this throwaway
+// database so that the guard of commitments answers by itself, with a timer
+// that has fired in the same transaction.
 func TestExpiryStampsClosedAtAndIsOneEffect(t *testing.T) {
 	t.Parallel()
 	e := newCommitmentEnv(t)
-	id := e.commit(t, ledgerSpaceA, "100.00")
-
-	requireRule(t, "expiry and a reason", runTx(t, e.admin, "", updateOf(id, `status = 'expired', canceled_reason = 'x'`)), "23001", "")
-	requireRule(t, "expiry and a forged closing time", runTx(t, e.admin, "", updateOf(id, `status = 'expired', closed_at = '2000-01-01T00:00:00Z'`)), "23001", "")
-	before := time.Now().Add(-time.Minute)
-	if err := runTx(t, e.admin, "", updateOf(id, `status = 'expired'`)); err != nil {
-		t.Fatalf("expire: %v", err)
-	}
-	var closedAt time.Time
-	if err := e.admin.QueryRow(`SELECT closed_at FROM kernel.commitments WHERE id = $1`, id).Scan(&closedAt); err != nil || closedAt.Before(before) {
-		t.Errorf("closed_at = %v (%v), want the transaction time", closedAt, err)
-	}
-	if status, _, _ := commitmentState(t, e.admin, id); status != "expired" {
-		t.Errorf("status = %s, want expired", status)
+	toggleTrigger(t, e.admin, "timers", "timers_expire_commitment", false)
+	toggleTrigger(t, e.admin, "timers", "timers_coherence_check", false)
+	toggleTrigger(t, e.admin, "commitments", "timers_coherence_check", false)
+	for _, w := range e.writers() {
+		id := e.commitPast(t, ledgerSpaceA, "100.00")
+		fire := fireTimerStmt(id)
+		requireRule(t, w.name+": expiry and a reason", runTx(t, w.pool, w.space, fire, updateOf(id, `status = 'expired', canceled_reason = 'x'`)), "23001", "")
+		requireRule(t, w.name+": expiry and a forged closing time", runTx(t, e.admin, "", fire, updateOf(id, `status = 'expired', closed_at = '2000-01-01T00:00:00Z'`)), "23001", "")
+		requireRule(t, w.name+": expiry and a moved due date", runTx(t, w.pool, w.space, fire, updateOf(id, `status = 'expired', due_at = now() + interval '1 day'`)), "23001", "")
+		before := time.Now().Add(-time.Minute)
+		if err := runTx(t, w.pool, w.space, fire, updateOf(id, `status = 'expired'`)); err != nil {
+			t.Fatalf("%s: expire: %v", w.name, err)
+		}
+		var closedAt time.Time
+		if err := e.admin.QueryRow(`SELECT closed_at FROM kernel.commitments WHERE id = $1`, id).Scan(&closedAt); err != nil || closedAt.Before(before) {
+			t.Errorf("%s: closed_at = %v (%v), want the transaction time", w.name, closedAt, err)
+		}
+		if status, _, _ := commitmentState(t, e.admin, id); status != "expired" {
+			t.Errorf("%s: status = %s, want expired", w.name, status)
+		}
 	}
 }
 
@@ -354,7 +365,7 @@ func TestCommitmentOnConflictCannotBypassGuards(t *testing.T) {
 	for name, tc := range map[string]struct{ conflict, state string }{
 		"fulfilled amount to the full amount": {`DO UPDATE SET fulfilled_amount = EXCLUDED.amount`, "23001"},
 		"fulfilled amount to a wrong sum":     {`DO UPDATE SET fulfilled_amount = 41`, "23001"},
-		"status":                              {`DO UPDATE SET status = 'fulfilled'`, "42501"},
+		"status":                              {`DO UPDATE SET status = 'fulfilled'`, "23001"},
 		"amount":                              {`DO UPDATE SET amount = 1`, "42501"},
 		"closing time":                        {`DO UPDATE SET closed_at = now()`, "42501"},
 	} {
@@ -617,7 +628,7 @@ func TestFulfillmentsAreAppendOnly(t *testing.T) {
 	for _, query := range []string{
 		`UPDATE kernel.fulfillments SET amount = 1`, `UPDATE kernel.fulfillments SET commitment_id = commitment_id`,
 		`DELETE FROM kernel.fulfillments`, `TRUNCATE kernel.fulfillments`, `TRUNCATE kernel.fulfillments CASCADE`,
-		`TRUNCATE kernel.commitments, kernel.fulfillments`, `TRUNCATE kernel.commitments CASCADE`,
+		`TRUNCATE kernel.commitments, kernel.fulfillments, kernel.timers`, `TRUNCATE kernel.commitments CASCADE`,
 		`TRUNCATE kernel.entries CASCADE`, `TRUNCATE kernel.exchanges CASCADE`, `TRUNCATE kernel.accounts CASCADE`,
 		`TRUNCATE kernel.resources CASCADE`, `TRUNCATE kernel.participants CASCADE`, `TRUNCATE kernel.spaces CASCADE`,
 	} {
@@ -661,7 +672,7 @@ func TestCommitmentsCannotBeDeleted(t *testing.T) {
 	for _, query := range []string{`DELETE FROM kernel.commitments`, `TRUNCATE kernel.commitments`} {
 		requireRule(t, "API: "+query, asAPI(t, e.admin, query), "42501", "")
 	}
-	for _, query := range []string{`DELETE FROM kernel.commitments`, `TRUNCATE kernel.commitments, kernel.fulfillments`} {
+	for _, query := range []string{`DELETE FROM kernel.commitments`, `TRUNCATE kernel.commitments, kernel.fulfillments, kernel.timers`} {
 		_, err := e.admin.Exec(query)
 		requireRule(t, "administrator: "+query, err, "23001", "")
 	}
@@ -671,8 +682,11 @@ func TestCommitmentsCannotBeDeleted(t *testing.T) {
 	if _, err := e.admin.Exec(`ALTER TABLE kernel.fulfillments DROP CONSTRAINT fulfillments_commitment_fkey`); err != nil {
 		t.Fatalf("drop foreign key: %v", err)
 	}
+	if _, err := e.admin.Exec(`ALTER TABLE kernel.timers DROP CONSTRAINT timers_commitment_fkey`); err != nil {
+		t.Fatalf("drop foreign key: %v", err)
+	}
 	_, err = e.admin.Exec(`TRUNCATE kernel.commitments`)
-	requireRule(t, "administrator without the foreign key: TRUNCATE", err, "23001", "")
+	requireRule(t, "administrator without the foreign keys: TRUNCATE", err, "23001", "")
 	for _, query := range []string{
 		`GRANT DELETE, TRUNCATE ON kernel.commitments TO nexusthrive_api`,
 		`CREATE POLICY mistaken_delete ON kernel.commitments FOR DELETE USING (true)`,

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/nexusthrive/nexusthrive/kernel/model"
 	"github.com/nexusthrive/nexusthrive/kernel/state"
 )
@@ -573,6 +575,47 @@ func TestCancelWithoutReasonIsInvalidInput(t *testing.T) {
 	}
 }
 
+// expireBySQL inserts a commitment that is already due and expires it the way
+// the kernel does, with the timer fired and the event written in one
+// transaction, as the administrator. It returns the id of the commitment.
+func (c commitmentFixtures) expireBySQL(t *testing.T) string {
+	t.Helper()
+	id, err := uuid.NewV7()
+	if err != nil {
+		t.Fatalf("new id: %v", err)
+	}
+	eventID, err := uuid.NewV7()
+	if err != nil {
+		t.Fatalf("new id: %v", err)
+	}
+	tx, err := c.admin.Begin()
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer tx.Rollback()
+	for _, s := range []struct {
+		query string
+		args  []any
+	}{
+		{`INSERT INTO kernel.commitments (id, space_id, kind, debtor_participant_id, creditor_participant_id, resource_id,
+			amount, starts_at, due_at, status, created_by_participant_id)
+			VALUES ($1, $2, 'test.commitment', $3, $4, $5, 40, now() - interval '2 days', now() - interval '1 day', 'open', $4)`,
+			[]any{id.String(), spaceA, c.debtor, c.actor.ParticipantID, c.cop}},
+		{`UPDATE kernel.timers SET status = 'fired' WHERE commitment_id = $1`, []any{id.String()}},
+		{`INSERT INTO kernel.events (id, space_id, type, version, subject_ref, payload, actor_kind)
+			VALUES ($1, $2, 'kernel.commitment.expired', 1, 'kernel.commitment/' || $3::text, '{}'::jsonb, 'system')`,
+			[]any{eventID.String(), spaceA, id.String()}},
+	} {
+		if _, err := tx.Exec(s.query, s.args...); err != nil {
+			t.Fatalf("expire by SQL: %v", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+	return id.String()
+}
+
 // closedCommitments returns one commitment in each terminal state.
 func (c commitmentFixtures) closedCommitments(t *testing.T) map[model.CommitmentStatus]string {
 	t.Helper()
@@ -582,13 +625,9 @@ func (c commitmentFixtures) closedCommitments(t *testing.T) map[model.Commitment
 	if _, err := state.CancelCommitment(context.Background(), c.api, c.actor, spaceA, canceled.ID, "stopped"); err != nil {
 		t.Fatalf("cancel: %v", err)
 	}
-	expired := c.create(t, "40.00")
-	// Expiry belongs to the timer story; the owner of the tables is its only writer today.
-	if _, err := c.admin.Exec(`UPDATE kernel.commitments SET status = 'expired' WHERE id = $1`, expired.ID); err != nil {
-		t.Fatalf("expire: %v", err)
-	}
+	expired := c.expireBySQL(t)
 	return map[model.CommitmentStatus]string{
-		model.CommitmentStatusFulfilled: fulfilled.ID, model.CommitmentStatusCanceled: canceled.ID, model.CommitmentStatusExpired: expired.ID,
+		model.CommitmentStatusFulfilled: fulfilled.ID, model.CommitmentStatusCanceled: canceled.ID, model.CommitmentStatusExpired: expired,
 	}
 }
 
