@@ -22,11 +22,13 @@ flowchart LR
 |---|---|---|
 | Operaciones | Protobuf con Connect-RPC | `kernel.v1`, `platform.v1`, `business.v1` |
 | Eventos | JSON Schema versionado | `kernel.space.created.v1`, `platform.charge.confirmed.v1` |
-| Errores | Códigos tipados | `permission_denied`, `capability_inactive`, `rule_violation`, `not_found`, `already_done`, `invalid_input`, `space_suspended` |
+| Errores | Códigos tipados | `permission_denied`, `capability_inactive`, `rule_violation`, `not_found`, `already_done`, `invalid_input`, `space_suspended`, `idempotency_conflict` |
 
 ## Funcionamiento
 
 - Cada operación declara su **permiso**, su **capacidad**, su **riesgo** (`read`, `write`, `money`) y si es **idempotente**. Las de dinero siempre lo son.
+  Mientras no exista `contracts/`, la declaración vive en Go (`execution.Operation`, [ADR-0035](../05-decisiones/0035-motor-de-ejecucion.md)): una **lista** de permisos que se verifican todos, una capacidad opcional, el riesgo (igual al mayor de sus permisos) y la idempotencia. El motor se niega a registrar una operación de dinero sin idempotencia.
+  Una operación idempotente recibe una **clave** (`^[A-Za-z0-9._:-]{1,128}$`) y el cuerpo de la solicitud: repetir la misma clave con la misma **huella** (operación, actor y cuerpo canónico) devuelve la respuesta guardada sin ejecutar de nuevo, y la misma clave con otra huella devuelve `idempotency_conflict` ([ADR-0026](../05-decisiones/0026-idempotencia-por-registro.md)). El registro vence a las 24 horas.
 - Los nombres de operaciones, campos y eventos están en inglés.
 - Los eventos llevan versión. Un cambio incompatible crea `.v2`; el anterior se mantiene durante un periodo de transición.
 - `buf lint` y `buf breaking` corren en el CI.

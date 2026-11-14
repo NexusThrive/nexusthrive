@@ -21,12 +21,23 @@ tasks:
   infra:up:
     desc: Start local PostgreSQL and Redis
     cmds:
-      - docker compose -f infra/docker/compose.yaml up -d
+      - docker compose -f infra/docker/compose.yaml up -d --wait
 
   infra:down:
     desc: Stop local infrastructure
     cmds:
       - docker compose -f infra/docker/compose.yaml down
+
+  db:migrate:
+    desc: Create the kernel schema and apply its migrations (DATABASE_URL, local PostgreSQL by default)
+    vars:
+      # Same credentials as infra/docker/compose.yaml.
+      DB_URL:
+        sh: echo "${DATABASE_URL:-postgres://nexusthrive:nexusthrive@localhost:55432/nexusthrive?sslmode=disable}"
+    env:
+      DATABASE_URL: "{{.DB_URL}}"
+    cmds:
+      - go run github.com/nexusthrive/nexusthrive/kernel/db/cmd/migrate
 
   gen:
     desc: Generate code from contracts (Go, TypeScript, Python)

@@ -30,7 +30,8 @@ git clone https://github.com/NexusThrive/nexusthrive.git
 cd nexusthrive
 cp .env.example .env      # completar las llaves de Clerk
 task setup                # dependencias de Go y pnpm (instala según pnpm-lock.yaml)
-task infra:up             # PostgreSQL 17 y Redis 7
+task infra:up             # PostgreSQL 17 y Redis 7 (espera a que PostgreSQL esté listo)
+task db:migrate           # crea el esquema kernel y aplica sus migraciones
 task gen                  # código desde contracts/
 task test                 # todas las pruebas
 task dev                  # API y apps en modo desarrollo
@@ -45,7 +46,23 @@ task dev                  # API y apps en modo desarrollo
 | `task test:go`, `task test:ts` | Cada suite por separado |
 | `task docs:check` | Dibuja todos los diagramas de `docs/` para detectar errores |
 | `pnpm storybook` | Abre la biblioteca de componentes |
+| `task db:migrate` | Crea el esquema `kernel` y aplica las migraciones pendientes; repetirla no cambia nada |
 | `task infra:down` | Detiene la infraestructura local |
+
+### Migraciones
+
+Las migraciones son SQL puro en `kernel/db/migrations/` (ADR-0024) y se aplican con goose desde un comando Go del kernel. `task db:migrate` solo lo invoca; sin Task el equivalente es:
+
+```bash
+DATABASE_URL="postgres://nexusthrive:nexusthrive@localhost:55432/nexusthrive?sslmode=disable" \
+  go run github.com/nexusthrive/nexusthrive/kernel/db/cmd/migrate
+```
+
+- El PostgreSQL local publica el puerto 55432 (configurable con `NEXUSTHRIVE_POSTGRES_PORT`) para no chocar con un PostgreSQL ya instalado en el 5432.
+- `DATABASE_URL` tiene por defecto la base de `infra/docker/compose.yaml`. Una migración inválida termina con código distinto de 0 y el mensaje nombra el archivo.
+- Contra Supabase usa la conexión directa o el pooler en modo sesión, nunca el modo transacción (ADR-0019).
+- Las pruebas de integración de `kernel/db` leen la misma variable `DATABASE_URL` (con ese valor por defecto) y fallan si PostgreSQL no responde; ejecuta `task infra:up` antes. Cada prueba usa un esquema `kernel_test_<id>` que elimina al terminar.
+- `task infra:up` espera al healthcheck de PostgreSQL, así que `task db:migrate` puede ir justo después.
 
 ### Herramientas que se descargan solas
 

@@ -14,13 +14,25 @@ Kernel, plataforma, distribuciones, contratos y apps.
 |---|---|---|
 | Leyes del kernel | Conservación, memoria, compromiso, permiso y movimiento | `go test ./kernel/laws/...` |
 | Unitarias | Una función o un tipo, sin base de datos | `go test`, Vitest, `pytest` |
-| Integración | Operaciones completas contra PostgreSQL real | `go test` con Testcontainers |
+| Integración | Operaciones completas contra PostgreSQL real | `go test` contra el PostgreSQL de `task infra:up` en local y el servicio `postgres:17` en CI; arnés `kernel/db/dbtest` |
 | Aislamiento | Ningún dato cruza entre espacios | Pruebas dedicadas por esquema |
 | Idempotencia | Repetir una operación de dinero no la duplica | Pruebas dedicadas por operación |
 | Arquitectura | Dependencias prohibidas y vocabulario prohibido en `kernel/` | Prueba de Go que analiza importaciones e identificadores |
 | Contrato | Compatibilidad hacia atrás | `buf breaking` |
 | Componentes | Los cuatro estados de cada componente | Storybook + Vitest |
 | Punta a punta | Recorridos principales en la web y la consola | Playwright |
+
+### Arnés de integración con PostgreSQL
+
+El paquete `kernel/db/dbtest` entrega a cada prueba una base o un esquema propio:
+
+- `dbtest.Database(t)` crea la base `kernel_test_<id>`, aplica las migraciones del kernel (esquema `kernel`) y la elimina al terminar. Es la opción para pruebas de tablas del kernel.
+- `dbtest.Schema(t)` crea un esquema vacío `kernel_test_<id>` en la base compartida y lo elimina al terminar; no aplica migraciones.
+- Cada prueba tiene su propia base o esquema, por lo que dos pruebas con `t.Parallel()` no se ven. La limpieza usa solo `t.Cleanup`, que corre también tras un fallo.
+- La URL sale de `DATABASE_URL`; sin ella se usa la de `task infra:up` (puerto 55432). `platform/` y las distribuciones pueden importar el mismo paquete.
+- `dbtest.APIPool(t, admin)` devuelve un pool cuyas conexiones ejecutan `SET ROLE nexusthrive_api`, el rol limitado de la API (ADR-0027). Las pruebas que verifican aislamiento usan este pool; el pool de `Database` es el administrador (superusuario) y ve todo porque los superusuarios no están sujetos a la RLS: solo sirve para preparar y revisar datos. Con una cuenta sin `BYPASSRLS` el administrador vería 0 filas por `FORCE`; local y CI usan superusuario.
+- Los restos de ejecuciones interrumpidas con más de una hora se eliminan en la primera llamada de cada proceso.
+- Una prueba de integración sin PostgreSQL falla con la indicación de ejecutar `task infra:up`; nunca se omite.
 
 ## Reglas e invariantes
 

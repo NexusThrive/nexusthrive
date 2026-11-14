@@ -8,31 +8,30 @@ Definir qué se construye de Business en la etapa 2 y cuándo está terminado.
 
 **Requisito previo:** la etapa 1 (base de NexusThrive) terminada hasta la fase B5. Ver [hoja de ruta](../../../02-arquitectura/hoja-de-ruta.md).
 
-**Objetivo:** que un gimnasio pequeño opere todo su día en NexusThrive (socios, planes, cobros, deudas, caja, entradas y avisos) y pague por ello. Después, la tienda.
+**Objetivo:** que una tienda pequeña opere todo su día en NexusThrive desde la web (ventas, existencias, compras, pedidos, cartera, caja y reportes) y pague por ello. Gimnasio y restaurante vienen después de la v1.0 ([ADR-0017](../../../05-decisiones/0017-mvp-web-tienda-primero.md)).
 
 ## Conceptos principales
 
 ```mermaid
 flowchart LR
-    subgraph SI["Entra"]
+    subgraph SI["Entra en el MVP (v1.0)"]
         direction TB
-        S1["Base de Business<br/>clientes · catálogo · ventas y cobros<br/>cartera · caja · documentos · reportes · equipo"]
-        S2["Patrón Membresía<br/>piel Gimnasio"]
-        S3["Patrón Productos<br/>piel Tienda"]
-        S4["Web + móvil de recepción"]
-        S5["Wompi · WhatsApp y correo por n8n"]
-        S6["IA: configura, resume, sugiere cobros"]
+        S1["Base de Business<br/>clientes · ventas y cobros · cartera<br/>caja · documentos · reportes · equipo"]
+        S3["Patrón Productos<br/>piel Tienda: catálogo, existencias,<br/>POS, pedidos, compras, CRM"]
+        S4["Solo web (apps/web)"]
+        S5["Control externo: API, MCP,<br/>webhooks y n8n"]
+        S6["AURI: onboarding y consultas"]
     end
-    subgraph NO["No entra"]
+    subgraph NO["Después de la v1.0"]
         direction TB
-        N1["Facturación electrónica"]
-        N2["Contabilidad completa"]
-        N3["Tienda en línea y pedidos"]
-        N4["Compras y proveedores"]
-        N5["Varias sedes"]
-        N6["Escritorio"]
-        N7["Patrón Preparación"]
-        N8["Predicciones con Python"]
+        N1["Gimnasio (Membresía)<br/>Restaurante (Preparación)"]
+        N2["Móvil y escritorio"]
+        N3["Varias bodegas o sedes"]
+        N4["Tienda en línea"]
+        N5["Factura electrónica DIAN"]
+        N6["Contabilidad completa"]
+        N7["Pasarelas de pago para los clientes de la tienda"]
+        N8["Cobro recurrente con tarjeta guardada"]
     end
 ```
 
@@ -40,12 +39,9 @@ flowchart LR
 
 | Fase | Entrega | Terminada cuando |
 |---|---|---|
-| N1 | Base de Business, `apps/web` y onboarding | Un dueño se registra, crea su negocio, crea un cliente, le vende de contado y fiado, recibe el pago de la deuda y cierra caja cuadrada |
-| N2 | Membresía con piel Gimnasio y `apps/mobile` | Recepción asigna un plan con cobro, el socio entra con QR y una membresía vencida es rechazada |
-| N3 | Wompi, flujos de n8n e IA de negocio | El socio recibe su recibo por WhatsApp; tres días antes del vencimiento recibe recordatorio con enlace de pago; al pagar, la deuda se salda sola |
-| N4 | Piloto | Diez gimnasios lo usan a diario durante un mes y al menos la mitad paga al terminar la prueba |
-| N5 | Productos con piel Tienda | Una tienda vende desde el POS con existencias que cuadran |
-| N6 | Preparación con piel Restaurante | Un restaurante toma una comanda, la cocina la ve y la cuenta se cobra dividida |
+| N1 | Base de Business, `apps/web` y onboarding | Un dueño se registra, crea su tienda, invita a un cajero, abre caja, vende de contado y fiado, recibe un abono y cierra caja cuadrada; un webhook de esa venta llega a n8n |
+| N2 | Tienda (patrón Productos, piel Tienda) | Una tienda vende desde el POS con lector; las existencias cuadran tras compras, ventas, devoluciones, pedidos y un conteo; la cartera coincide con el libro; cada operación se ejecuta y observa por API, MCP y n8n |
+| Después de la v1.0 | Membresía con piel Gimnasio, Preparación con piel Restaurante, móvil y escritorio | Se definen en su momento con un ADR |
 
 ### Roles del negocio
 
@@ -53,7 +49,7 @@ flowchart LR
 |---|---|
 | Dueño | Todo en su negocio: equipo, planes, precios, reportes, solicitar funciones |
 | Administrador | Igual que el dueño, sin cerrar el negocio ni cambiar la suscripción |
-| Recepción | Clientes, cobros, check-in y caja de su turno; no ve reportes de ganancias |
+| Cajero | Clientes, ventas, cobros y caja de su turno; no ve reportes de ganancias |
 
 ## Referencias
 

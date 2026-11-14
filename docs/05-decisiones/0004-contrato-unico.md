@@ -41,3 +41,7 @@ Las operaciones se definen en Protobuf con Connect-RPC y los eventos en JSON Sch
 ## Referencias
 
 - [Contrato](../02-arquitectura/contrato.md)
+
+## Enmienda 2026-11-14 · Código `idempotency_conflict`
+
+La lista de códigos de error tipados suma `idempotency_conflict`: la misma clave de idempotencia con una solicitud distinta (otra operación, otro actor u otro cuerpo) mientras el registro está vigente. No escribe nada y su mensaje no revela el registro. No es `already_done` ni `invalid_input`. La decisión completa está en el [ADR-0026](0026-idempotencia-por-registro.md) y el código se documenta en [contrato.md](../02-arquitectura/contrato.md).
