@@ -61,10 +61,20 @@ func (k ActorKind) Valid() bool {
 }
 
 // Actor identifies who performs an operation. ParticipantID is the participant
-// the actor stands for; it may be empty only for the system actor. Permission
-// checks that use more than the kind and the participant arrive with the
-// permissions story.
+// the actor stands for; it may be empty only for the system actor. The
+// application layer asserts the actor in M1: a permission check proves that
+// this participant may act, not that the caller is this participant (ADR-0032).
 type Actor struct {
 	Kind          ActorKind
 	ParticipantID string
+}
+
+// IsNil reports whether the actor is null: its kind is empty or unknown, or it
+// is not the system actor and stands for no participant. A null actor is never
+// allowed to do anything. The system actor with no participant is not null.
+func (a Actor) IsNil() bool {
+	if !a.Kind.Valid() {
+		return true
+	}
+	return a.Kind != ActorSystem && a.ParticipantID == ""
 }
