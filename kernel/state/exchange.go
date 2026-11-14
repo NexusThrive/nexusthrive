@@ -34,7 +34,7 @@ const maxReversalEntries = 100
 // failure comes out of this call as rule_violation. The deferred triggers of
 // the database stay the final guarantee when the transaction commits.
 func AppendExchange(ctx context.Context, tx *sql.Tx, actor model.Actor, in model.NewExchange) (model.Exchange, error) {
-	if err := validateExchangeActor(actor); err != nil {
+	if err := validateWriteActor(actor); err != nil {
 		return model.Exchange{}, err
 	}
 	if err := in.Validate(); err != nil {
@@ -120,8 +120,8 @@ func AppendExchange(ctx context.Context, tx *sql.Tx, actor model.Actor, in model
 }
 
 // RecordExchange appends one exchange to spaceID in a transaction of its own.
-// It is for standalone use and tests; operations that write more than the
-// exchange call AppendExchange inside their own transaction.
+// It is for standalone use and tests, and it runs no permission check, so it
+// accepts only the system actor; production goes through execution.Engine.
 func RecordExchange(ctx context.Context, pool *sql.DB, actor model.Actor, spaceID string, in model.NewExchange) (model.Exchange, error) {
 	if err := validateExchangeActor(actor); err != nil {
 		return model.Exchange{}, err
@@ -148,7 +148,7 @@ func RecordExchange(ctx context.Context, pool *sql.DB, actor model.Actor, spaceI
 // twice is already_done, decided by the unique index of the database so that a
 // race has one winner. Everything else follows AppendExchange.
 func AppendReversal(ctx context.Context, tx *sql.Tx, actor model.Actor, exchangeID, idempotencyKey string) (model.Exchange, error) {
-	if err := validateExchangeActor(actor); err != nil {
+	if err := validateWriteActor(actor); err != nil {
 		return model.Exchange{}, err
 	}
 	if err := requireID("exchange id", exchangeID); err != nil {
@@ -261,9 +261,25 @@ func GetExchange(ctx context.Context, pool *sql.DB, spaceID, exchangeID string) 
 	return out, nil
 }
 
-// validateExchangeActor checks who writes the exchange. Nothing is written
-// anonymously: only the system actor may write until permissions arrive, and it
-// must act through a participant of the space.
+// validateWriteActor checks who writes in the caller's transaction. Nothing is
+// written anonymously: the actor has a known kind and stands for a participant
+// of the space. It does not look at the kind beyond that, because whether this
+// actor may write is decided by Authorizer.Check inside the engine, not by a
+// substitute here.
+func validateWriteActor(actor model.Actor) error {
+	if !actor.Kind.Valid() {
+		return model.NewError(model.CodePermissionDenied, "a write needs an actor of a known kind", nil)
+	}
+	if actor.ParticipantID == "" {
+		return model.NewError(model.CodePermissionDenied, "a write needs an actor participant", nil)
+	}
+	return requireID("actor participant id", actor.ParticipantID)
+}
+
+// validateExchangeActor checks who writes through the wrappers that open their
+// own transaction. Nothing is written anonymously: only the system actor may
+// write there, because those wrappers are for tests and bootstrap and run no
+// permission check, and it must act through a participant of the space.
 func validateExchangeActor(actor model.Actor) error {
 	if actor.Kind != model.ActorSystem {
 		return model.NewError(model.CodePermissionDenied, "only the system actor writes exchanges", nil)

@@ -39,10 +39,10 @@ func scanTimer(row rowScanner) (model.Timer, error) {
 }
 
 // validateFire checks what a firing round needs before it writes anything: a
-// clock, a limit between 1 and 500 and the system actor. In M1 the actor check
-// is the only permission the function applies; wiring Authorizer.Check with
-// kernel.timer.process belongs to execution-13 (follow-up 49), because state
-// does not import capability.
+// clock, a limit between 1 and 500 and the system actor. The actor check is an
+// additional defense: the permission kernel.timer.process is verified with
+// Authorizer.Check by execution.Engine, because state does not import
+// capability.
 func validateFire(clock model.Clock, actor model.Actor, limit int) error {
 	if clock == nil {
 		return model.NewError(model.CodeInvalidInput, "a firing round needs a clock", nil)
@@ -60,7 +60,9 @@ func validateFire(clock model.Clock, actor model.Actor, limit int) error {
 }
 
 // FireDueTimers runs one firing round for spaceID in a transaction of its own.
-// See FireDueTimersTx for what a round does.
+// It is for standalone use and tests and runs no permission check beyond the
+// system actor; production goes through execution.Engine. See FireDueTimersTx
+// for what a round does.
 func FireDueTimers(ctx context.Context, pool *sql.DB, clock model.Clock, actor model.Actor, spaceID string, limit int) (model.TimerRun, error) {
 	if err := validateFire(clock, actor, limit); err != nil {
 		return model.TimerRun{}, err
@@ -244,7 +246,7 @@ func GetTimer(ctx context.Context, pool *sql.DB, spaceID, commitmentID string) (
 // concurrent change of the same commitment and then decides on the committed
 // state. Everything else follows AppendCommitment.
 func AppendRescheduleCommitment(ctx context.Context, tx *sql.Tx, actor model.Actor, commitmentID string, dueAt time.Time) (model.Commitment, error) {
-	if err := validateExchangeActor(actor); err != nil {
+	if err := validateWriteActor(actor); err != nil {
 		return model.Commitment{}, err
 	}
 	if err := requireID("commitment id", commitmentID); err != nil {
