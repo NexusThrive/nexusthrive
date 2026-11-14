@@ -50,6 +50,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0030](0030-libro-de-doble-partida.md) | Libro de doble partida: conservación diferida, inmutabilidad en dos capas, compensación y decimales | Aceptada |
 | [0031](0031-outbox-reclamo-y-arrendamiento.md) | Outbox: reclamo de un solo espacio, arrendamiento, entrega al menos una vez y valores de partida | Aceptada |
 | [0032](0032-catalogo-de-permisos-y-verificacion.md) | Catálogo de permisos y verificación: orden de errores, bloqueo y límite del actor afirmado | Aceptada |
+| [0033](0033-compromisos-estado-derivado-y-asiento-unico.md) | Compromisos: estado derivado, concurrencia por bloqueo de fila, monto cumplido verificado y cumplimientos inmutables | Aceptada |
 
 ## Pendientes
 
