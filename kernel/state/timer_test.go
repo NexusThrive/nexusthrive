@@ -497,37 +497,39 @@ func TestFireDueTimersRollsBackEverythingOnFailure(t *testing.T) {
 	requireUntouched("outbox failure")
 }
 
+// fulfillLeavingTimerScheduled fulfills a commitment with the triggers that
+// cancel its timer turned off, and turns them on again: the corrupt state that a
+// firing round must repair, built in a throwaway database.
+func (c commitmentFixtures) fulfillLeavingTimerScheduled(t *testing.T, created model.Commitment, key string) {
+	t.Helper()
+	entry := c.credit(t, key, created.Amount.String())
+	toggle := func(action string) {
+		for _, query := range []string{
+			`ALTER TABLE kernel.commitments ` + action + ` TRIGGER commitments_timer_sync`,
+			`ALTER TABLE kernel.commitments ` + action + ` TRIGGER timers_coherence_check`,
+			`ALTER TABLE kernel.timers ` + action + ` TRIGGER timers_coherence_check`,
+		} {
+			if _, err := c.admin.Exec(query); err != nil {
+				t.Fatalf("%s: %v", query, err)
+			}
+		}
+	}
+	toggle("DISABLE")
+	c.mustFulfill(t, created.ID, entry)
+	toggle("ENABLE")
+	if got := c.timer(t, created.ID); got.Status != model.TimerStatusScheduled {
+		t.Fatalf("timer = %s, want the corrupt scheduled one", got.Status)
+	}
+}
+
 // TestFireDueTimersCancelsTimerOfFulfilledCommitment guards criterion 6: a
 // timer whose commitment is already closed is canceled and the commitment and
-// the history stay as they were. The corrupt state is built in a throwaway
-// database by turning off the triggers that make it impossible.
+// the history stay as they were.
 func TestFireDueTimersCancelsTimerOfFulfilledCommitment(t *testing.T) {
 	t.Parallel()
 	c := commitmentSetup(t)
 	created := c.createPast(t, "40.00")
-	entry := c.credit(t, "k1", "40.00")
-	for _, query := range []string{
-		`ALTER TABLE kernel.commitments DISABLE TRIGGER commitments_timer_sync`,
-		`ALTER TABLE kernel.commitments DISABLE TRIGGER timers_coherence_check`,
-		`ALTER TABLE kernel.timers DISABLE TRIGGER timers_coherence_check`,
-	} {
-		if _, err := c.admin.Exec(query); err != nil {
-			t.Fatalf("%s: %v", query, err)
-		}
-	}
-	c.mustFulfill(t, created.ID, entry)
-	if got := c.timer(t, created.ID); got.Status != model.TimerStatusScheduled {
-		t.Fatalf("timer = %s, want the corrupt scheduled one", got.Status)
-	}
-	for _, query := range []string{
-		`ALTER TABLE kernel.commitments ENABLE TRIGGER commitments_timer_sync`,
-		`ALTER TABLE kernel.commitments ENABLE TRIGGER timers_coherence_check`,
-		`ALTER TABLE kernel.timers ENABLE TRIGGER timers_coherence_check`,
-	} {
-		if _, err := c.admin.Exec(query); err != nil {
-			t.Fatalf("%s: %v", query, err)
-		}
-	}
+	c.fulfillLeavingTimerScheduled(t, created, "k1")
 	closedAt := c.get(t, created.ID).ClosedAt
 
 	run := c.mustFire(t, realClock, 10)
@@ -542,6 +544,24 @@ func TestFireDueTimersCancelsTimerOfFulfilledCommitment(t *testing.T) {
 	}
 	if _, events, outbox := c.counts(t, "fired"); events != 0 || outbox != 0 {
 		t.Errorf("events %d, outbox %d, want none for a canceled timer", events, outbox)
+	}
+}
+
+// TestFireDueTimersClockCeilingAlsoLimitsCancellation guards that the ceiling of
+// the database clock applies to the repair of a corrupt timer too: a timer that
+// is not yet due is left alone even when the injected clock runs far ahead.
+func TestFireDueTimersClockCeilingAlsoLimitsCancellation(t *testing.T) {
+	t.Parallel()
+	c := commitmentSetup(t)
+	created := c.create(t, "40.00")
+	c.fulfillLeavingTimerScheduled(t, created, "k1")
+
+	run := c.mustFire(t, &fixedClock{at: time.Now().Add(365 * 24 * time.Hour)}, 10)
+	if len(run.Fired) != 0 || len(run.Canceled) != 0 {
+		t.Errorf("run = %+v, want nothing: the timer is not due yet", run)
+	}
+	if got := c.timer(t, created.ID); got.Status != model.TimerStatusScheduled {
+		t.Errorf("timer = %s, want it left alone", got.Status)
 	}
 }
 

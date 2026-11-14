@@ -207,3 +207,54 @@ func TestFireWaitsForNothingAndTakesLocksInOrder(t *testing.T) {
 		}
 	}
 }
+
+// TestFireRacesWithRescheduleOfManyCommitments guards the repair of a stale
+// candidate: while one round scans many due commitments, each of them is
+// rescheduled by its own transaction. A reschedule that commits after the scan
+// read the old fire time but before the round locks the commitment must leave
+// that timer alone: the round fires only what is still due when it fires, and
+// the commitment that was moved stays open with its timer at the new time.
+func TestFireRacesWithRescheduleOfManyCommitments(t *testing.T) {
+	t.Parallel()
+	c := commitmentSetup(t)
+	ctx := context.Background()
+	const commitments = 30
+	for lap := 0; lap < 6; lap++ {
+		created := make([]model.Commitment, commitments)
+		for i := range created {
+			created[i] = c.createPast(t, "10.00")
+		}
+		later := time.Now().UTC().Add(72 * time.Hour).Truncate(time.Microsecond)
+		fns := []func() error{func() error {
+			_, err := c.fireDue(realClock, 500)
+			return err
+		}}
+		moved := make([]bool, commitments)
+		for i := range created {
+			fns = append(fns, func() error {
+				_, err := state.RescheduleCommitment(ctx, c.api, c.actor, spaceA, created[i].ID, later)
+				moved[i] = err == nil
+				if isCode(err, model.CodeAlreadyDone) {
+					return nil
+				}
+				return err
+			})
+		}
+		for i, err := range runConcurrently(fns...) {
+			requireNoDeadlock(t, fmt.Sprintf("lap %d caller %d", lap, i), err)
+			if err != nil {
+				t.Fatalf("lap %d caller %d: %v", lap, i, err)
+			}
+		}
+		for i, got := range created {
+			stored := c.get(t, got.ID)
+			timer := c.timer(t, got.ID)
+			switch {
+			case moved[i] && stored.Status == model.CommitmentStatusOpen && timer.Status == model.TimerStatusScheduled && timer.FireAt.Equal(later):
+			case !moved[i] && stored.Status == model.CommitmentStatusExpired && timer.Status == model.TimerStatusFired:
+			default:
+				t.Fatalf("lap %d commitment %d: moved %v, commitment %s, timer %s at %v", lap, i, moved[i], stored.Status, timer.Status, timer.FireAt)
+			}
+		}
+	}
+}

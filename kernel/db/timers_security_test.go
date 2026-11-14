@@ -210,7 +210,8 @@ func TestTimersAreNeverDeleted(t *testing.T) {
 		requireRule(t, "API: "+query, asAPI(t, e.admin, query), "42501", "")
 	}
 	for _, query := range []string{`DELETE FROM kernel.timers`, `TRUNCATE kernel.timers`, `TRUNCATE kernel.timers CASCADE`,
-		`TRUNCATE kernel.commitments, kernel.timers, kernel.fulfillments`} {
+		`TRUNCATE kernel.commitments, kernel.timers, kernel.fulfillments`, `TRUNCATE kernel.commitments CASCADE`,
+		`TRUNCATE kernel.participants CASCADE`, `TRUNCATE kernel.resources CASCADE`, `TRUNCATE kernel.spaces CASCADE`} {
 		_, err := e.admin.Exec(query)
 		requireRule(t, "administrator: "+query, err, "23001", "")
 	}
@@ -326,6 +327,13 @@ func TestOpenCommitmentWithoutTimerFailsAtCommit(t *testing.T) {
 				"23000", "timers_coherent")
 			requireTimer(t, e.admin, id, "scheduled")
 		})
+		withoutTrigger(t, e.admin, "timers", "timers_guard_update", func() {
+			id := e.commit(t, ledgerSpaceA, "10.00")
+			requireRule(t, w.name+": timer moved by itself", runTx(t, w.pool, w.space,
+				stmt{`UPDATE kernel.timers SET fire_at = fire_at + interval '1 day' WHERE commitment_id = $1`, []any{id}}),
+				"23000", "timers_coherent")
+			requireTimer(t, e.admin, id, "scheduled")
+		})
 		withoutTrigger(t, e.admin, "timers", "timers_expire_commitment", func() {
 			id := e.commitPast(t, ledgerSpaceA, "10.00")
 			requireRule(t, w.name+": fired timer of an open commitment", runTx(t, w.pool, w.space, fireTimerStmt(id), expiryEventStmt(t, id, ledgerSpaceA)),
@@ -357,14 +365,26 @@ func TestExpiryRequiresDueAtPassedEvenWithoutTimerGuard(t *testing.T) {
 			map[string]string{"API": "42501", "administrator": "23001"}[w.name], "")
 	}
 
+	// A timer that claims to have fired before its time does not count: the
+	// CHECK that ties fired_at to fire_at is dropped here to reach the third
+	// condition of the guard on its own.
+	if _, err := e.admin.Exec(`ALTER TABLE kernel.timers DROP CONSTRAINT timers_fired_after_fire_at`); err != nil {
+		t.Fatalf("drop check: %v", err)
+	}
+	for _, query := range []string{
+		`ALTER TABLE kernel.timers DISABLE TRIGGER timers_coherence_check`, `ALTER TABLE kernel.commitments DISABLE TRIGGER timers_coherence_check`,
+	} {
+		if _, err := e.admin.Exec(query); err != nil {
+			t.Fatalf("%s: %v", query, err)
+		}
+	}
+	early := e.commitPast(t, ledgerSpaceA, "10.00")
+	requireRule(t, "timer fired before its fire time", runTx(t, e.admin, "",
+		stmt{`UPDATE kernel.timers SET fire_at = now() + interval '1 day', status = 'fired', fired_at = now() WHERE commitment_id = $1`, []any{early}},
+		updateOf(early, `status = 'expired'`)), "23001", "")
+
 	// A fired timer from an earlier transaction does not count either.
 	due := e.commitPast(t, ledgerSpaceA, "10.00")
-	if _, err := e.admin.Exec(`ALTER TABLE kernel.timers DISABLE TRIGGER timers_coherence_check`); err != nil {
-		t.Fatalf("disable coherence: %v", err)
-	}
-	if _, err := e.admin.Exec(`ALTER TABLE kernel.commitments DISABLE TRIGGER timers_coherence_check`); err != nil {
-		t.Fatalf("disable coherence: %v", err)
-	}
 	if err := runTx(t, e.admin, "", stmt{`UPDATE kernel.timers SET status = 'fired', fired_at = now() WHERE commitment_id = $1`, []any{due}}); err != nil {
 		t.Fatalf("fire: %v", err)
 	}
@@ -419,11 +439,16 @@ func TestRescheduleCannotForceExpiryInOneTransaction(t *testing.T) {
 	}
 }
 
-// TestTimerGuardLocksCommitment guards the lock order: firing a timer waits for
-// a concurrent change of its commitment, so the guard reads the committed state.
+// TestTimerGuardLocksCommitment guards the lock order: a direct write of a timer
+// waits for a concurrent change of its commitment, so the guard reads the
+// committed state. The cascade of a firing would wait on the commitment by
+// itself, so it is turned off to let the lock of the guard answer alone.
 func TestTimerGuardLocksCommitment(t *testing.T) {
 	t.Parallel()
 	e := newCommitmentEnv(t)
+	toggleTrigger(t, e.admin, "timers", "timers_expire_commitment", false)
+	toggleTrigger(t, e.admin, "timers", "timers_coherence_check", false)
+	toggleTrigger(t, e.admin, "commitments", "timers_coherence_check", false)
 	id := e.commitPast(t, ledgerSpaceA, "10.00")
 
 	holding, err := e.admin.Begin()
@@ -435,7 +460,7 @@ func TestTimerGuardLocksCommitment(t *testing.T) {
 		t.Fatalf("lock: %v", err)
 	}
 	done := make(chan error, 1)
-	go func() { done <- runTx(t, e.api, ledgerSpaceA, fireTimerStmt(id), expiryEventStmt(t, id, ledgerSpaceA)) }()
+	go func() { done <- runTx(t, e.api, ledgerSpaceA, fireTimerStmt(id)) }()
 	waitForLockWait(t, e.admin, "UPDATE kernel.timers")
 	select {
 	case err := <-done:

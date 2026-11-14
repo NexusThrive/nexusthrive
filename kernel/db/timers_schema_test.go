@@ -210,6 +210,11 @@ func TestSecondScheduledTimerRejectedByIndex(t *testing.T) {
 	for _, w := range e.writers() {
 		requireRule(t, w.name+" with the guard", runTx(t, w.pool, w.space, second()), "23505", "timers_one_scheduled_key")
 	}
+	// A second timer at another time is refused by the guard before the index.
+	for _, w := range e.writers() {
+		requireRule(t, w.name+" at another time", runTx(t, w.pool, w.space, stmt{`INSERT INTO kernel.timers (id, space_id, commitment_id, fire_at)
+			SELECT $1, space_id, id, due_at + interval '1 day' FROM kernel.commitments WHERE id = $2`, []any{newID(t), id}}), "23001", "")
+	}
 	if _, err := e.admin.Exec(`ALTER TABLE kernel.timers DISABLE TRIGGER timers_guard_insert`); err != nil {
 		t.Fatalf("disable guard: %v", err)
 	}

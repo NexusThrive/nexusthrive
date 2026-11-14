@@ -368,6 +368,8 @@ func TestCommitmentOnConflictCannotBypassGuards(t *testing.T) {
 		"status":                              {`DO UPDATE SET status = 'fulfilled'`, "23001"},
 		"amount":                              {`DO UPDATE SET amount = 1`, "42501"},
 		"closing time":                        {`DO UPDATE SET closed_at = now()`, "42501"},
+		"due date into the past":              {`DO UPDATE SET due_at = now() - interval '1 day'`, "23000"},
+		"expiry":                              {`DO UPDATE SET status = 'expired'`, "23001"},
 	} {
 		requireRule(t, name, runTx(t, e.api, ledgerSpaceA, again(id, tc.conflict)), tc.state, "")
 	}

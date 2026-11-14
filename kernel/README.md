@@ -22,4 +22,6 @@ Rules:
 - No business vocabulary in this module (`customer`, `invoice`, `sale`, `membership`…). An architecture test enforces it.
 - This module never imports `platform/` or `distributions/`. They register themselves through `extension/`.
 
+Current state of timers: `state.FireDueTimers` fires the due expiry timers of a space and expires their commitments; nothing calls it in production until the scheduler process exists (see `docs/02-arquitectura/kernel.md`, section "Temporizadores y vencimiento").
+
 Documentation (Spanish): `docs/02-arquitectura/kernel.md`.
