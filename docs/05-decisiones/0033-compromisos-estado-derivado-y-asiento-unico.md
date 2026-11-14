@@ -22,6 +22,8 @@ HU-kernel-commitments-11 implementa la ley de compromiso (`docs/01-modelo/leyes.
 
 **`entries.commitment_id` se descarta.** `fulfillments` es la única fuente de verdad del vínculo; `entries` es inmutable y una columna extra sería forjable con su grant. Se actualizan los documentos que la prometían.
 
+**Enmienda (2026-11-14, ADR-0034).** El rol de la API recibe `UPDATE (due_at, status)` sobre `commitments` porque la cascada de un timer corre con sus derechos, y `due_at` deja de ser inmutable: se reprograma solo hacia el futuro. `expired` se fija únicamente por cascada desde un timer disparado en la misma transacción, con `due_at <= now()`; resuelve el seguimiento 53.
+
 **Alcance.** Sin timers, vencimiento, eventos ni outbox (timers-12 y execution-13); los permisos `kernel.commitment.*` los aplica execution-13.
 
 ## Alternativas consideradas
