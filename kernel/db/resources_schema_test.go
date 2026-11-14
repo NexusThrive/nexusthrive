@@ -333,8 +333,8 @@ func TestResourcesAccountsForcedRLSAndGrants(t *testing.T) {
 }
 
 // expectedAmountColumns lists the ledger columns that must exist and hold
-// exact decimals. The commitment stories add theirs when their tables exist.
-var expectedAmountColumns = []string{"entries.amount"}
+// exact decimals. The commitment tables add theirs.
+var expectedAmountColumns = []string{"entries.amount", "commitments.amount", "commitments.fulfilled_amount", "fulfillments.amount"}
 
 // floatingTypes are the column types that can never hold money.
 var floatingTypes = []string{"real", "double precision", "money"}

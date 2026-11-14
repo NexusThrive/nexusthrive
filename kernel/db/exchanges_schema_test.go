@@ -478,6 +478,16 @@ func TestEntryCannotJoinCommittedExchange(t *testing.T) {
 	}
 }
 
+// dropFulfillmentEntryKey removes the foreign key from fulfillments to entries.
+// With it, PostgreSQL refuses a lone TRUNCATE of entries by itself, before any
+// trigger fires; the tests that prove the triggers drop it to reach them.
+func dropFulfillmentEntryKey(t *testing.T, admin *sql.DB) {
+	t.Helper()
+	if _, err := admin.Exec(`ALTER TABLE kernel.fulfillments DROP CONSTRAINT fulfillments_entry_fkey`); err != nil {
+		t.Fatalf("drop foreign key: %v", err)
+	}
+}
+
 // TestLedgerIsAppendOnly guards criterion 7: the API role lacks the privilege
 // and the administrator is stopped by the triggers, TRUNCATE CASCADE included.
 func TestLedgerIsAppendOnly(t *testing.T) {
@@ -486,6 +496,7 @@ func TestLedgerIsAppendOnly(t *testing.T) {
 	api := dbtest.APIPool(t, admin)
 	seedExchangeFixtures(t, admin)
 	commitPair(t, api, ledgerSpaceA, "k1", ledgerAccountA, exAccountA2, ledgerResourceA, "50.00")
+	dropFulfillmentEntryKey(t, admin)
 
 	for _, query := range []string{
 		`UPDATE kernel.entries SET amount = 1`, `DELETE FROM kernel.entries`, `TRUNCATE kernel.entries`,
@@ -541,6 +552,7 @@ func TestLedgerTriggersHoldEvenIfGrantedByMistake(t *testing.T) {
 	api := dbtest.APIPool(t, admin)
 	seedExchangeFixtures(t, admin)
 	commitPair(t, api, ledgerSpaceA, "k1", ledgerAccountA, exAccountA2, ledgerResourceA, "50.00")
+	dropFulfillmentEntryKey(t, admin)
 
 	for _, table := range []string{"exchanges", "entries"} {
 		for _, query := range []string{
