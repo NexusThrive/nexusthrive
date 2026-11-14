@@ -13,7 +13,7 @@ func TestTimerIdIsTheCommitmentIdAndNoSecondTimerFits(t *testing.T) {
 	w := newEngineWorld(t)
 	f := w.ledger(w.spaceA)
 	actor := w.writer(w.spaceA, "writer")
-	op := newOperation(t, f, "k-timer-id")
+	op := newOperation(t, f)
 	if err := w.run(actor, w.spaceA, "request-timer", op.standard()); err != nil {
 		t.Fatalf("the operation failed: %v", err)
 	}

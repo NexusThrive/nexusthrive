@@ -23,7 +23,7 @@ func TestLawMemoryHistoryIsAppendOnly(t *testing.T) {
 	// The ledger functions of the state package are written by the system actor.
 	bookkeeper := model.Actor{Kind: model.ActorSystem, ParticipantID: f.creditor}
 
-	op := newOperation(t, f, "k-memory")
+	op := newOperation(t, f)
 	if err := w.run(actor, w.spaceA, "request-memory", op.standard()); err != nil {
 		t.Fatalf("the operation failed: %v", err)
 	}

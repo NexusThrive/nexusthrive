@@ -109,7 +109,9 @@ func AppendExchange(ctx context.Context, tx *sql.Tx, actor model.Actor, in model
 	}
 
 	// Run the deferred checks now so the failure is typed and belongs to this
-	// call, then defer them again for anything the caller writes afterwards.
+	// call, then defer them again for anything the caller writes afterwards. The
+	// checks are always left DEFERRED, even if the caller had set them to
+	// IMMEDIATE: the kernel never runs them in another mode (follow-up 36).
 	if _, err := tx.ExecContext(ctx, `SET CONSTRAINTS kernel.exchanges_balance_check, kernel.entries_balance_check IMMEDIATE`); err != nil {
 		return model.Exchange{}, translateExchangeError("check exchange balance", err)
 	}

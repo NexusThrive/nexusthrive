@@ -93,7 +93,7 @@ func TestClaimOutboxNeedsClaimPermission(t *testing.T) {
 	writer := w.writer(w.spaceA, "writer")
 	w.clock.Set(time.Now().Add(time.Hour))
 	var ran steps
-	if err := w.engine.Run(context.Background(), call(writer, w.spaceA), moneyOperation.Name, f.handler(t, "k-claim", &ran, nil)); err != nil {
+	if err := w.runMoney(context.Background(), call(writer, w.spaceA), moneyOperation.Name, f.handler(t, &ran, nil)); err != nil {
 		t.Fatalf("seed an outbox row: %v", err)
 	}
 	owner := w.holder(w.spaceA, "owner", model.OwnerRole().Permissions...)

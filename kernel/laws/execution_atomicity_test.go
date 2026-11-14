@@ -60,7 +60,7 @@ func newEngineWorld(t *testing.T) *engineWorld {
 	t.Helper()
 	admin := dbtest.Database(t)
 	api := dbtest.APIPool(t, admin)
-	now := &clock{now: time.Date(2026, 11, 14, 12, 0, 0, 0, time.UTC)}
+	now := &clock{now: time.Now().UTC()}
 	auth, err := capability.NewAuthorizer(model.KernelCatalog(), now)
 	if err != nil {
 		t.Fatalf("NewAuthorizer: %v", err)
@@ -176,7 +176,6 @@ func money(t *testing.T, text string) model.Amount {
 type operation struct {
 	t          *testing.T
 	f          fixtures
-	key        string
 	calls      int
 	exchange   string
 	commitment string
@@ -184,18 +183,19 @@ type operation struct {
 }
 
 // newOperation prepares an operation over the fixtures.
-func newOperation(t *testing.T, f fixtures, key string) *operation {
-	return &operation{t: t, f: f, key: key, ran: map[string]bool{}}
+func newOperation(t *testing.T, f fixtures) *operation {
+	return &operation{t: t, f: f, ran: map[string]bool{}}
 }
 
-// stepExchange records an exchange, balanced or not.
+// stepExchange records an exchange, balanced or not. It names no key: the
+// operations of these tests are idempotent, so the engine derives it.
 func (o *operation) stepExchange(ctx context.Context, tx *execution.Tx, balanced bool) error {
 	credit := "10.00"
 	debit := "10.00"
 	if !balanced {
 		debit = "5.00"
 	}
-	out, err := tx.RecordExchange(ctx, model.NewExchange{Kind: "test.exchange", IdempotencyKey: o.key, Entries: []model.NewEntry{
+	out, err := tx.RecordExchange(ctx, model.NewExchange{Kind: "test.exchange", Entries: []model.NewEntry{
 		{AccountID: o.f.to, ResourceID: o.f.resource, Amount: money(o.t, credit)},
 		{AccountID: o.f.from, ResourceID: o.f.resource, Amount: money(o.t, debit).Neg()},
 	}})
@@ -251,25 +251,39 @@ func (o *operation) standard() execution.Handler {
 
 // run executes the money operation in a space.
 func (w *engineWorld) run(actor model.Actor, spaceID string, requestID string, fn execution.Handler) error {
-	return w.engine.Run(context.Background(), execution.Call{Actor: actor, SpaceID: spaceID, RequestID: requestID}, moneyOperation.Name, fn)
+	return w.runOperation(actor, spaceID, requestID, moneyOperation.Name, fn)
+}
+
+// runOperation executes an idempotent operation the way these tests did before
+// idempotency existed: through RunIdempotent with a fresh key and an empty body,
+// so that every call is a first execution, and with a Handler adapted to the
+// ResultHandler it takes, so that the assertions of the tests stay as they were.
+func (w *engineWorld) runOperation(actor model.Actor, spaceID, requestID, name string, fn execution.Handler) error {
+	_, err := w.engine.RunIdempotent(context.Background(),
+		execution.Call{Actor: actor, SpaceID: spaceID, RequestID: requestID, IdempotencyKey: "key-" + execution.NewRequestID(), Request: json.RawMessage(`{}`)},
+		name, func(ctx context.Context, tx *execution.Tx) (json.RawMessage, error) {
+			return json.RawMessage(`{}`), fn(ctx, tx)
+		})
+	return err
 }
 
 // TestOperationWritesAllFourOrNone guards criterion 1: an operation with both
 // permissions writes the exchange and its entries, the commitment with its
-// timer, the event and the outbox row together, the event carries the request
-// id and the actor of the call, and no other table changes.
+// timer, the event, the outbox row and, because the operation is idempotent, its
+// idempotency record, together; the event carries the request id and the actor
+// of the call, and no other table changes.
 func TestOperationWritesAllFourOrNone(t *testing.T) {
 	t.Parallel()
 	w := newEngineWorld(t)
 	f := w.ledger(w.spaceA)
 	actor := w.writer(w.spaceA, "writer")
-	op := newOperation(t, f, "k-atomic")
+	op := newOperation(t, f)
 
 	before := w.counts()
 	if err := w.run(actor, w.spaceA, "request-1", op.standard()); err != nil {
 		t.Fatalf("the operation failed: %v", err)
 	}
-	want := map[string]int{"exchanges": 1, "entries": 2, "commitments": 1, "timers": 1, "events": 1, "outbox": 1}
+	want := map[string]int{"exchanges": 1, "entries": 2, "commitments": 1, "timers": 1, "events": 1, "outbox": 1, "idempotency_records": 1}
 	got := diff(before, w.counts())
 	for table, n := range want {
 		if got[table] != n {
@@ -370,9 +384,9 @@ func TestOperationFailureLeavesNothing(t *testing.T) {
 			ran:  []string{"commitment", "event"},
 		},
 	}
-	for i, c := range cases {
+	for _, c := range cases {
 		before := w.counts()
-		o := newOperation(t, f, "k-fail-"+string(rune('a'+i)))
+		o := newOperation(t, f)
 		err := w.run(actor, w.spaceA, "request-fail", c.fn(o))
 		if err == nil {
 			t.Errorf("%s: the operation succeeded", c.name)
@@ -396,7 +410,7 @@ func TestOperationFailureLeavesNothing(t *testing.T) {
 	// and not from the operation. The failure injected in each write is in
 	// TestLawEndToEndInjectedFailureLeavesNothing.
 	before := w.counts()
-	if err := w.run(actor, w.spaceA, "request-ok", newOperation(t, f, "k-fail-after").standard()); err != nil {
+	if err := w.run(actor, w.spaceA, "request-ok", newOperation(t, f).standard()); err != nil {
 		t.Fatalf("the operation afterwards failed: %v", err)
 	}
 	if changed := diff(before, w.counts()); changed["outbox"] != 1 || changed["exchanges"] != 1 {

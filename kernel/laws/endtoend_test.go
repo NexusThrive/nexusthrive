@@ -26,6 +26,8 @@ var writtenTables = []struct {
 	{"timers", []string{"exchange"}},
 	{"events", []string{"exchange", "commitment"}},
 	{"outbox", []string{"exchange", "commitment"}},
+	// The record of an idempotent operation is written after its handler.
+	{"idempotency_records", []string{"exchange", "commitment", "event"}},
 }
 
 // TestLawEndToEndInjectedFailureLeavesNothing guards criterion 5 of the
@@ -51,7 +53,7 @@ func TestLawEndToEndInjectedFailureLeavesNothing(t *testing.T) {
 			t.Fatalf("%s: create the failing trigger: %v", target.table, err)
 		}
 		before := w.counts()
-		op := newOperation(t, f, "k-inject-"+target.table)
+		op := newOperation(t, f)
 		handler := op.standard()
 		if target.table == "exchanges" || target.table == "entries" {
 			handler = func(ctx context.Context, tx *execution.Tx) error {
@@ -86,7 +88,7 @@ func TestLawEndToEndInjectedFailureLeavesNothing(t *testing.T) {
 	// Without an injected failure the same operation writes all six tables, so
 	// the failures above came from the injection and not from the operation.
 	before := w.counts()
-	if err := w.run(actor, w.spaceA, "request-ok", newOperation(t, f, "k-inject-control").standard()); err != nil {
+	if err := w.run(actor, w.spaceA, "request-ok", newOperation(t, f).standard()); err != nil {
 		t.Fatalf("the operation without an injected failure failed: %v", err)
 	}
 	changed := diff(before, w.counts())

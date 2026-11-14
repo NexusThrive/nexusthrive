@@ -34,8 +34,10 @@ type Operation struct {
 	// Risk must equal the highest risk among Permissions, so an operation that
 	// moves value cannot be declared as a plain write.
 	Risk model.Risk
-	// Idempotent declares support for idempotent retries; it is required when
-	// Risk is money. HU-kernel-idempotency-14 implements it.
+	// Idempotent declares that the operation answers repeated requests with the
+	// response of the first one; it is required when Risk is money. Such an
+	// operation runs only through Engine.RunIdempotent (ADR-0026), and Run
+	// refuses it.
 	Idempotent bool
 }
 

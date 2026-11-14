@@ -55,7 +55,7 @@ func newIsolationWorld(t *testing.T) *isolationWorld {
 	for _, space := range []string{w.spaceA, w.spaceB} {
 		f := w.ledger(space)
 		actor := w.writer(space, "writer")
-		op := newOperation(t, f, "k-iso-"+space)
+		op := newOperation(t, f)
 		if err := w.run(actor, space, "request-iso", op.standard()); err != nil {
 			t.Fatalf("the operation failed in %s: %v", space, err)
 		}
