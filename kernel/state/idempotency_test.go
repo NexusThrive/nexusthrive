@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -82,13 +83,38 @@ func (f idempotencyFixtures) find(t *testing.T, space string, clock model.Clock,
 	return record, found
 }
 
+// age moves every record of key back in time by d, as the administrator: the
+// guard of the insert accepts a creation time only inside a window of five
+// minutes, so a record that is older than that can only come from rewriting
+// one. The trigger that forbids changing a record is switched off for the
+// rewrite and on again right after, in a database that only this test uses.
+func (f idempotencyFixtures) age(t *testing.T, key string, d time.Duration) {
+	t.Helper()
+	for _, query := range []string{
+		`ALTER TABLE kernel.idempotency_records DISABLE TRIGGER idempotency_records_no_update`,
+		fmt.Sprintf(`UPDATE kernel.idempotency_records SET created_at = created_at - interval '%d microseconds', expires_at = expires_at - interval '%d microseconds' WHERE key = '%s'`,
+			d.Microseconds(), d.Microseconds(), key),
+		`ALTER TABLE kernel.idempotency_records ENABLE TRIGGER idempotency_records_no_update`,
+	} {
+		if _, err := f.admin.Exec(query); err != nil {
+			t.Fatalf("age %q: %v", key, err)
+		}
+	}
+}
+
+// recent returns a clock a minute behind the database: inside the window of
+// the guard and far enough behind to be a fixed, comparable instant.
+func recent() *fixedClock {
+	return &fixedClock{at: time.Now().UTC().Add(-time.Minute).Truncate(time.Microsecond)}
+}
+
 // TestAppendAndFindRoundTrip guards criterion 1 in state: the record is stored
 // with the fingerprint, the response in the form of the database, the creation
 // time of the clock and an expiry 24 hours later, and a lookup returns it.
 func TestAppendAndFindRoundTrip(t *testing.T) {
 	t.Parallel()
 	f := idempotencySetup(t)
-	clock := &fixedClock{at: time.Now().UTC().Add(-3 * time.Hour).Truncate(time.Microsecond).Add(123 * time.Microsecond)}
+	clock := &fixedClock{at: recent().at.Add(123 * time.Microsecond)}
 	in := newRecord(t, f.actorA, "round-trip")
 	in.Response = []byte(`{"b": 2,"a":[1, 2]}`)
 
@@ -121,27 +147,23 @@ func TestAppendAndFindRoundTrip(t *testing.T) {
 }
 
 // TestFindHonorsTheExpiryToTheMicrosecond guards criterion 6 at the edge: a
-// record is in force until the instant it expires, not at it.
+// record is in force until the instant it expires, not at it. Each case ages a
+// record so that it has the given time left at the instant of the clock.
 func TestFindHonorsTheExpiryToTheMicrosecond(t *testing.T) {
 	t.Parallel()
 	f := idempotencySetup(t)
-	created := time.Now().UTC().Add(-48 * time.Hour).Truncate(time.Microsecond)
-	f.append(t, spaceA, &fixedClock{at: created}, newRecord(t, f.actorA, "edge"))
-	expiry := created.Add(model.IdempotencyTTL)
-
-	for name, tc := range map[string]struct {
-		at   time.Time
+	clock := recent()
+	for i, tc := range []struct {
+		left time.Duration
 		want bool
 	}{
-		"at creation":           {created, true},
-		"23 h 59 min":           {created.Add(23*time.Hour + 59*time.Minute), true},
-		"a microsecond before":  {expiry.Add(-time.Microsecond), true},
-		"exactly at the expiry": {expiry, false},
-		"a microsecond after":   {expiry.Add(time.Microsecond), false},
-		"long after":            {expiry.Add(72 * time.Hour), false},
+		{model.IdempotencyTTL, true}, {time.Minute, true}, {time.Microsecond, true}, {0, false}, {-time.Microsecond, false}, {-72 * time.Hour, false},
 	} {
-		if _, ok := f.find(t, spaceA, &fixedClock{at: tc.at}, "edge"); ok != tc.want {
-			t.Errorf("%s: found = %v, want %v", name, ok, tc.want)
+		key := fmt.Sprintf("edge-%d", i)
+		f.append(t, spaceA, clock, newRecord(t, f.actorA, key))
+		f.age(t, key, model.IdempotencyTTL-tc.left)
+		if _, ok := f.find(t, spaceA, clock, key); ok != tc.want {
+			t.Errorf("with %v left: found = %v, want %v", tc.left, ok, tc.want)
 		}
 	}
 }
@@ -185,31 +207,71 @@ func TestAppendCapsCreatedAtAtTheDatabase(t *testing.T) {
 func TestAppendFollowsAnExpiredRecordWithTheNextGeneration(t *testing.T) {
 	t.Parallel()
 	f := idempotencySetup(t)
-	start := time.Now().UTC().Add(-48 * time.Hour).Truncate(time.Microsecond)
-	first := f.append(t, spaceA, &fixedClock{at: start}, newRecord(t, f.actorA, "again"))
+	clock := recent()
+	first := f.append(t, spaceA, clock, newRecord(t, f.actorA, "again"))
+	f.age(t, "again", model.IdempotencyTTL+time.Hour)
 
-	later := &fixedClock{at: start.Add(model.IdempotencyTTL + time.Second)}
-	if _, ok := f.find(t, spaceA, later, "again"); ok {
-		t.Fatal("the record is still in force after 24 hours and a second")
+	if _, ok := f.find(t, spaceA, clock, "again"); ok {
+		t.Fatal("the record is still in force after it expired")
 	}
-	second := f.append(t, spaceA, later, newRecord(t, f.actorA, "again"))
+	second := f.append(t, spaceA, clock, newRecord(t, f.actorA, "again"))
 	if second.Generation != 2 || second.ID == first.ID {
 		t.Errorf("second = %+v, want generation 2 and another id", second)
 	}
-	found, ok := f.find(t, spaceA, later, "again")
+	found, ok := f.find(t, spaceA, clock, "again")
 	if !ok || found.ID != second.ID {
 		t.Errorf("found = %+v (%v), want the second generation in force", found, ok)
-	}
-	// Even a clock that is behind sees the newest generation, not an older one
-	// that its own time would still call in force.
-	behind, ok := f.find(t, spaceA, &fixedClock{at: start}, "again")
-	if !ok || behind.ID != second.ID {
-		t.Errorf("a clock behind found %+v (%v), want the newest generation", behind, ok)
 	}
 	var kept int
 	if err := f.admin.QueryRow(`SELECT count(*) FROM kernel.idempotency_records WHERE id = $1 AND generation = 1 AND response = '{"ok":true}'::jsonb`, first.ID).Scan(&kept); err != nil || kept != 1 {
 		t.Errorf("the first generation changed (%d, %v)", kept, err)
 	}
+}
+
+// TestCheckIdempotencyClock guards the clock before a handler runs: the zero
+// time and a clock behind the database by more than the tolerance are
+// invalid_input, a clock inside the tolerance, at it, and any clock ahead of the
+// database pass.
+func TestCheckIdempotencyClock(t *testing.T) {
+	t.Parallel()
+	f := idempotencySetup(t)
+	check := func(clock model.Clock) error {
+		return state.InSpace(context.Background(), f.api, spaceA, func(ctx context.Context, tx *sql.Tx) error {
+			return state.CheckIdempotencyClock(ctx, tx, clock)
+		})
+	}
+	now := time.Now()
+	for name, at := range map[string]time.Time{
+		"the zero time": {}, "year 1": time.Date(1, 1, 1, 0, 0, 1, 0, time.UTC), "25 hours behind": now.Add(-25 * time.Hour),
+		"an hour behind": now.Add(-time.Hour), "six minutes behind": now.Add(-6 * time.Minute),
+	} {
+		requireCodeLabel(t, name, check(&fixedClock{at: at}), model.CodeInvalidInput)
+	}
+	for name, at := range map[string]time.Time{
+		"now": now, "a minute behind": now.Add(-time.Minute), "four minutes behind": now.Add(-4 * time.Minute),
+		"a second ahead": now.Add(time.Second), "a year ahead": now.AddDate(1, 0, 0),
+	} {
+		if err := check(&fixedClock{at: at}); err != nil {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	requireCodeLabel(t, "no clock", check(nil), model.CodeInvalidInput)
+}
+
+// TestRequireReadCommitted guards the isolation level the lock relies on: the
+// default level passes and a stricter one is rule_violation.
+func TestRequireReadCommitted(t *testing.T) {
+	t.Parallel()
+	f := idempotencySetup(t)
+	f.inSpace(t, spaceA, func(ctx context.Context, tx *sql.Tx) error {
+		return state.RequireReadCommitted(ctx, tx)
+	})
+	tx, err := f.api.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer tx.Rollback()
+	requireCodeLabel(t, "repeatable read", state.RequireReadCommitted(context.Background(), tx), model.CodeRuleViolation)
 }
 
 // TestAppendInAKeyInForceIsRuleViolation guards that the refusal of a key in

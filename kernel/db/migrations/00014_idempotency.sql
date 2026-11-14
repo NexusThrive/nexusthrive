@@ -20,8 +20,8 @@ CREATE TABLE kernel.idempotency_records (
   request_hash bytea NOT NULL CONSTRAINT idempotency_records_hash_size CHECK (octet_length(request_hash) = 32),
   response jsonb NOT NULL CONSTRAINT idempotency_records_response_check
     CHECK (jsonb_typeof(response) = 'object' AND octet_length(response::text) <= 65536),
-  -- Written by the engine with its injectable clock and capped at now() by a
-  -- trigger: the clock can run behind the database, never ahead of it.
+  -- Written by the engine with its injectable clock. A trigger keeps it inside
+  -- the window from 5 minutes before now() up to now().
   created_at timestamptz NOT NULL,
   -- Stamped by a trigger: no role chooses it.
   expires_at timestamptz NOT NULL,
@@ -90,9 +90,16 @@ BEGIN
   IF NEW.space_id IS DISTINCT FROM kernel.current_space_id() THEN
     RAISE EXCEPTION 'an idempotency record is written in the current space only' USING ERRCODE = 'restrict_violation';
   END IF;
-  -- The ceiling of the injectable clock: it may run behind the database, never ahead.
+  -- The window of the injectable clock: never ahead of the database, and not
+  -- more than 5 minutes behind it (model.IdempotencyClockTolerance). A record
+  -- born older than that would start with less than its 24 hours, or already
+  -- expired, and a repetition would run the handler again.
   IF NEW.created_at IS NULL OR NEW.created_at > now() THEN
     RAISE EXCEPTION 'an idempotency record cannot be born in the future of the database clock'
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF NEW.created_at < now() - interval '5 minutes' THEN
+    RAISE EXCEPTION 'an idempotency record cannot be born more than 5 minutes behind the database clock'
       USING ERRCODE = 'restrict_violation';
   END IF;
   PERFORM kernel.idempotency_lock(NEW.key);

@@ -23,14 +23,19 @@ var system = model.Actor{Kind: model.ActorSystem}
 
 // fakeClock is a Clock the tests move by hand.
 type fakeClock struct {
-	mu  sync.Mutex
-	now time.Time
+	mu    sync.Mutex
+	now   time.Time
+	fixed bool
 }
 
-// Now returns the frozen time.
+// Now returns the time the test set, or the real time while none was set: a
+// clock far from the one of the database is refused by idempotent operations.
 func (c *fakeClock) Now() time.Time {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if !c.fixed {
+		return time.Now().UTC()
+	}
 	return c.now
 }
 
@@ -38,11 +43,8 @@ func (c *fakeClock) Now() time.Time {
 func (c *fakeClock) Set(at time.Time) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.now = at
+	c.now, c.fixed = at, true
 }
-
-// start is the instant every test clock begins at.
-var start = time.Date(2026, 11, 14, 12, 0, 0, 0, time.UTC)
 
 // moneyOperation is the operation of the tests: it needs two permissions,
 // moves value and declares idempotency.
@@ -71,7 +73,7 @@ func newWorld(t *testing.T, ops ...Operation) *world {
 	t.Helper()
 	admin := dbtest.Database(t)
 	api := dbtest.APIPool(t, admin)
-	clock := &fakeClock{now: start}
+	clock := &fakeClock{}
 	auth, err := capability.NewAuthorizer(model.KernelCatalog(), clock)
 	if err != nil {
 		t.Fatalf("NewAuthorizer: %v", err)

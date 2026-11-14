@@ -98,7 +98,7 @@ func TestFirstRunStoresHashResponseAndExpiryInSameTransaction(t *testing.T) {
 	w := newWorld(t)
 	f := w.ledger(w.spaceA)
 	holder := w.writer(w.spaceA, "holder")
-	created := behind(30 * time.Hour)
+	created := behind(time.Minute)
 	w.at(created)
 	var runs counter
 
@@ -177,6 +177,9 @@ func TestFailedCommitLeavesNoRecordNorExchange(t *testing.T) {
 			return body, err
 		})
 	requireCode(t, "failed commit", err, model.CodeRuleViolation)
+	if got := w.count(`SELECT count(*) FROM kernel.idempotency_records WHERE key = 'k-late-failure'`); got != 0 {
+		t.Errorf("%d records after the rolled back commit, want 0", got)
+	}
 	if changed := w.changed(before); len(changed) != 0 {
 		t.Errorf("the failed commit left %v", changed)
 	}
@@ -453,6 +456,17 @@ func TestIdempotencyRecordsIsolationBetweenSpaces(t *testing.T) {
 	}
 }
 
+// age moves the record of a key back in time by d, as the administrator, with
+// the trigger that forbids changing a record switched off for the rewrite. The
+// engine refuses a clock that is more than five minutes behind the database, and
+// a clock can never run ahead of it, so the only way to have a record that is
+// close to its expiry, or past it, is to age the record and keep the clock still.
+func (w *world) age(key string, d time.Duration) {
+	w.t.Helper()
+	w.tamper(`UPDATE kernel.idempotency_records SET created_at = created_at - $1::bigint * interval '1 microsecond',
+		expires_at = expires_at - $1::bigint * interval '1 microsecond' WHERE key = '`+key+`'`, d.Microseconds())
+}
+
 // TestExpiredRecordIsReplacedByNextGeneration guards criterion 6: after 24 hours
 // the same key runs again as a new execution with a new exchange key, the
 // record of the first execution stays as it was, and the new generation is the
@@ -462,13 +476,12 @@ func TestExpiredRecordIsReplacedByNextGeneration(t *testing.T) {
 	w := newWorld(t)
 	f := w.ledger(w.spaceA)
 	holder := w.writer(w.spaceA, "holder")
-	start := behind(30 * time.Hour)
 	var runs counter
 	run := func() (Response, error) {
 		return w.engine.RunIdempotent(context.Background(), idemCall(holder, w.spaceA, "k-expire", idemBody), moneyOperation.Name, f.recordHandler(t, &runs))
 	}
 
-	w.at(start)
+	w.at(behind(time.Minute))
 	first, err := run()
 	if err != nil || first.Replayed {
 		t.Fatalf("first: %v, replayed %v", err, first.Replayed)
@@ -477,12 +490,12 @@ func TestExpiredRecordIsReplacedByNextGeneration(t *testing.T) {
 	if len(ids) != 1 {
 		t.Fatalf("records after the first run = %v", generations)
 	}
-	w.at(start.Add(model.IdempotencyTTL - time.Second))
+	w.age("k-expire", model.IdempotencyTTL-time.Second)
 	if again, err := run(); err != nil || !again.Replayed || runs.Count() != 1 {
 		t.Fatalf("a second before the expiry: %v, replayed %v, runs %d", err, again.Replayed, runs.Count())
 	}
 
-	w.at(start.Add(model.IdempotencyTTL + time.Second))
+	w.age("k-expire", 2*time.Second)
 	second, err := run()
 	if err != nil || second.Replayed || runs.Count() != 2 {
 		t.Fatalf("after the expiry: %v, replayed %v, runs %d; want a new execution", err, second.Replayed, runs.Count())
@@ -522,26 +535,23 @@ func (w *world) stringColumn(query string) []string {
 	return out
 }
 
-// TestRecordAt23h59IsStillInForce and TestRecordExpiresAtExactly24Hours guard
-// the two edges of the criterion 6 to the microsecond.
+// TestRecordAt23h59IsStillInForce guards the edge of criterion 6 to the
+// microsecond: with a minute left, or a microsecond, the record is in force.
 func TestRecordAt23h59IsStillInForce(t *testing.T) {
 	t.Parallel()
 	w := newWorld(t)
 	f := w.ledger(w.spaceA)
 	holder := w.writer(w.spaceA, "holder")
-	start := behind(30 * time.Hour)
 	var runs counter
 	run := func() (Response, error) {
 		return w.engine.RunIdempotent(context.Background(), idemCall(holder, w.spaceA, "k-edge", idemBody), moneyOperation.Name, f.recordHandler(t, &runs))
 	}
-	w.at(start)
+	w.at(behind(time.Minute))
 	if _, err := run(); err != nil {
 		t.Fatalf("first: %v", err)
 	}
-	for name, at := range map[string]time.Time{
-		"23 h 59 min": start.Add(23*time.Hour + 59*time.Minute), "a microsecond before": start.Add(model.IdempotencyTTL - time.Microsecond),
-	} {
-		w.at(at)
+	for name, d := range map[string]time.Duration{"a minute left": model.IdempotencyTTL - time.Minute, "a microsecond left": time.Minute - time.Microsecond} {
+		w.age("k-edge", d)
 		if again, err := run(); err != nil || !again.Replayed {
 			t.Errorf("%s: %v, replayed %v; want the record in force", name, err, again.Replayed)
 		}
@@ -558,18 +568,135 @@ func TestRecordExpiresAtExactly24Hours(t *testing.T) {
 	w := newWorld(t)
 	f := w.ledger(w.spaceA)
 	holder := w.writer(w.spaceA, "holder")
-	start := behind(30 * time.Hour)
 	var runs counter
 	run := func() (Response, error) {
 		return w.engine.RunIdempotent(context.Background(), idemCall(holder, w.spaceA, "k-exact", idemBody), moneyOperation.Name, f.recordHandler(t, &runs))
 	}
-	w.at(start)
+	w.at(behind(time.Minute))
 	if _, err := run(); err != nil {
 		t.Fatalf("first: %v", err)
 	}
-	w.at(start.Add(model.IdempotencyTTL))
+	w.age("k-exact", model.IdempotencyTTL)
 	if again, err := run(); err != nil || again.Replayed || runs.Count() != 2 {
 		t.Errorf("at exactly 24 hours: %v, replayed %v, runs %d; want a new execution", err, again.Replayed, runs.Count())
+	}
+}
+
+// TestUnusableClockFailsTypedBeforeTheHandler guards the lower bound of the
+// clock: the zero time, a clock a day behind and one just beyond the tolerance
+// make the engine fail with invalid_input before the handler runs and before any
+// write, so the skew is seen and the record is never born shortened. A clock
+// inside the tolerance runs.
+func TestUnusableClockFailsTypedBeforeTheHandler(t *testing.T) {
+	t.Parallel()
+	w := newWorld(t)
+	f := w.ledger(w.spaceA)
+	holder := w.writer(w.spaceA, "holder")
+	before := w.snapshot()
+	var runs counter
+	run := func(key string) (Response, error) {
+		return w.engine.RunIdempotent(context.Background(), idemCall(holder, w.spaceA, key, idemBody), moneyOperation.Name, f.recordHandler(t, &runs))
+	}
+	for name, at := range map[string]time.Time{
+		"the zero time": {}, "year 1": time.Date(1, 1, 1, 0, 0, 1, 0, time.UTC), "25 hours behind": time.Now().Add(-25 * time.Hour),
+		"a day and a minute behind": time.Now().Add(-24*time.Hour - time.Minute), "an hour behind": time.Now().Add(-time.Hour),
+		"six minutes behind": time.Now().Add(-6 * time.Minute),
+	} {
+		w.clock.Set(at)
+		got, err := run("k-clock")
+		requireCode(t, name, err, model.CodeInvalidInput)
+		if len(got.Body) != 0 {
+			t.Errorf("%s: the refusal carried a response", name)
+		}
+	}
+	if runs.Count() != 0 {
+		t.Errorf("the handler ran %d times with an unusable clock", runs.Count())
+	}
+	if changed := w.changed(before); len(changed) != 0 {
+		t.Errorf("an unusable clock left %v", changed)
+	}
+	w.at(behind(4 * time.Minute))
+	if got, err := run("k-clock"); err != nil || got.Replayed || runs.Count() != 1 {
+		t.Errorf("a clock four minutes behind: %v, replayed %v, runs %d", err, got.Replayed, runs.Count())
+	}
+	// The record stored by that run lives its whole day: it was dated inside the window.
+	var left time.Duration
+	var seconds float64
+	if err := w.admin.QueryRow(`SELECT extract(epoch FROM expires_at - now()) FROM kernel.idempotency_records WHERE key = 'k-clock'`).Scan(&seconds); err != nil {
+		t.Fatalf("read the record: %v", err)
+	}
+	left = time.Duration(seconds * float64(time.Second))
+	if left < model.IdempotencyTTL-model.IdempotencyClockTolerance-time.Minute {
+		t.Errorf("the record has %v left, want almost the whole day", left)
+	}
+}
+
+// TestRepeatableReadIsRefusedTyped guards the isolation level the lock of the
+// key relies on: when the database hands out connections at a stricter level,
+// the engine fails with rule_violation before running anything, instead of
+// letting a repetition read a snapshot that hides the winner.
+func TestRepeatableReadIsRefusedTyped(t *testing.T) {
+	t.Parallel()
+	w := newWorld(t)
+	f := w.ledger(w.spaceA)
+	holder := w.writer(w.spaceA, "holder")
+	var name string
+	if err := w.admin.QueryRow(`SELECT current_database()`).Scan(&name); err != nil {
+		t.Fatalf("database name: %v", err)
+	}
+	if _, err := w.admin.Exec(`ALTER DATABASE ` + pgx.Identifier{name}.Sanitize() + ` SET default_transaction_isolation = 'repeatable read'`); err != nil {
+		t.Fatalf("alter database: %v", err)
+	}
+	// Close the idle connections so that the next ones take the new default.
+	w.api.SetMaxIdleConns(0)
+	var runs counter
+	before := w.snapshot()
+	_, err := w.engine.RunIdempotent(context.Background(), idemCall(holder, w.spaceA, "k-isolation", idemBody), moneyOperation.Name, f.recordHandler(t, &runs))
+	requireCode(t, "repeatable read", err, model.CodeRuleViolation)
+	if runs.Count() != 0 {
+		t.Errorf("the handler ran %d times", runs.Count())
+	}
+	if changed := w.changed(before); len(changed) != 0 {
+		t.Errorf("the refused call left %v", changed)
+	}
+}
+
+// TestResponseLimitIsMeasuredOnTheStoredForm guards the size of a response: the
+// database measures the text of the jsonb value, which adds a space after every
+// colon and comma, so a response whose raw bytes fit in 64 KiB can still be too
+// big once stored. That is invalid_input, nothing is written and the key is free
+// again; a response that fits in both forms is stored.
+func TestResponseLimitIsMeasuredOnTheStoredForm(t *testing.T) {
+	t.Parallel()
+	w := newWorld(t)
+	holder := w.writer(w.spaceA, "holder")
+	object := func(members int) json.RawMessage {
+		var b strings.Builder
+		b.WriteString("{")
+		for i := 0; i < members; i++ {
+			if i > 0 {
+				b.WriteString(",")
+			}
+			fmt.Fprintf(&b, `"k%05d":1`, i)
+		}
+		b.WriteString("}")
+		return json.RawMessage(b.String())
+	}
+	big, small := object(5800), object(4500)
+	if len(big) > model.MaxResponseBody || len(small) > model.MaxResponseBody {
+		t.Fatalf("the raw responses are %d and %d bytes: the test must fit them in 64 KiB", len(big), len(small))
+	}
+	before := w.snapshot()
+	_, err := w.engine.RunIdempotent(context.Background(), idemCall(holder, w.spaceA, "k-size", idemBody), moneyOperation.Name,
+		func(context.Context, *Tx) (json.RawMessage, error) { return big, nil })
+	requireCode(t, "raw response of "+fmt.Sprint(len(big))+" bytes", err, model.CodeInvalidInput)
+	if changed := w.changed(before); len(changed) != 0 {
+		t.Errorf("the refused response left %v", changed)
+	}
+	got, err := w.engine.RunIdempotent(context.Background(), idemCall(holder, w.spaceA, "k-size", idemBody), moneyOperation.Name,
+		func(context.Context, *Tx) (json.RawMessage, error) { return small, nil })
+	if err != nil || got.Replayed || len(got.Body) > model.MaxResponseBody {
+		t.Errorf("a response that fits: %v, replayed %v, %d bytes", err, got.Replayed, len(got.Body))
 	}
 }
 
@@ -618,10 +745,14 @@ func TestRuleErrorIsNotCachedAndRetryRuns(t *testing.T) {
 	var runs counter
 
 	inner := f.recordHandler(t, &runs)
+	// The context bounds each call so that a failure of this test is an error,
+	// not a hang.
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 	for name, failure := range map[string]error{
 		"a rule violation": model.NewError(model.CodeRuleViolation, "refused", nil), "a plain error": errors.New("boom"),
 	} {
-		_, err := w.engine.RunIdempotent(context.Background(), idemCall(holder, w.spaceA, "k-fail", idemBody), moneyOperation.Name,
+		_, err := w.engine.RunIdempotent(ctx, idemCall(holder, w.spaceA, "k-fail", idemBody), moneyOperation.Name,
 			func(ctx context.Context, tx *Tx) (json.RawMessage, error) {
 				if _, err := inner(ctx, tx); err != nil {
 					return nil, err
@@ -634,8 +765,11 @@ func TestRuleErrorIsNotCachedAndRetryRuns(t *testing.T) {
 		if changed := w.changed(before); len(changed) != 0 {
 			t.Errorf("%s: the failed attempt left %v", name, changed)
 		}
+		if got := w.count(`SELECT count(*) FROM kernel.idempotency_records WHERE key = 'k-fail'`); got != 0 {
+			t.Errorf("%s: %d records after the failure of the handler, want 0", name, got)
+		}
 	}
-	got, err := w.engine.RunIdempotent(context.Background(), idemCall(holder, w.spaceA, "k-fail", idemBody), moneyOperation.Name, f.recordHandler(t, &runs))
+	got, err := w.engine.RunIdempotent(ctx, idemCall(holder, w.spaceA, "k-fail", idemBody), moneyOperation.Name, f.recordHandler(t, &runs))
 	if err != nil || got.Replayed {
 		t.Fatalf("the retry: %v, replayed %v; want a new execution", err, got.Replayed)
 	}

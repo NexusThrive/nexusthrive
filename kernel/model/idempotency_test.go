@@ -18,6 +18,9 @@ func TestIdempotencyLimits(t *testing.T) {
 	if model.IdempotencyTTL != 24*time.Hour {
 		t.Errorf("IdempotencyTTL = %v, want 24h", model.IdempotencyTTL)
 	}
+	if model.IdempotencyClockTolerance != 5*time.Minute {
+		t.Errorf("IdempotencyClockTolerance = %v, want 5m", model.IdempotencyClockTolerance)
+	}
 	if model.MaxIdempotencyKey != 128 || model.MaxRequestBody != 1<<20 || model.MaxResponseBody != 64<<10 {
 		t.Errorf("limits = %d, %d, %d", model.MaxIdempotencyKey, model.MaxRequestBody, model.MaxResponseBody)
 	}
@@ -263,5 +266,53 @@ func TestNewIdempotencyRecordValidate(t *testing.T) {
 		in := valid
 		change(&in)
 		requireCode(t, in.Validate(), model.CodeInvalidInput)
+	}
+}
+
+// TestCanonicalJSONRejectsLoneSurrogates guards that escapes that stand for a
+// lone UTF-16 surrogate are invalid_input: the decoder would turn each of them
+// into U+FFFD and bodies that differ only there would share one fingerprint.
+func TestCanonicalJSONRejectsLoneSurrogates(t *testing.T) {
+	t.Parallel()
+	bs := string(rune(92))
+	for name, body := range map[string]string{
+		"a lone high surrogate":         `"` + bs + `ud800"`,
+		"another lone high surrogate":   `"` + bs + `ud801"`,
+		"a lone low surrogate":          `"` + bs + `udc00"`,
+		"a high followed by a letter":   `"` + bs + `ud800a"`,
+		"a high followed by a high":     `"` + bs + `ud800` + bs + `ud800"`,
+		"a lone surrogate in a key":     `{"` + bs + `ud800":1}`,
+		"upper case hex":                `"` + bs + `uD83D"`,
+		"a surrogate after a backslash": `"` + bs + bs + bs + `ud800"`,
+	} {
+		_, err := model.CanonicalJSON([]byte(body))
+		if err == nil {
+			t.Errorf("%s: accepted", name)
+			continue
+		}
+		requireCode(t, err, model.CodeInvalidInput)
+	}
+	// Valid pairs, the replacement character itself and an escaped backslash
+	// that only looks like an escape stay valid and stay different.
+	forms := map[string]string{}
+	for name, body := range map[string]string{
+		"a valid pair":         `"` + bs + `ud83d` + bs + `ude00"`,
+		"the same pair raw":    "\"😀\"",
+		"the replacement":      `"` + bs + `ufffd"`,
+		"the replacement raw":  "\"�\"",
+		"an escaped backslash": `"` + bs + bs + `ud800"`,
+	} {
+		got, err := model.CanonicalJSON([]byte(body))
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		forms[name] = string(got)
+	}
+	if forms["a valid pair"] != forms["the same pair raw"] || forms["the replacement"] != forms["the replacement raw"] {
+		t.Errorf("equal texts have different forms: %v", forms)
+	}
+	if forms["the replacement"] == forms["an escaped backslash"] || forms["a valid pair"] == forms["the replacement"] {
+		t.Errorf("different texts share a form: %v", forms)
 	}
 }

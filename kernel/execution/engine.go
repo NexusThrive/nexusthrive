@@ -197,7 +197,8 @@ func (e *Engine) guarded(name string, body func() error) (err error) {
 //     there is one with the same fingerprint (operation, actor and body), its
 //     response is returned and the handler does not run; with another
 //     fingerprint the call fails with idempotency_conflict and writes nothing.
-//  4. Otherwise the handler runs, its response is validated (a JSON object of at
+//  4. Otherwise the clock must be a usable one (not the zero time and not more
+//     than 5 minutes behind the database, else invalid_input), the handler runs, its response is validated (a JSON object of at
 //     most 64 KiB, else invalid_input) and the record is stored in the same
 //     transaction. The Response carries the stored form of the response, byte
 //     for byte what a repetition returns.
@@ -300,6 +301,11 @@ func (e *Engine) execute(ctx context.Context, conn *sql.Tx, call Call, op Operat
 // executeIdempotent is the body of the transaction of an idempotent call, see
 // RunIdempotent. body is the canonical request.
 func (e *Engine) executeIdempotent(ctx context.Context, conn *sql.Tx, call Call, op Operation, body []byte, fn ResultHandler) (Response, error) {
+	// The lock of the key is only useful if the read that follows it sees what
+	// the winner committed, so a level above READ COMMITTED is refused.
+	if err := state.RequireReadCommitted(ctx, conn); err != nil {
+		return Response{}, err
+	}
 	// The permissions come first, with the locks that Check takes, and the lock
 	// of the key after them. A caller that may not run the operation never
 	// reads a record and never waits for a key.
@@ -332,6 +338,14 @@ func (e *Engine) executeIdempotent(ctx context.Context, conn *sql.Tx, call Call,
 		return Response{Body: json.RawMessage(record.Response), Replayed: true}, nil
 	}
 
+	// A clock that is the zero time or too far behind the database would date
+	// the record so that it starts with less than 24 hours, and a repetition
+	// would run the handler again. The refusal comes before the handler and
+	// before any write, so the skew is seen and never weakens the idempotency
+	// in silence. A replay above does not need the clock to be right.
+	if err := state.CheckIdempotencyClock(ctx, conn, e.auth.Clock()); err != nil {
+		return Response{}, err
+	}
 	executionID, err := uuid.NewV7()
 	if err != nil {
 		return Response{}, fmt.Errorf("generate execution id: %w", err)

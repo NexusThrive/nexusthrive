@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"database/sql"
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -62,6 +63,33 @@ func recordStmt(t *testing.T, space, key, created string) stmt {
 	}
 }
 
+// agedRecordStmts writes a record of key in space A and then moves it back in
+// time, as the administrator, in one transaction: the record is inserted at
+// now(), the trigger that forbids changing a record is switched off inside the
+// transaction, created_at and expires_at are rewritten (created is a SQL
+// expression) and the trigger is switched on again. The insert guard accepts
+// only a creation time inside its window, so this is the way to have a record
+// that is older than the window without weakening the guard. The switch is
+// part of the transaction: nothing outside it ever sees the trigger off.
+func agedRecordStmts(t *testing.T, key, created string) []stmt {
+	t.Helper()
+	return []stmt{
+		recordStmt(t, ledgerSpaceA, key, "now()"),
+		{`ALTER TABLE kernel.idempotency_records DISABLE TRIGGER idempotency_records_no_update`, nil},
+		{`UPDATE kernel.idempotency_records SET created_at = ` + created + `, expires_at = ` + created + ` + interval '24 hours'
+		  WHERE space_id = '` + ledgerSpaceA + `' AND key = '` + key + `'`, nil},
+		{`ALTER TABLE kernel.idempotency_records ENABLE TRIGGER idempotency_records_no_update`, nil},
+	}
+}
+
+// ageRecord commits agedRecordStmts as the administrator.
+func (e idempotencyEnv) ageRecord(t *testing.T, key, created string) {
+	t.Helper()
+	if err := runTx(t, e.admin, ledgerSpaceA, agedRecordStmts(t, key, created)...); err != nil {
+		t.Fatalf("age record %q: %v", key, err)
+	}
+}
+
 // generationsOf lists the generations stored for a key of a space, in order.
 func generationsOf(t *testing.T, admin *sql.DB, space, key string) []int {
 	t.Helper()
@@ -97,14 +125,14 @@ func TestInsertStampsGenerationAndExpiry(t *testing.T) {
 	e := newIdempotencyEnv(t)
 	for _, w := range e.writers() {
 		key := "stamp-" + w.name
-		if err := runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, key, "now() - interval '1 hour'")); err != nil {
+		if err := runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, key, "now() - interval '1 minute'")); err != nil {
 			t.Fatalf("%s: insert: %v", w.name, err)
 		}
 		var generation int
 		var ttlOK, createdOK bool
 		var response string
 		err := e.admin.QueryRow(`SELECT generation, expires_at = created_at + interval '24 hours',
-			created_at BETWEEN now() - interval '61 minutes' AND now() - interval '59 minutes', response::text
+			created_at BETWEEN now() - interval '90 seconds' AND now() - interval '30 seconds', response::text
 			FROM kernel.idempotency_records WHERE space_id = $1 AND key = $2`, ledgerSpaceA, key).Scan(&generation, &ttlOK, &createdOK, &response)
 		if err != nil {
 			t.Fatalf("%s: read: %v", w.name, err)
@@ -138,9 +166,7 @@ func TestTTLConstantMatchesSQL(t *testing.T) {
 func TestInsertInKeyInForceRejected(t *testing.T) {
 	t.Parallel()
 	e := newIdempotencyEnv(t)
-	if err := runTx(t, e.api, ledgerSpaceA, recordStmt(t, ledgerSpaceA, "force", "now() - interval '23 hours 59 minutes'")); err != nil {
-		t.Fatalf("first record: %v", err)
-	}
+	e.ageRecord(t, "force", "now() - interval '23 hours 59 minutes'")
 	for _, w := range e.writers() {
 		requireRule(t, w.name+": second record of a key in force", runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, "force", "now()")),
 			"23505", "idempotency_records_key_in_force")
@@ -163,10 +189,8 @@ func TestExpiredRecordIsFollowedByNextGeneration(t *testing.T) {
 	e := newIdempotencyEnv(t)
 	for _, w := range e.writers() {
 		key := "gen-" + w.name
-		if err := runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, key, "now() - interval '26 hours'")); err != nil {
-			t.Fatalf("%s: first record: %v", w.name, err)
-		}
-		if err := runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, key, "now() - interval '1 hour'")); err != nil {
+		e.ageRecord(t, key, "now() - interval '26 hours'")
+		if err := runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, key, "now() - interval '1 minute'")); err != nil {
 			t.Fatalf("%s: record after the expiry: %v", w.name, err)
 		}
 		requireGenerations(t, w.name, e.admin, ledgerSpaceA, key, 1, 2)
@@ -185,17 +209,13 @@ func TestExpiredRecordIsFollowedByNextGeneration(t *testing.T) {
 func TestRecordAtTheBoundaryOfExpiry(t *testing.T) {
 	t.Parallel()
 	e := newIdempotencyEnv(t)
-	err := runTx(t, e.api, ledgerSpaceA,
-		recordStmt(t, ledgerSpaceA, "edge", "now() - interval '24 hours'"),
-		recordStmt(t, ledgerSpaceA, "edge", "now()"))
+	err := runTx(t, e.admin, ledgerSpaceA, append(agedRecordStmts(t, "edge", "now() - interval '24 hours'"), recordStmt(t, ledgerSpaceA, "edge", "now()"))...)
 	if err != nil {
 		t.Errorf("a record that expires exactly now was treated as in force: %v", err)
 	}
 	requireGenerations(t, "expired at the edge", e.admin, ledgerSpaceA, "edge", 1, 2)
 
-	err = runTx(t, e.api, ledgerSpaceA,
-		recordStmt(t, ledgerSpaceA, "inside", "now() - interval '24 hours' + interval '1 microsecond'"),
-		recordStmt(t, ledgerSpaceA, "inside", "now()"))
+	err = runTx(t, e.admin, ledgerSpaceA, append(agedRecordStmts(t, "inside", "now() - interval '24 hours' + interval '1 microsecond'"), recordStmt(t, ledgerSpaceA, "inside", "now()"))...)
 	requireRule(t, "a microsecond before the expiry", err, "23505", "idempotency_records_key_in_force")
 	requireGenerations(t, "refused inside the edge", e.admin, ledgerSpaceA, "inside")
 }
@@ -456,4 +476,44 @@ func TestIdempotencyLockNeedsASpaceAndSerializesAKey(t *testing.T) {
 	}
 	_, err = same.Exec(`SELECT kernel.idempotency_lock('same')`)
 	requireRule(t, "the same key of the same space", err, "55P03", "")
+}
+
+// TestToleranceConstantMatchesSQL guards that the window of the trigger and the
+// constant of Go are the same duration: a record exactly at the edge is stored,
+// one microsecond further is refused.
+func TestToleranceConstantMatchesSQL(t *testing.T) {
+	t.Parallel()
+	e := newIdempotencyEnv(t)
+	edge := fmt.Sprintf("now() - make_interval(secs => %d)", int(model.IdempotencyClockTolerance.Seconds()))
+	for _, w := range e.writers() {
+		requireRule(t, w.name+": one microsecond beyond the tolerance", runTx(t, w.pool, w.space,
+			recordStmt(t, ledgerSpaceA, "beyond-"+w.name, edge+" - interval '1 microsecond'")), "23001", "")
+		if err := runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, "edge-"+w.name, edge)); err != nil {
+			t.Errorf("%s: a record exactly at the tolerance: %v", w.name, err)
+		}
+	}
+}
+
+// TestInsertCannotBeBornBeyondTheTolerance guards the lower bound of created_at:
+// a record older than the tolerance, from an old clock, the zero time or far in
+// the past, is refused for either writer, so that no record is born with less
+// than its 24 hours. A record just inside the window is stored.
+func TestInsertCannotBeBornBeyondTheTolerance(t *testing.T) {
+	t.Parallel()
+	e := newIdempotencyEnv(t)
+	for _, w := range e.writers() {
+		for name, created := range map[string]string{
+			"six minutes behind": "now() - interval '6 minutes'", "an hour behind": "now() - interval '1 hour'",
+			"25 hours behind": "now() - interval '25 hours'", "a century behind": "now() - interval '100 years'",
+			"year 1": "'0001-01-01T00:00:00Z'::timestamptz", "the epoch": "'1970-01-01T00:00:00Z'::timestamptz", "-infinity": "'-infinity'::timestamptz",
+		} {
+			requireRule(t, w.name+": "+name, runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, "old-"+w.name, created)), "23001", "")
+		}
+		if err := runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, "inside-"+w.name, "now() - interval '4 minutes'")); err != nil {
+			t.Errorf("%s: a record four minutes behind: %v", w.name, err)
+		}
+	}
+	if got := count(t, e.admin, `SELECT count(*) FROM kernel.idempotency_records WHERE key LIKE 'old-%'`); got != 0 {
+		t.Errorf("%d records born beyond the tolerance were stored", got)
+	}
 }

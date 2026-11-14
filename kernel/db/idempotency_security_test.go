@@ -173,7 +173,7 @@ func TestInsertCannotBeBornInTheFuture(t *testing.T) {
 			requireRule(t, w.name+": "+name, runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, "future-"+w.name, created)), "23001", "")
 		}
 		requireRule(t, w.name+": null creation time", runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, "future-"+w.name, "NULL")), "23001", "")
-		for name, created := range map[string]string{"now": "now()", "one microsecond behind": "now() - interval '1 microsecond'", "far behind": "now() - interval '100 years'"} {
+		for name, created := range map[string]string{"now": "now()", "one microsecond behind": "now() - interval '1 microsecond'", "a minute behind": "now() - interval '1 minute'"} {
 			if err := runTx(t, w.pool, w.space, recordStmt(t, ledgerSpaceA, "past-"+w.name+"-"+strings.ReplaceAll(name, " ", "-"), created)); err != nil {
 				t.Errorf("%s: %s: %v", w.name, name, err)
 			}
@@ -287,11 +287,11 @@ func TestOnConflictCopyAndSetRoleDoNotBypass(t *testing.T) {
 		}
 		return tx.Commit(ctx)
 	}
-	requireRule(t, "API COPY", copyRows(pgxConn(t, e.admin, true), "copied", time.Now().Add(-time.Hour)), "0A000", "")
+	requireRule(t, "API COPY", copyRows(pgxConn(t, e.admin, true), "copied", time.Now().Add(-time.Minute)), "0A000", "")
 	requireRule(t, "administrator COPY into a key in force", copyRows(pgxConn(t, e.admin, false), "bypass", time.Now().Add(-time.Minute)),
 		"23505", "idempotency_records_key_in_force")
 	requireRule(t, "administrator COPY from the future", copyRows(pgxConn(t, e.admin, false), "copied", time.Now().Add(time.Hour)), "23001", "")
-	if err := copyRows(pgxConn(t, e.admin, false), "copied", time.Now().Add(-time.Hour)); err != nil {
+	if err := copyRows(pgxConn(t, e.admin, false), "copied", time.Now().Add(-time.Minute)); err != nil {
 		t.Errorf("administrator COPY of a valid record: %v", err)
 	}
 	requireGenerations(t, "after the copies", e.admin, ledgerSpaceA, "copied", 1)

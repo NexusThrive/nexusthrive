@@ -20,6 +20,13 @@ import (
 // the interval the database uses to stamp expires_at; a test compares both.
 const IdempotencyTTL = 24 * time.Hour
 
+// IdempotencyClockTolerance is how far behind the clock of the database the
+// creation time of a record may be. The database refuses an older one, and the
+// engine refuses to run when its clock is further behind than this, so that a
+// record never starts its 24 hours already shortened (ADR-0026). It equals the
+// interval of the insert trigger; a test compares both.
+const IdempotencyClockTolerance = 5 * time.Minute
+
 const (
 	// MaxIdempotencyKey is the longest accepted idempotency key, in characters.
 	MaxIdempotencyKey = 128
@@ -81,6 +88,9 @@ func CanonicalJSON(body []byte) ([]byte, error) {
 	if !json.Valid(body) {
 		return nil, invalidBody("it is not valid JSON")
 	}
+	if hasLoneSurrogate(body) {
+		return nil, invalidBody("it has an escape for a lone UTF-16 surrogate")
+	}
 	decoder := json.NewDecoder(bytes.NewReader(body))
 	decoder.UseNumber()
 	var out bytes.Buffer
@@ -91,6 +101,53 @@ func CanonicalJSON(body []byte) ([]byte, error) {
 		return nil, invalidBody("it has bytes after the first value")
 	}
 	return out.Bytes(), nil
+}
+
+// hasLoneSurrogate reports whether the valid JSON text holds a \u escape of a
+// UTF-16 surrogate that is not half of a pair. The decoder turns each of them
+// into U+FFFD, so different bodies would share one canonical form. A backslash
+// only appears inside strings, and a pair of backslashes is skipped as one escape.
+func hasLoneSurrogate(body []byte) bool {
+	hex := func(at int) (int, bool) {
+		if at+6 > len(body) || body[at] != '\\' || body[at+1] != 'u' {
+			return 0, false
+		}
+		value := 0
+		for _, c := range body[at+2 : at+6] {
+			switch {
+			case c >= '0' && c <= '9':
+				value = value<<4 | int(c-'0')
+			case c >= 'a' && c <= 'f':
+				value = value<<4 | int(c-'a'+10)
+			case c >= 'A' && c <= 'F':
+				value = value<<4 | int(c-'A'+10)
+			default:
+				return 0, false
+			}
+		}
+		return value, true
+	}
+	for i := 0; i < len(body); i++ {
+		if body[i] != '\\' {
+			continue
+		}
+		code, isUnicode := hex(i)
+		switch {
+		case !isUnicode:
+			i++
+		case code >= 0xD800 && code <= 0xDBFF:
+			low, paired := hex(i + 6)
+			if !paired || low < 0xDC00 || low > 0xDFFF {
+				return true
+			}
+			i += 11
+		case code >= 0xDC00 && code <= 0xDFFF:
+			return true
+		default:
+			i += 5
+		}
+	}
+	return false
 }
 
 // writeCanonical reads one value from the decoder and writes its canonical form

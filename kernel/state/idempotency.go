@@ -159,3 +159,48 @@ func translateIdempotencyError(operation string, err error) error {
 	}
 	return fmt.Errorf("%s: %w", operation, err)
 }
+
+// CheckIdempotencyClock fails with invalid_input when the injected clock cannot
+// be trusted to date a record: it is the zero time or it is behind the clock of
+// the database by more than model.IdempotencyClockTolerance. The database would
+// refuse such a record, and writing one that starts with less than its 24 hours
+// would let a repetition run the handler again. A clock ahead of the database is
+// fine: the record is dated with the earlier of the two. It never begins,
+// commits or rolls back.
+func CheckIdempotencyClock(ctx context.Context, tx *sql.Tx, clock model.Clock) error {
+	if clock == nil {
+		return model.NewError(model.CodeInvalidInput, "an idempotent operation needs a clock", nil)
+	}
+	at := clock.Now()
+	if at.IsZero() {
+		return model.NewError(model.CodeInvalidInput, "the clock of the engine returned the zero time", nil)
+	}
+	var tooOld bool
+	if err := tx.QueryRowContext(ctx,
+		`SELECT $1::timestamptz < now() - make_interval(secs => $2::float8)`,
+		outboxTime(clock), model.IdempotencyClockTolerance.Seconds(),
+	).Scan(&tooOld); err != nil {
+		return fmt.Errorf("check idempotency clock: %w", err)
+	}
+	if tooOld {
+		return model.NewError(model.CodeInvalidInput,
+			"the clock of the engine is behind the clock of the database by more than the tolerance of an idempotency record", nil)
+	}
+	return nil
+}
+
+// RequireReadCommitted fails with rule_violation unless the transaction runs at
+// the READ COMMITTED level. The lock of an idempotency key is useful only if the
+// read that follows it sees what the winner committed, which a snapshot taken
+// earlier would hide. The level is read, not set: it cannot be changed once the
+// transaction has run a query.
+func RequireReadCommitted(ctx context.Context, tx *sql.Tx) error {
+	var level string
+	if err := tx.QueryRowContext(ctx, `SELECT current_setting('transaction_isolation')`).Scan(&level); err != nil {
+		return fmt.Errorf("read isolation level: %w", err)
+	}
+	if level != "read committed" {
+		return model.NewError(model.CodeRuleViolation, "idempotent operations need the READ COMMITTED isolation level", nil)
+	}
+	return nil
+}

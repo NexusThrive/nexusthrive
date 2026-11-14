@@ -60,7 +60,7 @@ func newEngineWorld(t *testing.T) *engineWorld {
 	t.Helper()
 	admin := dbtest.Database(t)
 	api := dbtest.APIPool(t, admin)
-	now := &clock{now: time.Date(2026, 11, 14, 12, 0, 0, 0, time.UTC)}
+	now := &clock{now: time.Now().UTC()}
 	auth, err := capability.NewAuthorizer(model.KernelCatalog(), now)
 	if err != nil {
 		t.Fatalf("NewAuthorizer: %v", err)
