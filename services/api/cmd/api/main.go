@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -125,7 +126,8 @@ func clerkServer(engine *execution.Engine, log *slog.Logger) (http.Handler, erro
 	if issuer == "" || jwks == "" {
 		return nil, errors.New("CLERK_ISSUER and CLERK_JWKS_URL are required")
 	}
-	verifier, err := gateway.NewVerifier(&gateway.RemoteKeys{URL: jwks}, gateway.VerifierConfig{Issuer: issuer, AuthorizedParty: os.Getenv("CLERK_AZP")})
+	parties := strings.FieldsFunc(os.Getenv("CLERK_AZP"), func(r rune) bool { return r == ',' || r == ' ' || r == '\n' })
+	verifier, err := gateway.NewVerifier(&gateway.RemoteKeys{URL: jwks}, gateway.VerifierConfig{Issuer: issuer, AuthorizedParties: parties, RequireAuthorizedParty: true, Audience: os.Getenv("CLERK_AUDIENCE"), OnReject: func(reason string) { log.Warn("token rejected", "reason", reason) }})
 	if err != nil {
 		return nil, err
 	}
