@@ -56,6 +56,8 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0035](0035-motor-de-ejecucion.md) | Motor de ejecución: una operación, una transacción, verificación previa y `Tx` mínima sin SQL crudo | Aceptada |
 | [0036](0036-primera-puerta-http-del-kernel.md) | Primera puerta HTTP del kernel: `kernel/gateway`, token verificado y espacio en la ruta | Aceptada |
 | [0037](0037-contrato-inicial-del-kernel.md) | Contrato inicial de `kernel.v1` y generación local (HU-gateway-01) | Aceptada |
+| [0038](0038-resolucion-de-actor-y-espacio.md) | Actor verificado y resolución del espacio por slug (HU-gateway-02) | Propuesta |
+| [0039](0039-identidad-en-el-primer-ingreso.md) | Primer ingreso sin creación automática de identidad (HU-gateway-02) | Propuesta |
 
 ## Pendientes
 
