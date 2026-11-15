@@ -14,7 +14,6 @@ Operaciones, eventos y errores de todas las capas. Las listas de operaciones de 
 flowchart LR
     C["contracts/<br/>Protobuf + JSON Schema"] -->|"genera"| GO["Go<br/>kernel/gen"]
     C -->|"genera"| TS["TypeScript<br/>packages/sdk"]
-    C -->|"genera"| PY["Python<br/>services/ai"]
     C -->|"expone"| MCP["Herramientas MCP"]
 ```
 
@@ -23,6 +22,16 @@ flowchart LR
 | Operaciones | Protobuf con Connect-RPC | `kernel.v1`, `platform.v1`, `business.v1` |
 | Eventos | JSON Schema versionado | `kernel.space.created.v1`, `platform.charge.confirmed.v1` |
 | Errores | Códigos tipados | `permission_denied`, `capability_inactive`, `rule_violation`, `not_found`, `already_done`, `invalid_input`, `space_suspended`, `idempotency_conflict` |
+
+En M2 se genera Go y TypeScript. El SDK Python y otros lenguajes permanecen pospuestos por el ADR-0018; el ADR-0004 conserva la visión general del contrato.
+
+## Contrato inicial de M2 (decisión aceptada)
+
+El [ADR-0037](../05-decisiones/0037-contrato-inicial-del-kernel.md), aceptado por santy401 el 2026-11-15 en HU-gateway-01, define `KernelService.WriteExchange` (`kernel.exchange.write`, riesgo `money`, idempotencia obligatoria) y `KernelService.ReadEvents` (`kernel.event.read`, riesgo `read`). La escritura exige tanto `kernel.exchange.write` como `kernel.commitment.write` y registra intercambio, compromiso, evento y outbox juntos. Ninguna operación exige una capacidad adicional.
+
+La decisión define entradas, respuestas, errores, la clave en el campo `idempotency_key`, métodos específicos del `Engine` para preservar el prefijo reservado y plugins locales con versiones fijadas. Añade el código `retryable` para abortos de transacción; aún no forma parte del catálogo implementado. El transporte inicial para dinero es JSON, para conservar el cuerpo original que exige la idempotencia del motor.
+
+El ADR está **Aceptado** y habilita HU-gateway-08. La implementación sigue pendiente: la configuración actual aún usa plugins remotos y no tiene operaciones Protobuf. El corte HTTP vigente está descrito en el [ADR-0036](../05-decisiones/0036-primera-puerta-http-del-kernel.md).
 
 ## Funcionamiento
 
@@ -41,3 +50,5 @@ flowchart LR
 ## Decisiones relacionadas
 
 - [ADR-0004 · Contrato único](../05-decisiones/0004-contrato-unico.md)
+- [ADR-0018 · Recorte de la etapa 1](../05-decisiones/0018-recorte-de-la-etapa-1.md)
+- [ADR-0037 · Contrato inicial del kernel](../05-decisiones/0037-contrato-inicial-del-kernel.md)

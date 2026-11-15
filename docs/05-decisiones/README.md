@@ -55,6 +55,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0034](0034-vencimiento-de-compromisos-por-timer.md) | Vencimiento de compromisos por timer: `expired` solo por cascada desde un timer disparado, con el reloj de la base como techo | Aceptada |
 | [0035](0035-motor-de-ejecucion.md) | Motor de ejecución: una operación, una transacción, verificación previa y `Tx` mínima sin SQL crudo | Aceptada |
 | [0036](0036-primera-puerta-http-del-kernel.md) | Primera puerta HTTP del kernel: `kernel/gateway`, token verificado y espacio en la ruta | Aceptada |
+| [0037](0037-contrato-inicial-del-kernel.md) | Contrato inicial de `kernel.v1` y generación local (HU-gateway-01) | Aceptada |
 
 ## Pendientes
 
