@@ -25,7 +25,7 @@ Validación local de HU-gateway-01: enlaces relativos y bloques de código compr
 
 HU-gateway-08 está implementada y validada localmente en `feature/HU-gateway-08`, commit `387b33e`, sobre la decisión aceptada. Incluye contratos, esquema del evento, generación local, SDK generado, pruebas del contrato y CI de compatibilidad y regeneración. No incluye las implementaciones del motor ni del servidor. Lint, pruebas completas, typecheck, compilación y render de 58 diagramas pasaron. La integración espera la cadena previa: PR #27 y HU-gateway-01; no se ha fusionado ni abierto un PR nuevo.
 
-HU-gateway-02 está en curso en `chore/HU-gateway-02`, con los ADR [0038](../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (actor y directorio por slug) y [0039](../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (primer ingreso) propuestos. HU-gateway-09 espera la aceptación de ambos antes de implementar el motor. La numeración antigua 0037/0038 para estos temas queda sustituida por 0038/0039; las reservas posteriores se reasignan al redactar cada historia.
+HU-gateway-02 está en curso en `chore/HU-gateway-02`, con los ADR [0038](../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (actor y directorio por slug) y [0039](../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (primer ingreso) aceptados. santy401 aceptó ambos el 2026-11-15; HU-gateway-09 queda habilitada. La numeración antigua 0037/0038 para estos temas queda sustituida por 0038/0039; las reservas posteriores se reasignan al redactar cada historia.
 
 | Concepto | Cantidad |
 |---|---|

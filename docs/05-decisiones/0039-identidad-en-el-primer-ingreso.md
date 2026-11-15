@@ -1,8 +1,9 @@
 # ADR-0039 · Primer ingreso sin creación automática de identidad
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-11-15
 - **Responsables:** santy401
+- **Aceptación:** santy401, 2026-11-15
 
 ## Contexto
 
@@ -10,7 +11,7 @@ Un token válido de Clerk prueba el control de una identidad externa, pero no su
 
 El corte aceptado por el ADR-0036 ya rechaza un token sin participante activo. HU-gateway-02 debe dejar ese comportamiento como política explícita para el contrato definitivo de M2.
 
-## Decisión propuesta
+## Decisión
 
 El ingreso por API o MCP no crea ni actualiza identidades, participantes, roles ni grants. El proveedor y subject de la credencial validada se resuelven contra registros previamente preparados por el proceso interno de arranque o sembrado. El alta y las invitaciones serán operaciones posteriores, con su propia decisión y permisos.
 

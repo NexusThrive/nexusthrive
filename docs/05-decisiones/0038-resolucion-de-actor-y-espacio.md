@@ -1,8 +1,9 @@
 # ADR-0038 · Actor verificado y resolución del espacio por slug
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-11-15
 - **Responsables:** santy401
+- **Aceptación:** santy401, 2026-11-15
 
 ## Contexto
 
@@ -10,7 +11,7 @@ HU-gateway-02 debe cerrar la selección del espacio antes de implementar HU-gate
 
 `Engine.ResolveActor` ya resuelve una identidad verificada dentro de un espacio conocido. Falta un directorio acotado que encuentre el UUID desde el slug sin permitir enumerar espacios ni identidades. Los seguimientos 4, 6, 28, 29 y 46 exigen que los identificadores afirmados por un cliente nunca certifiquen al actor.
 
-## Decisión propuesta
+## Decisión
 
 ### Límite de confianza
 

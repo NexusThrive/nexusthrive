@@ -90,7 +90,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-02 · Decidir la resolución del actor, la selección del espacio y el primer ingreso
 
-- **Estado:** En curso, decisiones propuestas pendientes de aceptación. **Tamaño:** M. **Rama:** `chore/HU-gateway-02`. **ADR que escribe:** [0038](../../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (resolución de actor y espacio, composición en `services/api`; cubre P3 y P5) y [0039](../../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (identidad en el primer ingreso; cubre P4).
+- **Estado:** Decisiones aceptadas; pendiente de integración. **Tamaño:** M. **Rama:** `chore/HU-gateway-02`. **ADR que escribe:** [0038](../../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (resolución de actor y espacio, composición en `services/api`; cubre P3 y P5) y [0039](../../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (identidad en el primer ingreso; cubre P4).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero decidir dónde se resuelve el token a participante, cómo se elige el espacio y qué pasa con un token sin participante,
@@ -209,7 +209,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-09 · Registrar las primeras operaciones y componer el `Engine` (R2)
 
-- **Estado:** Lista, espera aceptación de los ADR de HU-gateway-02. **Tamaño:** S. **Rama:** `feature/HU-gateway-09`. **ADR exigidos:** 0037 (contrato, aceptado), 0038 y 0039 (actor y primer ingreso, propuestos).
+- **Estado:** Lista, decisiones aceptadas. **Tamaño:** S. **Rama:** `feature/HU-gateway-09`. **ADR exigidos:** 0037 (contrato, aceptado), 0038 y 0039 (actor y primer ingreso, aceptados).
 - **Historia:**
   Como desarrollador integrador,
   quiero que la operación de intercambio con compromiso y la lectura de eventos existan en el kernel,
