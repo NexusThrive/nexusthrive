@@ -275,7 +275,8 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-12 · Construir el `Actor` desde el token y elegir el espacio por la ruta (R5)
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-12`. **ADR exigidos:** 0037, 0038.
+- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** M. **Rama:** `feature/HU-gateway-12`. **ADR exigidos:** 0038, 0039 y 0040, aceptados.
+- **Avance:** [directorio, actor y cableado por slug](../../ingenieria/diseno/HU-gateway-12.md). La migración 00015 queda reservada para el directorio; no se reutiliza en llaves ni webhooks.
 - **Historia:**
   Como desarrollador integrador,
   quiero que el servidor resuelva quién soy y en qué espacio opero a partir de mi token,

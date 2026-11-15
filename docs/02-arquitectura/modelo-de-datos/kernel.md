@@ -10,6 +10,12 @@ Incluye identidad y acceso, el libro de movimientos, los compromisos y el tiempo
 
 ## Conceptos principales
 
+### Directorio previo al espacio (M2)
+
+La migración 00015 añade `kernel.resolve_space_actor(text,text,text)`, una consulta fija para resolver un sujeto de Clerk verificado y un slug a espacio, identidad y participante activo. Es la excepción SECURITY DEFINER del ADR-0038: su dueño `nexusthrive_directory` no puede iniciar sesión, heredar roles, saltar RLS ni escribir. Solo recibe columnas de lectura y políticas SELECT exclusivas sobre espacios, identidades y participantes; no se amplía la visibilidad del rol de la API. PUBLIC no ejecuta la función. No se crea ninguna tabla de directorio ni se duplica el slug.
+
+La puerta no consulta SQL: llama al motor, que utiliza `state.LookupSpaceActor` en una transacción de solo lectura. La operación posterior vuelve a verificar permisos dentro de su espacio. Ver [ADR-0038](../../05-decisiones/0038-resolucion-de-actor-y-espacio.md) y [diseño de HU-gateway-12](../../ingenieria/diseno/HU-gateway-12.md).
+
 | Pieza del modelo | Tablas |
 |---|---|
 | Participante | `identities`, `participants`, `contact_points` |

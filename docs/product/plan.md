@@ -19,6 +19,8 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Backlog:
 
 ## Resumen de estado (S02)
 
+HU-gateway-12 implementa la resolución del actor por slug, la función y el rol acotados del directorio (migración 00015), y el cableado Connect del binario con el token validado. [Avance local y límites de M2](../ingenieria/sprint-02/avance.md). La integración y el criterio completo de B3 con webhook siguen pendientes.
+
 HU-gateway-10 implementa el servidor Connect con autenticador inyectable, cuerpo original, errores tipados y límites en memoria. Pasan las pruebas completas, lint y compilación; su cableado con la resolución real por slug corresponde a HU-gateway-12.
 
 HU-gateway-11 está implementada localmente en `feature/HU-gateway-11`: verificador ampliado y caché JWKS acotada según ADR-0040. Pasan lint, suite completa y detector de carreras de las pruebas nuevas. La cuenta real de Clerk sigue siendo un requisito de HU-gateway-22, no de esta implementación.
@@ -38,11 +40,11 @@ HU-gateway-04 tiene el [ADR-0040](../05-decisiones/0040-validacion-de-clerk-y-ca
 | Concepto | Cantidad |
 |---|---|
 | Historias | 23 |
-| Listas | 14 |
+| Listas | 13 |
 | Bloqueadas | 2 (HU-gateway-22 por Q1, HU-gateway-23 por Q2) |
-| Terminadas / en curso | 0 / 7 (incluye historias pendientes de revisión o integración) |
+| Terminadas / en curso | 0 / 8 (incluye historias pendientes de revisión o integración) |
 
-De las 14 listas, 03, 07, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
+De las 13 listas, 03, 07, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
 
 Discrepancias del backlog (se rutean al analista, no se corrigen aquí):
 
