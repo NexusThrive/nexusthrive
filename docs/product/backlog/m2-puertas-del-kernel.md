@@ -124,7 +124,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-04 · Decidir la validación de tokens de Clerk
 
-- **Estado:** En curso, decisión propuesta pendiente de aceptación. **Tamaño:** S. **Rama:** `chore/HU-gateway-04`. **ADR que escribe:** [0040](../../05-decisiones/0040-validacion-de-clerk-y-cache-jwks.md) (validación de tokens de Clerk y caché de JWKS; cubre P6).
+- **Estado:** Decisión aceptada; pendiente de integración. **Tamaño:** S. **Rama:** `chore/HU-gateway-04`. **ADR que escribe:** [0040](../../05-decisiones/0040-validacion-de-clerk-y-cache-jwks.md) (validación de tokens de Clerk y caché de JWKS; cubre P6).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero fijar qué se valida de un token de Clerk y qué pasa si el emisor cae,

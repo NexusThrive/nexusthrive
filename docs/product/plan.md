@@ -29,7 +29,7 @@ HU-gateway-02 está en curso en `chore/HU-gateway-02`, con los ADR [0038](../05-
 
 HU-gateway-09 está implementada y validada localmente en `feature/HU-gateway-09`: operaciones fijas de escritura y lectura, políticas del contrato consumidas al construir el motor y errores `retryable` para abortos de transacción, sin reintento automático. Pasan lint, suite completa y compilación. No se cambia la puerta HTTP ni se implementa el directorio de HU-gateway-12. HU-gateway-10 espera la decisión de Clerk de HU-gateway-04 antes de su código.
 
-HU-gateway-04 tiene el [ADR-0040](../05-decisiones/0040-validacion-de-clerk-y-cache-jwks.md) propuesto en `chore/HU-gateway-04`. Fija RS256, lista de partes autorizadas, caché fresca de 5 minutos, máximo de uso de una hora desde la última descarga válida y separación de intentos de 30 segundos. Espera aceptación del responsable antes de HU-gateway-10 y HU-gateway-11.
+HU-gateway-04 tiene el [ADR-0040](../05-decisiones/0040-validacion-de-clerk-y-cache-jwks.md) aceptado por santy401 el 2026-11-15 en `chore/HU-gateway-04`. Fija RS256, lista de partes autorizadas, caché fresca de 5 minutos, máximo de uso de una hora desde la última descarga válida y separación de intentos de 30 segundos. HU-gateway-10 y HU-gateway-11 tienen esta decisión aceptada.
 
 | Concepto | Cantidad |
 |---|---|

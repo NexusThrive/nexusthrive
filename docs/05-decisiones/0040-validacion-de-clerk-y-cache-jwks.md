@@ -1,8 +1,9 @@
 # ADR-0040 · Validación de Clerk y vigencia de la caché JWKS
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-11-15
 - **Responsables:** santy401
+- **Aceptación:** santy401, 2026-11-15
 
 ## Contexto
 
@@ -10,7 +11,7 @@ HU-gateway-04 debe fijar la validación de tokens antes de HU-gateway-10 y HU-ga
 
 La autenticación debe seguir siendo verificable sin una cuenta real de Clerk. Las pruebas con la instancia real corresponden a HU-gateway-22; la resolución del participante y del espacio se rige por los ADR-0038 y 0039.
 
-## Decisión propuesta
+## Decisión
 
 ### Token y configuración
 
