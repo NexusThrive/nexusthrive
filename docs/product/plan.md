@@ -27,14 +27,16 @@ HU-gateway-08 está implementada y validada localmente en `feature/HU-gateway-08
 
 HU-gateway-02 está en curso en `chore/HU-gateway-02`, con los ADR [0038](../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (actor y directorio por slug) y [0039](../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (primer ingreso) aceptados. santy401 aceptó ambos el 2026-11-15; HU-gateway-09 queda habilitada. La numeración antigua 0037/0038 para estos temas queda sustituida por 0038/0039; las reservas posteriores se reasignan al redactar cada historia.
 
+HU-gateway-09 está implementada y validada localmente en `feature/HU-gateway-09`: operaciones fijas de escritura y lectura, políticas del contrato consumidas al construir el motor y errores `retryable` para abortos de transacción, sin reintento automático. Pasan lint, suite completa y compilación. No se cambia la puerta HTTP ni se implementa el directorio de HU-gateway-12. HU-gateway-10 espera la decisión de Clerk de HU-gateway-04 antes de su código.
+
 | Concepto | Cantidad |
 |---|---|
 | Historias | 23 |
-| Listas | 18 |
+| Listas | 17 |
 | Bloqueadas | 2 (HU-gateway-22 por Q1, HU-gateway-23 por Q2) |
-| Terminadas / en curso | 0 / 3 (incluye historias pendientes de revisión o integración) |
+| Terminadas / en curso | 0 / 4 (incluye historias pendientes de revisión o integración) |
 
-De las 18 listas, 03, 07, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
+De las 17 listas, 03, 07, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
 
 Discrepancias del backlog (se rutean al analista, no se corrigen aquí):
 

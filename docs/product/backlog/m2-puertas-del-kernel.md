@@ -209,7 +209,8 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-09 · Registrar las primeras operaciones y componer el `Engine` (R2)
 
-- **Estado:** Lista, decisiones aceptadas. **Tamaño:** S. **Rama:** `feature/HU-gateway-09`. **ADR exigidos:** 0037 (contrato, aceptado), 0038 y 0039 (actor y primer ingreso, aceptados).
+- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** S. **Rama:** `feature/HU-gateway-09`. **ADR exigidos:** 0037 (contrato, aceptado), 0038 y 0039 (actor y primer ingreso, aceptados).
+- **Avance:** métodos fijos del motor, políticas generadas y código `retryable` implementados. [Diseño y pruebas](../../ingenieria/diseno/HU-gateway-09.md). La selección por slug y el directorio permanecen en HU-gateway-12; la puerta Connect permanece en HU-gateway-10.
 - **Historia:**
   Como desarrollador integrador,
   quiero que la operación de intercambio con compromiso y la lectura de eventos existan en el kernel,
