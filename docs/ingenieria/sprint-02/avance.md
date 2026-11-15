@@ -1,4 +1,4 @@
-# Avance local del sprint S02
+# Avance y PR del sprint S02
 
 ## Propósito
 
@@ -6,18 +6,20 @@ Registrar el trabajo implementado y su validación sin confundirlo con una promo
 
 ## Estado al 2026-11-15
 
-| Historia | Trabajo | Rama |
-|---|---|---|
-| HU-gateway-01 | ADR-0037 aceptado y contrato inicial decidido | `chore/HU-gateway-01` |
-| HU-gateway-02 | ADR-0038 y 0039 aceptados | `chore/HU-gateway-02` |
-| HU-gateway-04 | ADR-0040 aceptado | `chore/HU-gateway-04` |
-| HU-gateway-08 | Contratos, generación local Go/TypeScript y CI | `feature/HU-gateway-08` |
-| HU-gateway-09 | Operaciones del contrato en el motor, atomicidad e idempotencia | `feature/HU-gateway-09` |
-| HU-gateway-11 | Validación ampliada de Clerk y caché JWKS acotada | `feature/HU-gateway-11` |
-| HU-gateway-10 | Servidor Connect, errores públicos, plazos y límites | `feature/HU-gateway-10` |
-| HU-gateway-12 | Directorio por slug, actor desde token y cableado del binario | `feature/HU-gateway-12` |
+| Historia | Trabajo | Rama | PR | Depende de |
+|---|---|---|---|---|
+| HU-gateway-01 | ADR-0037 aceptado y contrato inicial decidido | `chore/HU-gateway-01` | [#28](https://github.com/NexusThrive/nexusthrive/pull/28) | #27 |
+| HU-gateway-08 | Contratos, generación local Go/TypeScript y CI | `feature/HU-gateway-08` | [#29](https://github.com/NexusThrive/nexusthrive/pull/29) | #28 |
+| HU-gateway-02 | ADR-0038 y 0039 aceptados | `chore/HU-gateway-02` | [#30](https://github.com/NexusThrive/nexusthrive/pull/30) | #29 |
+| HU-gateway-09 | Operaciones del contrato en el motor, atomicidad e idempotencia | `feature/HU-gateway-09` | [#31](https://github.com/NexusThrive/nexusthrive/pull/31) | #30 |
+| HU-gateway-04 | ADR-0040 aceptado | `chore/HU-gateway-04` | [#32](https://github.com/NexusThrive/nexusthrive/pull/32) | #31 |
+| HU-gateway-11 | Validación ampliada de Clerk y caché JWKS acotada | `feature/HU-gateway-11` | [#33](https://github.com/NexusThrive/nexusthrive/pull/33) | #32 |
+| HU-gateway-10 | Servidor Connect, errores públicos, plazos y límites | `feature/HU-gateway-10` | [#34](https://github.com/NexusThrive/nexusthrive/pull/34) | #33 |
+| HU-gateway-12 | Directorio por slug, actor desde token y cableado del binario | `feature/HU-gateway-12` | [#35](https://github.com/NexusThrive/nexusthrive/pull/35) | #34 |
 
-Las ramas forman una cadena local que conserva una historia por commit y rama. El PR #27 del primer corte sigue siendo el antecedente de integración. No se ha fusionado ninguna de estas historias ni se han abierto PR nuevos durante este avance. `go.work.sum` estaba sin seguimiento al comenzar y permanece fuera de los commits.
+Las ocho ramas están publicadas y sus PR están en borrador, cada uno con la rama precedente como base temporal. El [PR #27](https://github.com/NexusThrive/nexusthrive/pull/27) del primer corte sigue siendo el antecedente de integración. El destino final es `sprint/S02`; después de integrar cada antecedente se actualiza la rama, se cambia la base y se revisan diff y CI. No se ha fusionado ninguna historia. `go.work.sum` estaba sin seguimiento al comenzar y permanece fuera de los commits.
+
+La primera ejecución de CI de los ocho PR terminó correctamente, comprobada el 2026-11-15 a las 23:48 UTC. Los checks vigentes de cada nueva cabecera se consultan en su PR; cualquier actualización vuelve a comprobarse antes de revisión. El modo de publicación y seguimiento está fijado en [flujo de Git](../../07-ingenieria/git-workflow.md) y `AGENTS.md`.
 
 ## Validación
 

@@ -19,6 +19,8 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Backlog:
 
 ## Resumen de estado (S02)
 
+Publicación 2026-11-15: las ocho historias implementadas o decididas están subidas y tienen PR en borrador [#28 a #35](../ingenieria/sprint-02/avance.md), con una historia por diff y dependencias enlazadas. Sus primeras ejecuciones de CI pasaron. Se mantienen bases temporales en cadena hasta integrar los antecedentes; el destino final es `sprint/S02`. La publicación no cambia el conteo de terminadas: ninguna se ha fusionado.
+
 HU-gateway-12 implementa la resolución del actor por slug, la función y el rol acotados del directorio (migración 00015), y el cableado Connect del binario con el token validado. [Avance local y límites de M2](../ingenieria/sprint-02/avance.md). La integración y el criterio completo de B3 con webhook siguen pendientes.
 
 HU-gateway-10 implementa el servidor Connect con autenticador inyectable, cuerpo original, errores tipados y límites en memoria. Pasan las pruebas completas, lint y compilación; su cableado con la resolución real por slug corresponde a HU-gateway-12.
@@ -29,7 +31,7 @@ Actualización 2026-11-15: santy401 aceptó el [ADR-0037](../05-decisiones/0037-
 
 Validación local de HU-gateway-01: enlaces relativos y bloques de código comprobados, `git diff --check` sin errores. `task lint` pasó con Go 1.24.7 (el Staticcheck fijado no admite Go 1.27 del servidor) y `task test` pasó, incluidas las leyes del kernel contra PostgreSQL en 55432. Se ejecutó Task 3.40.1 mediante `go run` porque no está instalado como comando. Mermaid pasó con `CI=1`: 58 diagramas renderizados. La decisión está en el commit `9f19a48`; su integración sigue pendiente.
 
-HU-gateway-08 está implementada y validada localmente en `feature/HU-gateway-08`, commit `387b33e`, sobre la decisión aceptada. Incluye contratos, esquema del evento, generación local, SDK generado, pruebas del contrato y CI de compatibilidad y regeneración. No incluye las implementaciones del motor ni del servidor. Lint, pruebas completas, typecheck, compilación y render de 58 diagramas pasaron. La integración espera la cadena previa: PR #27 y HU-gateway-01; no se ha fusionado ni abierto un PR nuevo.
+HU-gateway-08 está implementada y validada en `feature/HU-gateway-08`, commit `387b33e`, y publicada en el PR #29, sobre la decisión aceptada. Incluye contratos, esquema del evento, generación local, SDK generado, pruebas del contrato y CI de compatibilidad y regeneración. No incluye las implementaciones del motor ni del servidor. Lint, pruebas completas, typecheck, compilación y render de 58 diagramas pasaron. La integración espera la cadena previa: PR #27 y HU-gateway-01; no se ha fusionado.
 
 HU-gateway-02 está en curso en `chore/HU-gateway-02`, con los ADR [0038](../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (actor y directorio por slug) y [0039](../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (primer ingreso) aceptados. santy401 aceptó ambos el 2026-11-15; HU-gateway-09 queda habilitada. La numeración antigua 0037/0038 para estos temas queda sustituida por 0038/0039; las reservas posteriores se reasignan al redactar cada historia.
 
