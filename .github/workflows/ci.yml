@@ -66,6 +66,10 @@ jobs:
             contracts:
               - *shared
               - 'contracts/**'
+              - 'tools/contracts-*'
+              - 'packages/sdk/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
             docs:
               - 'docs/**'
               - 'tools/docs-check.mjs'
@@ -148,6 +152,10 @@ jobs:
           node-version-file: .tool-versions
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+      - run: node tools/contracts-setup.mjs
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
@@ -158,14 +166,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.work
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .tool-versions
+          cache: pnpm
       - uses: arduino/setup-task@v2
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - run: task lint:contracts
+      - run: pnpm install --frozen-lockfile
+      - run: task tools:contracts
+      - run: task contracts:check
+        env:
+          CONTRACT_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+      - run: task gen
+      - run: task gen
+      - name: Verify generated files are committed
+        run: |
+          git diff --exit-code -- kernel/gen packages/sdk/src/gen
+          test -z "$(git ls-files --others --exclude-standard kernel/gen packages/sdk/src/gen)"
+      - run: node --test tools/contracts-schema.test.mjs tools/contracts-tooling.test.mjs
+      - run: go test ./kernel/gen/...
 
   docs:
     needs: changes

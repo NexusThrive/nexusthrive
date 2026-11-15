@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package kernel.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/nexusthrive/nexusthrive/kernel/gen/kernel/v1;kernelv1";
+
+// Risk bounds an operation's authority and idempotency requirements.
+enum Risk {
+  RISK_UNSPECIFIED = 0;
+  RISK_READ = 1;
+  RISK_WRITE = 2;
+  RISK_MONEY = 3;
+}
+
+// OperationPolicy is the shared declaration consumed by every gateway.
+message OperationPolicy {
+  string name = 1;
+  repeated string permissions = 2;
+  string capability = 3;
+  Risk risk = 4;
+  bool idempotent = 5;
+}
+
+extend google.protobuf.MethodOptions {
+  OperationPolicy operation = 50001;
+}

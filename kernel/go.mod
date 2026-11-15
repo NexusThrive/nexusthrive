@@ -3,9 +3,11 @@ module github.com/nexusthrive/nexusthrive/kernel
 go 1.24
 
 require (
+	connectrpc.com/connect v1.18.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/pressly/goose/v3 v3.26.0
+	google.golang.org/protobuf v1.36.5
 )
 
 require (
