@@ -48,7 +48,7 @@ El código del dominio y su mensaje público viajan en el detalle `OperationErro
 La política de reparto y las cifras de intentos están aceptadas en el [ADR-0041](../05-decisiones/0041-despacho-y-reintentos-de-webhooks.md); el cifrado y la firma están aceptados en el [ADR-0042](../05-decisiones/0042-secretos-y-firma-de-webhooks.md). HU-gateway-15 implementa la base de entrega; HU-gateway-16 completa la deshabilitación por veinte fallos consecutivos; la rotación sigue en 17. El quinto fallo del outbox y los veinte fallos consecutivos del endpoint son contadores distintos.
 
 - Agregar una puerta no duplica lógica: todas llaman a las mismas operaciones del contrato.
-- Al principio el MCP solo expone operaciones de lectura; las de escritura se habilitan por alcance cuando se aprueben.
+- En M2 el MCP solo expone operaciones de lectura; la escritura queda pospuesta y requiere otro ADR, según [ADR-0044](../05-decisiones/0044-mcp-de-solo-lectura-en-m2.md).
 - Un endpoint de webhook se deshabilita solo después de 20 entregas fallidas seguidas y aparece en la consola.
 
 ### Implementación inicial de webhooks en M2

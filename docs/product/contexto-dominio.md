@@ -136,7 +136,7 @@ Decisiones pendientes con ADR que pueden tocar a B3: 35 (compensar una compensac
 ### Lo que dice la documentación sobre cada puerta
 
 - **API** (`docs/04-integraciones/puertas.md`): token de Clerk o llave por espacio, alcances, límites por minuto, idempotencia. Connect-RPC y JSON/HTTP en `api.nexusthrive.com.co` (ADR-0023). Límites de tasa en memoria, sin Redis en production (ADR-0025).
-- **MCP:** `puertas.md` y `AGENTS.md` dicen "solo lectura al principio"; ADR-0018 y ADR-0020 dicen "lectura y escritura controlada" con propuestas aprobadas por una persona. Ver preguntas abiertas. Ruta `/mcp` en la misma API (ADR-0023).
+- **MCP:** `puertas.md` y `AGENTS.md` dicen "solo lectura al principio"; ADR-0018 y ADR-0020 dicen "lectura y escritura controlada" con propuestas aprobadas por una persona. Resuelto por S-P1 y [ADR-0044](../05-decisiones/0044-mcp-de-solo-lectura-en-m2.md): solo lectura en M2, escritura pospuesta. Ruta `/mcp` en la misma API (ADR-0023).
 - **Webhooks salientes:** firmados con HMAC, reintentos con espera creciente, registro de entregas, reenvío manual y rotación del secreto; un endpoint se deshabilita tras 20 fallos seguidos (`puertas.md`, ADR-0020). Cada evento lleva identificador estable para deduplicar.
 - **Webhooks entrantes:** firma verificada y protección contra repetición (`docs/07-ingenieria/security.md`, punto 10). `/webhooks/wompi` pertenece a B4 (cobro, ADR-0022), no a B3.
 - **n8n:** nodo generado desde el contrato con trigger por eventos y plantillas de flujos; si n8n falla, solo se atrasan avisos y nunca guarda ni mueve valor (ADR-0005, ADR-0020). `integrations/n8n/` está vacío. La licencia comercial de n8n para credenciales de clientes está pendiente y bloquea la fase N3, no B3 (`docs/05-decisiones/README.md`).
@@ -200,7 +200,7 @@ Esta separación es un análisis a partir de lo documentado; no está escrita co
 
 ## Preguntas abiertas para el equipo
 
-1. **MCP: solo lectura o lectura y escritura controlada.** `AGENTS.md`, `puertas.md` y la hoja de ruta (la petición dice "MCP de solo lectura") frente a ADR-0018 y ADR-0020 ("lectura y escritura controlada", propuestas aprobadas por una persona). ¿Qué fija M2? Se asume solo lectura por la petición.
+1. **MCP: solo lectura o lectura y escritura controlada.** `AGENTS.md`, `puertas.md` y la hoja de ruta (la petición dice "MCP de solo lectura") frente a ADR-0018 y ADR-0020 ("lectura y escritura controlada", propuestas aprobadas por una persona). ¿Qué fija M2? Resuelto: S-P1 confirmado y [ADR-0044](../05-decisiones/0044-mcp-de-solo-lectura-en-m2.md); solo lectura en M2 y escritura pospuesta.
 2. **Primera operación del contrato.** No hay ninguna fuera de `kernel.timer.fire` y `kernel.outbox.claim`, que no se exponen. ¿Qué operación de `kernel.v1` demuestra el criterio de B3 (por ejemplo un intercambio con compromiso)? ¿Es de dinero (idempotente obligatoria)? No hay documentación de la lista de operaciones del kernel.
 3. **Resolución token a participante.** ¿Dónde vive (en `execution`, en un paquete nuevo con permiso para importar `state`, o una operación del motor)? ¿Cómo se elige el espacio en una petición: ruta con `slug` (ADR-0023), cabecera o campo del contrato? Hoy no hay documento que fije cómo la API resuelve el espacio.
 4. **Identidad del primer ingreso.** Alta de la identidad de Clerk la primera vez que llega un token (seguimiento 6): ¿invitación verificada, creación por `system` o por webhook de Clerk? Hace falta ADR; no está documentado.

@@ -19,6 +19,8 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Backlog:
 
 ## Resumen de estado (S02)
 
+HU-gateway-03 registra S-P1 ya confirmado en ADR-0044 aceptado y enmienda ADR-0018/0020: MCP solo de lectura, con paridad por riesgo. No introduce una nueva decisión de alcance.
+
 HU-gateway-16 está publicada en el [PR #39](https://github.com/NexusThrive/nexusthrive/pull/39), sobre #38, y completa el contador de fallos remotos y la deshabilitación a veinte fallos consecutivos, con motivo consultable y sin atribuir cancelaciones o rechazos locales al endpoint. [Diseño y pruebas](../ingenieria/diseno/HU-gateway-16.md).
 
 HU-gateway-15 está publicada en el [PR #38](https://github.com/NexusThrive/nexusthrive/pull/38), sobre #37, e implementa registro y consulta Connect, cifrado y firma, migración 00016, reparto duradero y transporte HTTP con validación de destinos. [Diseño y límites](../ingenieria/diseno/HU-gateway-15.md). El ciclo automático, la deshabilitación consecutiva y la rotación siguen separados en HU-gateway-21, 16 y 17.
@@ -48,11 +50,11 @@ HU-gateway-04 tiene el [ADR-0040](../05-decisiones/0040-validacion-de-clerk-y-ca
 | Concepto | Cantidad |
 |---|---|
 | Historias | 23 |
-| Listas | 9 |
+| Listas | 8 |
 | Bloqueadas | 2 (HU-gateway-22 por Q1, HU-gateway-23 por Q2) |
-| Terminadas / en curso | 0 / 12 (incluye historias pendientes de revisión o integración) |
+| Terminadas / en curso | 0 / 13 (incluye historias pendientes de revisión o integración) |
 
-De las 9 listas, 03, 14, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
+De las 8 listas, 14, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
 
 Discrepancias del backlog (se rutean al analista, no se corrigen aquí):
 
