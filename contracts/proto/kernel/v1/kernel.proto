@@ -52,6 +52,27 @@ service KernelService {
     };
   }
 
+  // RotateWebhookSecret presents a new secret with a fifteen-minute overlap.
+  rpc RotateWebhookSecret(RotateWebhookSecretRequest) returns (RotateWebhookSecretResponse) {
+    option (operation) = {
+      name: "kernel.webhook.rotate"
+      permissions: "kernel.webhook.write"
+      capability: ""
+      risk: RISK_WRITE
+      idempotent: false
+    };
+  }
+  // ReplayWebhookDelivery creates a new idempotent work item for a failed delivery.
+  rpc ReplayWebhookDelivery(ReplayWebhookDeliveryRequest) returns (ReplayWebhookDeliveryResponse) {
+    option (operation) = {
+      name: "kernel.webhook.replay"
+      permissions: "kernel.webhook.write"
+      capability: ""
+      risk: RISK_WRITE
+      idempotent: true
+    };
+  }
+
 }
 
 message EntryInput {
@@ -144,4 +165,22 @@ message WebhookDelivery {
 
 message ListWebhookDeliveriesResponse {
   repeated WebhookDelivery deliveries = 1;
+}
+
+message RotateWebhookSecretRequest {
+  string endpoint_id = 1;
+}
+
+message RotateWebhookSecretResponse {
+  string secret = 1;
+  google.protobuf.Timestamp previous_valid_until = 2;
+}
+
+message ReplayWebhookDeliveryRequest {
+  string delivery_id = 1;
+  string idempotency_key = 2;
+}
+
+message ReplayWebhookDeliveryResponse {
+  string delivery_id = 1;
 }

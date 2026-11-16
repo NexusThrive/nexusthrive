@@ -45,6 +45,12 @@ const (
 	// KernelServiceListWebhookDeliveriesProcedure is the fully-qualified name of the KernelService's
 	// ListWebhookDeliveries RPC.
 	KernelServiceListWebhookDeliveriesProcedure = "/kernel.v1.KernelService/ListWebhookDeliveries"
+	// KernelServiceRotateWebhookSecretProcedure is the fully-qualified name of the KernelService's
+	// RotateWebhookSecret RPC.
+	KernelServiceRotateWebhookSecretProcedure = "/kernel.v1.KernelService/RotateWebhookSecret"
+	// KernelServiceReplayWebhookDeliveryProcedure is the fully-qualified name of the KernelService's
+	// ReplayWebhookDelivery RPC.
+	KernelServiceReplayWebhookDeliveryProcedure = "/kernel.v1.KernelService/ReplayWebhookDelivery"
 )
 
 // KernelServiceClient is a client for the kernel.v1.KernelService service.
@@ -57,6 +63,10 @@ type KernelServiceClient interface {
 	CreateWebhookEndpoint(context.Context, *connect.Request[v1.CreateWebhookEndpointRequest]) (*connect.Response[v1.CreateWebhookEndpointResponse], error)
 	// ListWebhookDeliveries returns metadata without signing credentials.
 	ListWebhookDeliveries(context.Context, *connect.Request[v1.ListWebhookDeliveriesRequest]) (*connect.Response[v1.ListWebhookDeliveriesResponse], error)
+	// RotateWebhookSecret presents a new secret with a fifteen-minute overlap.
+	RotateWebhookSecret(context.Context, *connect.Request[v1.RotateWebhookSecretRequest]) (*connect.Response[v1.RotateWebhookSecretResponse], error)
+	// ReplayWebhookDelivery creates a new idempotent work item for a failed delivery.
+	ReplayWebhookDelivery(context.Context, *connect.Request[v1.ReplayWebhookDeliveryRequest]) (*connect.Response[v1.ReplayWebhookDeliveryResponse], error)
 }
 
 // NewKernelServiceClient constructs a client for the kernel.v1.KernelService service. By default,
@@ -94,6 +104,18 @@ func NewKernelServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(kernelServiceMethods.ByName("ListWebhookDeliveries")),
 			connect.WithClientOptions(opts...),
 		),
+		rotateWebhookSecret: connect.NewClient[v1.RotateWebhookSecretRequest, v1.RotateWebhookSecretResponse](
+			httpClient,
+			baseURL+KernelServiceRotateWebhookSecretProcedure,
+			connect.WithSchema(kernelServiceMethods.ByName("RotateWebhookSecret")),
+			connect.WithClientOptions(opts...),
+		),
+		replayWebhookDelivery: connect.NewClient[v1.ReplayWebhookDeliveryRequest, v1.ReplayWebhookDeliveryResponse](
+			httpClient,
+			baseURL+KernelServiceReplayWebhookDeliveryProcedure,
+			connect.WithSchema(kernelServiceMethods.ByName("ReplayWebhookDelivery")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -103,6 +125,8 @@ type kernelServiceClient struct {
 	readEvents            *connect.Client[v1.ReadEventsRequest, v1.ReadEventsResponse]
 	createWebhookEndpoint *connect.Client[v1.CreateWebhookEndpointRequest, v1.CreateWebhookEndpointResponse]
 	listWebhookDeliveries *connect.Client[v1.ListWebhookDeliveriesRequest, v1.ListWebhookDeliveriesResponse]
+	rotateWebhookSecret   *connect.Client[v1.RotateWebhookSecretRequest, v1.RotateWebhookSecretResponse]
+	replayWebhookDelivery *connect.Client[v1.ReplayWebhookDeliveryRequest, v1.ReplayWebhookDeliveryResponse]
 }
 
 // WriteExchange calls kernel.v1.KernelService.WriteExchange.
@@ -125,6 +149,16 @@ func (c *kernelServiceClient) ListWebhookDeliveries(ctx context.Context, req *co
 	return c.listWebhookDeliveries.CallUnary(ctx, req)
 }
 
+// RotateWebhookSecret calls kernel.v1.KernelService.RotateWebhookSecret.
+func (c *kernelServiceClient) RotateWebhookSecret(ctx context.Context, req *connect.Request[v1.RotateWebhookSecretRequest]) (*connect.Response[v1.RotateWebhookSecretResponse], error) {
+	return c.rotateWebhookSecret.CallUnary(ctx, req)
+}
+
+// ReplayWebhookDelivery calls kernel.v1.KernelService.ReplayWebhookDelivery.
+func (c *kernelServiceClient) ReplayWebhookDelivery(ctx context.Context, req *connect.Request[v1.ReplayWebhookDeliveryRequest]) (*connect.Response[v1.ReplayWebhookDeliveryResponse], error) {
+	return c.replayWebhookDelivery.CallUnary(ctx, req)
+}
+
 // KernelServiceHandler is an implementation of the kernel.v1.KernelService service.
 type KernelServiceHandler interface {
 	// WriteExchange records an exchange and an open commitment atomically.
@@ -135,6 +169,10 @@ type KernelServiceHandler interface {
 	CreateWebhookEndpoint(context.Context, *connect.Request[v1.CreateWebhookEndpointRequest]) (*connect.Response[v1.CreateWebhookEndpointResponse], error)
 	// ListWebhookDeliveries returns metadata without signing credentials.
 	ListWebhookDeliveries(context.Context, *connect.Request[v1.ListWebhookDeliveriesRequest]) (*connect.Response[v1.ListWebhookDeliveriesResponse], error)
+	// RotateWebhookSecret presents a new secret with a fifteen-minute overlap.
+	RotateWebhookSecret(context.Context, *connect.Request[v1.RotateWebhookSecretRequest]) (*connect.Response[v1.RotateWebhookSecretResponse], error)
+	// ReplayWebhookDelivery creates a new idempotent work item for a failed delivery.
+	ReplayWebhookDelivery(context.Context, *connect.Request[v1.ReplayWebhookDeliveryRequest]) (*connect.Response[v1.ReplayWebhookDeliveryResponse], error)
 }
 
 // NewKernelServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -168,6 +206,18 @@ func NewKernelServiceHandler(svc KernelServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(kernelServiceMethods.ByName("ListWebhookDeliveries")),
 		connect.WithHandlerOptions(opts...),
 	)
+	kernelServiceRotateWebhookSecretHandler := connect.NewUnaryHandler(
+		KernelServiceRotateWebhookSecretProcedure,
+		svc.RotateWebhookSecret,
+		connect.WithSchema(kernelServiceMethods.ByName("RotateWebhookSecret")),
+		connect.WithHandlerOptions(opts...),
+	)
+	kernelServiceReplayWebhookDeliveryHandler := connect.NewUnaryHandler(
+		KernelServiceReplayWebhookDeliveryProcedure,
+		svc.ReplayWebhookDelivery,
+		connect.WithSchema(kernelServiceMethods.ByName("ReplayWebhookDelivery")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/kernel.v1.KernelService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case KernelServiceWriteExchangeProcedure:
@@ -178,6 +228,10 @@ func NewKernelServiceHandler(svc KernelServiceHandler, opts ...connect.HandlerOp
 			kernelServiceCreateWebhookEndpointHandler.ServeHTTP(w, r)
 		case KernelServiceListWebhookDeliveriesProcedure:
 			kernelServiceListWebhookDeliveriesHandler.ServeHTTP(w, r)
+		case KernelServiceRotateWebhookSecretProcedure:
+			kernelServiceRotateWebhookSecretHandler.ServeHTTP(w, r)
+		case KernelServiceReplayWebhookDeliveryProcedure:
+			kernelServiceReplayWebhookDeliveryHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -201,4 +255,12 @@ func (UnimplementedKernelServiceHandler) CreateWebhookEndpoint(context.Context, 
 
 func (UnimplementedKernelServiceHandler) ListWebhookDeliveries(context.Context, *connect.Request[v1.ListWebhookDeliveriesRequest]) (*connect.Response[v1.ListWebhookDeliveriesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kernel.v1.KernelService.ListWebhookDeliveries is not implemented"))
+}
+
+func (UnimplementedKernelServiceHandler) RotateWebhookSecret(context.Context, *connect.Request[v1.RotateWebhookSecretRequest]) (*connect.Response[v1.RotateWebhookSecretResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kernel.v1.KernelService.RotateWebhookSecret is not implemented"))
+}
+
+func (UnimplementedKernelServiceHandler) ReplayWebhookDelivery(context.Context, *connect.Request[v1.ReplayWebhookDeliveryRequest]) (*connect.Response[v1.ReplayWebhookDeliveryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kernel.v1.KernelService.ReplayWebhookDelivery is not implemented"))
 }

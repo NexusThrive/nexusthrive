@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 // SealedWebhookSecret contains authenticated ciphertext, never the signing key.
 type SealedWebhookSecret struct {
 	Ciphertext []byte `json:"-"`
@@ -28,6 +30,8 @@ type WebhookDelivery struct {
 
 // WebhookJob is returned only to the internal worker, never a client or a log.
 type WebhookJob struct {
+	PreviousSecret     *SealedWebhookSecret `json:"-"`
+	PreviousValidUntil *time.Time           `json:"-"`
 	WebhookDelivery
 	SpaceID    string              `json:"-"`
 	URL        string              `json:"-"`

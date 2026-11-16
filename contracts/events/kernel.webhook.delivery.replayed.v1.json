@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusthrive.com.co/contracts/events/kernel.webhook.delivery.replayed.v1.json",
+  "title": "kernel.webhook.delivery.replayed v1",
+  "description": "Secret-free webhook management audit payload.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "delivery_id",
+    "source_delivery_id"
+  ],
+  "properties": {
+    "delivery_id": {
+      "$ref": "#/$defs/uuidV7"
+    },
+    "source_delivery_id": {
+      "$ref": "#/$defs/uuidV7"
+    }
+  },
+  "$defs": {
+    "uuidV7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    }
+  }
+}

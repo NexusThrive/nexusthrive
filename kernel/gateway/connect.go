@@ -97,7 +97,7 @@ func (s *ConnectServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 	slug, path, found := strings.Cut(strings.TrimPrefix(r.URL.Path, "/"), "/")
 	path = "/" + path
-	if !found || slug == "" || (path != kernelv1connect.KernelServiceWriteExchangeProcedure && path != kernelv1connect.KernelServiceReadEventsProcedure && !(s.cfg.Webhooks != nil && (path == kernelv1connect.KernelServiceCreateWebhookEndpointProcedure || path == kernelv1connect.KernelServiceListWebhookDeliveriesProcedure))) {
+	if !found || slug == "" || !s.hasRoute(path) {
 		http.NotFound(w, r)
 		return
 	}
@@ -128,11 +128,11 @@ func (s *ConnectServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		refuse(connect.NewError(connect.CodeResourceExhausted, errors.New("request limit exceeded")))
 		return
 	}
-	if path == kernelv1connect.KernelServiceWriteExchangeProcedure {
+	if path == kernelv1connect.KernelServiceWriteExchangeProcedure || path == kernelv1connect.KernelServiceReplayWebhookDeliveryProcedure {
 		mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		encoding := r.Header.Get("Content-Encoding")
 		if err != nil || mediaType != "application/json" || (encoding != "" && encoding != "identity") {
-			refuse(model.NewError(model.CodeInvalidInput, "money requests require uncompressed Connect JSON", nil))
+			refuse(model.NewError(model.CodeInvalidInput, "idempotent requests require uncompressed Connect JSON", nil))
 			return
 		}
 	}
@@ -239,4 +239,15 @@ func (s *ConnectServer) rpcError(err error) error {
 	}
 	s.cfg.Log.Error("operation failed", "error", err)
 	return connect.NewError(connect.CodeInternal, errors.New("internal error"))
+}
+
+func (s *ConnectServer) hasRoute(path string) bool {
+	switch path {
+	case kernelv1connect.KernelServiceWriteExchangeProcedure, kernelv1connect.KernelServiceReadEventsProcedure:
+		return true
+	case kernelv1connect.KernelServiceCreateWebhookEndpointProcedure, kernelv1connect.KernelServiceListWebhookDeliveriesProcedure, kernelv1connect.KernelServiceRotateWebhookSecretProcedure, kernelv1connect.KernelServiceReplayWebhookDeliveryProcedure:
+		return s.cfg.Webhooks != nil
+	default:
+		return false
+	}
 }

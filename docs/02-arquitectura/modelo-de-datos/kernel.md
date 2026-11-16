@@ -278,7 +278,7 @@ erDiagram
 
 ## 4. Memoria y señales
 
-La migración 00016 de HU-gateway-15 implementa `webhook_endpoints`, `webhook_deliveries` y `webhook_delivery_attempts`, con cifrado autenticado según el [ADR-0042 aceptado](../../05-decisiones/0042-secretos-y-firma-de-webhooks.md). HMAC recupera el secreto para firmar; no se guarda una huella. El diagrama incluye los campos de rotación previstos para HU-gateway-17, todavía pendientes de esa historia. El reparto y los intentos siguen el [ADR-0041 aceptado](../../05-decisiones/0041-despacho-y-reintentos-de-webhooks.md). `sent` en outbox acredita aceptación duradera del reparto; el recibo HTTP pertenece a la entrega.
+La migración 00016 de HU-gateway-15 implementa `webhook_endpoints`, `webhook_deliveries` y `webhook_delivery_attempts`, con cifrado autenticado según el [ADR-0042 aceptado](../../05-decisiones/0042-secretos-y-firma-de-webhooks.md). HMAC recupera el secreto para firmar; no se guarda una huella. HU-gateway-17 implementa la rotación y los reenvíos con 00017. El reparto y los intentos siguen el [ADR-0041 aceptado](../../05-decisiones/0041-despacho-y-reintentos-de-webhooks.md). `sent` en outbox acredita aceptación duradera del reparto; el recibo HTTP pertenece a la entrega.
 
 ```mermaid
 erDiagram
@@ -287,6 +287,8 @@ erDiagram
     SPACES ||--o{ WEBHOOK_ENDPOINTS : "configura"
     WEBHOOK_ENDPOINTS ||--o{ WEBHOOK_DELIVERIES : "recibe"
     EVENTS ||--o{ WEBHOOK_DELIVERIES : "entrega"
+    WEBHOOK_DELIVERIES ||--o{ WEBHOOK_DELIVERY_ATTEMPTS : "registra"
+    WEBHOOK_DELIVERIES ||--o{ WEBHOOK_DELIVERIES : "reenvia"
     EVENTS ||--o{ NOTICES : "origina"
     PARTICIPANTS ||--o{ NOTICES : "destinatario"
     CONTACT_POINTS ||--o{ NOTICES : "por"
@@ -323,24 +325,40 @@ erDiagram
         text url
         bytea secret_ciphertext
         bytea secret_nonce
-        text secret_key_id
-        bytea previous_secret_ciphertext
-        bytea previous_secret_nonce
-        text previous_secret_key_id
+        text encryption_key_id
+        bytea previous_ciphertext
+        bytea previous_nonce
+        text previous_key_id
         timestamptz previous_valid_until
-        text[] event_types
+        text[] events
         text status "active, disabled"
         int consecutive_failures
     }
     WEBHOOK_DELIVERIES {
         uuid id PK
+        uuid space_id FK
         uuid endpoint_id FK
         bigint event_seq FK
-        text status
+        uuid replay_of FK
+        bytea body "bytes inmutables del evento"
+        text status "pending, failed, sent, dead"
         int attempts
-        int response_status
-        text last_error
-        timestamptz delivered_at
+        int http_status
+        bigint duration_ms
+        timestamptz next_attempt_at
+        uuid claim_token
+        timestamptz claimed_until
+        timestamptz created_at
+    }
+    WEBHOOK_DELIVERY_ATTEMPTS {
+        uuid id PK
+        uuid space_id FK
+        uuid delivery_id FK
+        int attempt
+        text outcome
+        int http_status
+        bigint duration_ms
+        timestamptz created_at
     }
     NOTICES {
         uuid id PK
