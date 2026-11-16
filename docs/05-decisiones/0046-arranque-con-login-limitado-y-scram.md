@@ -1,8 +1,9 @@
 # ADR-0046 · Arranque con login limitado y verificador SCRAM
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-11-16
 - **Responsables:** santy401
+- **Aceptación:** santy401, 2026-11-16, confirmada explícitamente en la revisión del PR #44.
 - **Enmienda a:** ADR-0027, únicamente el mecanismo de login y provisión al arrancar
 
 ## Contexto
@@ -11,7 +12,7 @@ HU-gateway-20 exige migrar antes de abrir el puerto y probar un login real limit
 
 La API no debe permanecer con una conexión del dueño de las migraciones después del arranque. La nueva vía también permite probar el comportamiento local sin tocar la PostgreSQL ajena que usa el puerto 5432.
 
-## Decisión propuesta
+## Decisión
 
 ### Separación de roles
 
@@ -60,7 +61,7 @@ Esta decisión no autoriza desplegar en Render, Dokploy, Supabase ni Cloudflare.
 - El login se prueba de verdad sin cambiar `nexusthrive_api` a LOGIN.
 - El bootstrap necesita credenciales de migración solo durante la fase previa al servicio.
 - Se añade una fase explícita de arranque y reejecución, conservando un solo binario de servicio.
-- Requiere aceptación antes del código de bootstrap de HU-gateway-20; la imagen y la prueba local pertenecen a esa misma historia.
+- La aceptación habilita el código de bootstrap de HU-gateway-20; la imagen y la prueba local pertenecen a esa misma historia.
 
 ## Cumplimiento
 

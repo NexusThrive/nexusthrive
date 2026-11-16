@@ -33,7 +33,7 @@ HU-gateway-17 quedó integrada en #42 con reenvío idempotente, convivencia de s
 | Listas | 4 (13, 14, 18, 19) |
 | Diferidas por alcance local actual | 2 (22 y 23) |
 
-Orden local restante: llaves (13), MCP (14), nodo n8n (19), imagen y arranque (20), y prueba completa de B3 (18). El ADR-0046 propone cómo probar login real sin dar LOGIN al rol global; requiere aceptación antes del código de arranque. Mientras se revisa, las demás historias locales siguen habilitadas.
+Orden local restante: llaves (13), MCP (14), nodo n8n (19), imagen y arranque (20), y prueba completa de B3 (18). El ADR-0046 fue aceptado por santy401 el 2026-11-16: habilita probar login real sin dar LOGIN al rol global y retirar las credenciales privilegiadas antes de servir tráfico. La implementación continúa en el PR #44.
 
 El responsable indicó completar por ahora desarrollo y pruebas locales. Las claves de Clerk están en `.env`; la conexión de Supabase se guardó localmente sin publicarla. Dokploy y n8n existen en el servidor. La prueba con token real de Clerk (22) y la publicación de staging (23) quedan diferidas; Cloudflare se usará después sin abrir puertos del router. No se anuncian como terminadas ni se despliega mientras se trabaja en el alcance local.
 

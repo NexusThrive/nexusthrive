@@ -435,7 +435,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-20 · Empaquetar la API, migrar al arrancar y exponer salud (R10)
 
-- **Estado:** En curso; propuesta de arranque seguro pendiente de aceptación. **Tamaño:** M. **Rama:** `feature/HU-gateway-20`. **ADR exigidos:** 0046 (propuesto; enmienda de 0027); 0019 y 0024 aceptados.
+- **Estado:** En curso; ADR-0046 aceptado por santy401 el 2026-11-16. **Tamaño:** M. **Rama:** `feature/HU-gateway-20`. **ADR exigidos:** 0046 (aceptado; enmienda de 0027); 0019 y 0024 aceptados.
 - **Historia:**
   Como equipo NexusThrive,
   quiero una imagen de la API que migre antes de recibir tráfico y use el rol limitado,

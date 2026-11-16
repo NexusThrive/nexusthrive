@@ -50,4 +50,4 @@ Las claves de Clerk están disponibles en `.env`; la conexión de Supabase está
 - [Plan](../../product/plan.md) y [backlog](../../product/backlog/m2-puertas-del-kernel.md).
 - [Hoja de ruta](../../02-arquitectura/hoja-de-ruta.md).
 
-HU-gateway-20 propone ADR-0046 para mantener el rol global NOLOGIN y usar un login limitado por despliegue con SCRAM y bootstrap sin secretos privilegiados durante el servicio. El código de bootstrap espera aceptación.
+HU-gateway-20 continúa en el [PR #44](https://github.com/NexusThrive/nexusthrive/pull/44). santy401 aceptó el ADR-0046 el 2026-11-16: el rol global sigue NOLOGIN y se implementará un login limitado por despliegue con SCRAM y bootstrap sin secretos privilegiados durante el servicio. La historia sigue en curso hasta completar implementación y pruebas locales.
