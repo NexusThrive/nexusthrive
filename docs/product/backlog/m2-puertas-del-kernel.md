@@ -171,13 +171,13 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-07 · Decidir el proceso programador en el binario de la API (*)
 
-- **Estado:** Lista, con supuesto por confirmar (S-P13). **Tamaño:** S. **Rama:** `chore/HU-gateway-07`. **ADR que escribe:** 0044 (proceso programador de M2; cubre P13, seguimientos 60 y 61).
+- **Estado:** En curso; propuesta pendiente de aceptación. S-P13 ya confirmado. **Tamaño:** S. **Rama:** `chore/HU-gateway-07`. **ADR que escribe:** 0043 (proceso programador de M2; cubre P13, seguimientos 60 y 61).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero decidir cómo se ejecutan los timers vencidos y el despachador en M2,
   para que los compromisos expiren sin construir aún la coordinación multi-instancia.
 - **Criterios de aceptación:**
-  1. Dado el ADR 0044, cuando se revisa, entonces fija un ciclo simple dentro del binario de la API que invoca `FireDueTimers` y el despachador, con intervalo numérico, sin `kernel/coordination` ni `scheduler_runs`, y declara el límite de una sola instancia.
+  1. Dado el ADR 0043, cuando se revisa, entonces fija un ciclo simple dentro del binario de la API que invoca `FireDueTimers` y el despachador, con intervalo numérico, sin `kernel/coordination` ni `scheduler_runs`, y declara el límite de una sola instancia.
   2. Dado el ADR, cuando se revisa, entonces declara qué pasa si el dueño lo rechaza: se pospone a M4 y los compromisos vencidos no expiran en staging.
   3. Dado el ADR, cuando se revisa, entonces fija que el ciclo llama al kernel solo por el `Engine` con un actor `ActorSystem` construido por el propio proceso, no por una petición.
 - **Reglas de negocio:** `kernel.timer.fire` y `kernel.outbox.claim` existen como operaciones propias (`kernel/execution/builtin.go`); `ActorSystem` solo se construye internamente (ADR-0035); decisión por defecto del Product Owner (P13).
@@ -336,7 +336,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-15 · Firmar y entregar webhooks desde el outbox (R8a)
 
-- **Estado:** Lista (el despachador en el binario de la API depende de S-P13 (*)). **Tamaño:** L. **Rama:** `feature/HU-gateway-15`. **ADR exigidos:** 0041, 0042 y la decisión del programador de HU-gateway-07.
+- **Estado:** Lista; S-P13 confirmado, ADR pendientes de aceptación. **Tamaño:** L. **Rama:** `feature/HU-gateway-15`. **ADR exigidos:** 0041, 0042 y 0043 (programador, propuesta de HU-gateway-07).
 - **Historia:**
   Como sistema receptor de webhooks,
   quiero recibir los eventos del kernel firmados una sola vez por entrega,
@@ -352,7 +352,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
   8. Dado un evento de un espacio A, cuando se despacha, entonces nunca se entrega a un endpoint del espacio B (aislamiento).
   9. Dado el despachador, cuando se revisa, entonces llama al kernel solo por el `Engine` con un actor del sistema construido por el propio proceso, sin pool ni importar `kernel/state` (regla de puerta).
   10. Dado el cuerpo enviado, cuando se revisa, entonces nunca contiene el secreto de la llave ni datos de otro espacio.
-- **Reglas de negocio:** ADR-0031 (reclamo y arrendamiento, al menos una vez), ADR-0028 (orden de eventos), seguimientos 13, 39; ADR 0042 y 0043 (nuevos); `webhook_*` no existe hoy; firma HMAC (`puertas.md`).
+- **Reglas de negocio:** ADR-0031 (reclamo y arrendamiento, al menos una vez), ADR-0028 (orden de eventos), seguimientos 13, 39; ADR 0041, 0042 y 0043 (propuestos); `webhook_*` no existe hoy; firma HMAC (`puertas.md`).
 - **Dependencias:** HU-gateway-06, HU-gateway-07, HU-gateway-10, HU-gateway-09.
 - **Fuera de alcance:** reintentos con espera y deshabilitación (HU-gateway-16), reenvío y rotación (HU-gateway-17), `/webhooks/wompi`.
 
@@ -450,7 +450,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-21 · Arrancar el programador de timers y el despachador en la API (R-P13) (*)
 
-- **Estado:** Lista, con supuesto por confirmar (S-P13). **Tamaño:** S. **Rama:** `feature/HU-gateway-21`. **ADR exigidos:** 0044.
+- **Estado:** Lista; S-P13 confirmado, ADR pendiente de aceptación. **Tamaño:** S. **Rama:** `feature/HU-gateway-21`. **ADR exigidos:** 0043.
 - **Historia:**
   Como equipo NexusThrive,
   quiero que la API dispare los timers vencidos y despache el outbox por sí misma,
@@ -462,7 +462,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
   4. Dada la API detenida con una señal, cuando termina, entonces el ciclo se cancela por `ctx` y no deja trabajo reclamado sin arrendar.
   5. Dado el ciclo, cuando se revisa, entonces usa solo el `Engine` con un actor `ActorSystem` que construye el propio proceso (regla de puerta) y declara en logs el límite de una sola instancia.
   6. Dado `kernel/coordination` y `scheduler_runs`, cuando se revisa el repositorio, entonces no se crean.
-- **Reglas de negocio:** ADR-0034 (vencimiento por timer), ADR-0031, ADR 0044 (nuevo); S-P13.
+- **Reglas de negocio:** ADR-0034 (vencimiento por timer), ADR-0031, ADR 0043 (nuevo); S-P13.
 - **Dependencias:** HU-gateway-07, HU-gateway-15.
 - **Fuera de alcance:** multi-instancia, coordinación.
 

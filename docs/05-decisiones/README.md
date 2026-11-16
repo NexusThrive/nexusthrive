@@ -61,6 +61,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0040](0040-validacion-de-clerk-y-cache-jwks.md) | Validación de Clerk y vigencia de la caché JWKS (HU-gateway-04) | Aceptada |
 | [0041](0041-despacho-y-reintentos-de-webhooks.md) | Despacho duradero y reintentos de webhooks (HU-gateway-06) | Propuesta |
 | [0042](0042-secretos-y-firma-de-webhooks.md) | Secretos cifrados y firma de webhooks (HU-gateway-06) | Propuesta |
+| [0043](0043-programador-en-la-api.md) | Programador de timers y webhooks en la API (HU-gateway-07) | Propuesta |
 
 ## Pendientes
 
