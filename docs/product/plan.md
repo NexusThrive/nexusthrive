@@ -19,7 +19,7 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Backlog:
 
 ## Resumen de estado (S02)
 
-HU-gateway-16 completa el contador de fallos remotos y la deshabilitación a veinte fallos consecutivos, con motivo consultable y sin atribuir cancelaciones o rechazos locales al endpoint. [Diseño y pruebas](../ingenieria/diseno/HU-gateway-16.md).
+HU-gateway-16 está publicada en el [PR #39](https://github.com/NexusThrive/nexusthrive/pull/39), sobre #38, y completa el contador de fallos remotos y la deshabilitación a veinte fallos consecutivos, con motivo consultable y sin atribuir cancelaciones o rechazos locales al endpoint. [Diseño y pruebas](../ingenieria/diseno/HU-gateway-16.md).
 
 HU-gateway-15 está publicada en el [PR #38](https://github.com/NexusThrive/nexusthrive/pull/38), sobre #37, e implementa registro y consulta Connect, cifrado y firma, migración 00016, reparto duradero y transporte HTTP con validación de destinos. [Diseño y límites](../ingenieria/diseno/HU-gateway-15.md). El ciclo automático, la deshabilitación consecutiva y la rotación siguen separados en HU-gateway-21, 16 y 17.
 
