@@ -336,7 +336,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-15 · Firmar y entregar webhooks desde el outbox (R8a)
 
-- **Estado:** Lista (el despachador en el binario de la API depende de S-P13 (*)). **Tamaño:** L. **Rama:** `feature/HU-gateway-15`. **ADR exigidos:** 0042, 0043, 0044.
+- **Estado:** Lista (el despachador en el binario de la API depende de S-P13 (*)). **Tamaño:** L. **Rama:** `feature/HU-gateway-15`. **ADR exigidos:** 0041, 0042 y la decisión del programador de HU-gateway-07.
 - **Historia:**
   Como sistema receptor de webhooks,
   quiero recibir los eventos del kernel firmados una sola vez por entrega,
@@ -358,26 +358,26 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-16 · Reintentar entregas y deshabilitar endpoints con fallos (R8b)
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-16`. **ADR exigidos:** 0042.
+- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-16`. **ADR exigidos:** 0041.
 - **Historia:**
   Como sistema receptor de webhooks,
   quiero que las entregas fallidas se reintenten con espera creciente y que un endpoint roto se deshabilite,
   para recuperarme de caídas cortas sin que el kernel insista sin fin.
 - **Criterios de aceptación:**
-  1. Dada una entrega que falla (timeout o no-2xx), cuando se reintenta, entonces las esperas siguen la tabla creciente del ADR 0042, probada con reloj inyectable.
+  1. Dada una entrega que falla (timeout o no-2xx), cuando se reintenta, entonces las esperas siguen la tabla creciente del ADR 0041, probada con reloj inyectable.
   2. Dado un evento cuyo outbox llega al quinto fallo, cuando se registra, entonces pasa a `dead` y no se reclama más (ADR-0031).
   3. Dado un endpoint con 20 fallos seguidos, cuando ocurre el vigésimo, entonces queda deshabilitado, no recibe más entregas y se registra el motivo.
   4. Dado un endpoint con 19 fallos seguidos y luego un éxito, cuando se cuenta, entonces el contador de fallos seguidos vuelve a 0.
   5. Dado un endpoint deshabilitado, cuando se consultan sus entregas, entonces siguen visibles con su historial.
-  6. Dados `docs/02-arquitectura/plataforma/flujos.md` y `docs/04-integraciones/puertas.md`, cuando se revisan, entonces las cifras coinciden con el ADR 0042.
+  6. Dados `docs/02-arquitectura/plataforma/flujos.md` y `docs/04-integraciones/puertas.md`, cuando se revisan, entonces las cifras coinciden con el ADR 0041.
   7. Dada una entrega que reintenta, cuando se envía de nuevo, entonces conserva el mismo `event.id` y recalcula la firma con una marca de tiempo nueva.
-- **Reglas de negocio:** ADR-0031 (`dead` al quinto fallo), `puertas.md` (20 fallos), ADR 0042 (tabla de esperas, nueva).
+- **Reglas de negocio:** ADR-0031 (`dead` al quinto fallo), `puertas.md` (20 fallos), ADR 0041 (tabla de esperas, nueva).
 - **Dependencias:** HU-gateway-15.
 - **Fuera de alcance:** reenvío manual, rotación.
 
 ## HU-gateway-17 · Reenviar entregas y rotar el secreto del endpoint (R8c)
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-17`. **ADR exigidos:** 0043.
+- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-17`. **ADR exigidos:** 0042.
 - **Historia:**
   Como desarrollador integrador,
   quiero reenviar una entrega y rotar el secreto sin perder eventos,
@@ -386,11 +386,11 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
   1. Dada una entrega en `webhook_deliveries` fallida o muerta, cuando un participante con permiso pide el reenvío, entonces se envía de nuevo con el mismo `event.id`, se registra un intento nuevo y el original se conserva.
   2. Dado un participante sin permiso, cuando pide el reenvío, entonces recibe `permission_denied`.
   3. Dado un endpoint deshabilitado, cuando se pide un reenvío, entonces falla con un error tipado sin enviar.
-  4. Dada la rotación del secreto, cuando se completa, entonces se muestra el secreto nuevo una sola vez y durante la ventana del ADR 0043 las entregas llevan firmas válidas para ambos secretos.
+  4. Dada la rotación del secreto, cuando se completa, entonces se muestra el secreto nuevo una sola vez y durante la ventana del ADR 0042 las entregas llevan firmas válidas para ambos secretos.
   5. Dada la ventana vencida, cuando se entrega, entonces solo vale el secreto nuevo.
   6. Dado un reenvío de un evento de otro espacio, cuando se pide, entonces responde `not_found` (aislamiento).
   7. Dada la puerta, cuando se revisa, entonces opera solo por el `Engine`, el actor sale del token o llave y el secreto no aparece en logs (regla de puerta).
-- **Reglas de negocio:** ADR 0043 (nuevo): secreto reversible con ventana de doble secreto; `puertas.md` (reenvío manual y rotación).
+- **Reglas de negocio:** ADR 0042 (nuevo): secreto reversible con ventana de doble secreto; `puertas.md` (reenvío manual y rotación).
 - **Dependencias:** HU-gateway-15.
 - **Fuera de alcance:** interfaz (consola), re-despacho masivo.
 
