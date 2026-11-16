@@ -19,7 +19,7 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Backlog:
 
 ## Resumen de estado (S02)
 
-HU-gateway-06 tiene los ADR-0041 y 0042 propuestos en `chore/HU-gateway-06`: reparto duradero, contadores independientes, secretos cifrados y firma. No habilitan todavía código de webhooks; requieren aceptación junto con la decisión del programador. Los números anteriores eran reservas: 0041 pertenece ahora a despacho y 0042 a secretos.
+Actualización 2026-11-16: santy401 aceptó ADR-0041, 0042 y 0043 en conversación. Los PR [#36](https://github.com/NexusThrive/nexusthrive/pull/36) y [#37](https://github.com/NexusThrive/nexusthrive/pull/37) registran despacho, cifrado y firma, y ciclo del programador. HU-gateway-15 queda habilitada; se toma antes de reintentos, rotación y arranque del ciclo. La integración de los antecedentes sigue pendiente.
 
 Publicación 2026-11-15: las ocho historias implementadas o decididas están subidas y tienen PR en borrador [#28 a #35](../ingenieria/sprint-02/avance.md), con una historia por diff y dependencias enlazadas. Sus primeras ejecuciones de CI pasaron. Se mantienen bases temporales en cadena hasta integrar los antecedentes; el destino final es `sprint/S02`. La publicación no cambia el conteo de terminadas: ninguna se ha fusionado.
 
@@ -44,11 +44,11 @@ HU-gateway-04 tiene el [ADR-0040](../05-decisiones/0040-validacion-de-clerk-y-ca
 | Concepto | Cantidad |
 |---|---|
 | Historias | 23 |
-| Listas | 12 |
+| Listas | 11 |
 | Bloqueadas | 2 (HU-gateway-22 por Q1, HU-gateway-23 por Q2) |
-| Terminadas / en curso | 0 / 9 (incluye historias pendientes de revisión o integración) |
+| Terminadas / en curso | 0 / 10 (incluye historias pendientes de revisión o integración) |
 
-De las 12 listas, 03, 07, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
+De las 11 listas, 03, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
 
 Discrepancias del backlog (se rutean al analista, no se corrigen aquí):
 
