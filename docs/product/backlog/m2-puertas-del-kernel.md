@@ -140,7 +140,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-05 · Decidir las llaves por espacio
 
-- **Estado:** En curso; ADR pendiente de aceptación. **Tamaño:** S. **Rama:** `chore/HU-gateway-05`. **ADR que escribe:** 0045 (llaves de API por espacio, alcances y migración `api_keys`; cubre P7).
+- **Estado:** Decisión aceptada; pendiente de integración. **Tamaño:** S. **Rama:** `chore/HU-gateway-05`. **ADR que escribe:** 0045 (llaves de API por espacio, alcances y migración `api_keys`; cubre P7).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero decidir el modelo de las llaves por espacio,

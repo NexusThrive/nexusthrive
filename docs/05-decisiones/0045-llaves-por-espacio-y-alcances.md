@@ -1,8 +1,9 @@
 # ADR-0045 · Llaves por espacio y alcances transaccionales
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-11-16
 - **Responsables:** santy401
+- **Aceptación:** santy401, 2026-11-16, confirmada en conversación.
 
 ## Contexto
 
@@ -10,7 +11,7 @@ HU-gateway-05 concreta R6 antes de HU-gateway-13, 14 y 19. El alcance aprobado d
 
 La reserva antigua de ADR-0041 ya pertenece a webhooks. La migración 00017 se reserva para reenvío y rotación de webhooks (HU-gateway-17); esta historia reserva 00018 para llaves. No se modifica el rol global de la API para darle LOGIN.
 
-## Decisión propuesta
+## Decisión
 
 ### Secreto y almacenamiento
 
@@ -59,7 +60,7 @@ Crear, consultar, revocar y rotar nacen en `contracts/`, con sus permisos, capac
 - La revocación se aplica por transacción y los alcances no crecen por cambios posteriores de roles.
 - Se añade una excepción de directorio estrecha y comprobada; el acceso habitual sigue sujeto a RLS por espacio.
 - La gestión de llaves tiene dos permisos nuevos y no incluye interfaz, listas de IP ni emisión automática de identidades.
-- Estos detalles requieren aceptación antes de implementar HU-gateway-13. El alcance de MCP de solo lectura ya está aceptado en ADR-0044.
+- El responsable aceptó estos detalles; HU-gateway-13 queda habilitada. El alcance de MCP de solo lectura ya está aceptado en ADR-0044.
 
 ## Cumplimiento
 
