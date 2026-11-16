@@ -4,6 +4,12 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Brief: `
 
 ## Resumen
 
+### Avance de HU-gateway-01 · 2026-11-15
+
+Decisión aceptada por santy401 el 2026-11-15 en `chore/HU-gateway-01`: [ADR-0037, contrato inicial del kernel](../../05-decisiones/0037-contrato-inicial-del-kernel.md). Incluye escritura con compromiso, lectura de eventos, errores, generación local y acceso al espacio de nombres reservado mediante métodos fijos del motor. No hay implementación de contratos ni cambios de código en esta historia. La integración y las comprobaciones completas siguen pendientes; HU-gateway-08 ya tiene su decisión aceptada.
+
+El ADR-0036 ya pertenece a la primera puerta HTTP y no se reutiliza. Los números 0036 a 0044 citados abajo eran reservas originales, no decisiones existentes: HU-gateway-01 usa ahora 0037; los demás ADR se numerarán al redactarlos, sin colisionar con los existentes. Las dependencias por ID de historia se mantienen; las referencias numéricas originales deben resolverse por el tema de la historia hasta actualizar cada una.
+
 - Historias: 23. Listas: 20. Bloqueadas: 3 (HU-gateway-22, HU-gateway-23 por cuentas externas; ver más abajo). Ninguna es XL.
 - Tamaños: S = 5, M = 10, L = 8 (la rebanada R8, XL en la definición, se parte en HU-gateway-15, 16 y 17).
 - Slug `gateway`. Ramas de tarea: `feature/HU-gateway-NN` (las historias solo de documentación usan `chore/HU-gateway-NN` si no llevan código; patrón `^(feature|fix|chore|hotfix)/HU-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{2}$`). Rama base: `sprint/S02`. Un PR por historia, con `docs/` actualizado.
@@ -63,13 +69,13 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-01 · Decidir el contrato inicial de `kernel.v1`
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `chore/HU-gateway-01`. **ADR que escribe:** 0036 (contrato inicial de `kernel.v1`, herramienta `buf` y alcance de lenguajes; cubre P2 y P10).
+- **Estado:** Decisión aceptada; pendiente de validación completa e integración. **Tamaño:** M. **Rama:** `chore/HU-gateway-01`. **ADR que escribe:** [0037](../../05-decisiones/0037-contrato-inicial-del-kernel.md) (contrato inicial de `kernel.v1`, herramienta `buf` y alcance de lenguajes; cubre P2 y P10).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero fijar la lista inicial de operaciones de `kernel.v1` y la política de generación con `buf`,
   para que los contratos y las puertas se construyan sobre una decisión escrita.
 - **Criterios de aceptación:**
-  1. Dado `docs/05-decisiones/0036-*.md`, cuando se revisa, entonces tiene estado Aceptado y lista al menos una operación `write` de riesgo `money` (propuesta: `kernel.exchange.write`) y una `read` de eventos (propuesta: `kernel.event.read`), cada una con nombre, permiso del catálogo, riesgo, idempotencia, campos de entrada y salida y errores tipados.
+  1. Dado `docs/05-decisiones/0037-contrato-inicial-del-kernel.md`, cuando se revisa, entonces tiene estado Aceptado y lista al menos una operación `write` de riesgo `money` (propuesta: `kernel.exchange.write`) y una `read` de eventos (propuesta: `kernel.event.read`), cada una con nombre, permiso del catálogo, riesgo, idempotencia, campos de entrada y salida y errores tipados.
   2. Dado el ADR, cuando se lee la operación `money`, entonces declara idempotencia obligatoria y la clave viaja en un campo del contrato.
   3. Dado el ADR, cuando se lee la sección de generación, entonces fija plugins de `buf` locales con versión fijada (no remotos), `buf lint` y `buf breaking` en CI, y excluye Python de M2.
   4. Dado el ADR, cuando se lee la sección de nombres, entonces resuelve cómo se registran las operaciones del espacio de nombres reservado `kernel` (nota de la cabecera) y cómo las alcanza el gateway sin saltarse el `Engine`.
@@ -184,13 +190,13 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-08 · Declarar los contratos de `kernel.v1` (R1)
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-08`. **ADR exigidos antes del código:** 0036.
+- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-08`. **ADR exigidos antes del código:** [0037, aceptado](../../05-decisiones/0037-contrato-inicial-del-kernel.md).
 - **Historia:**
   Como desarrollador integrador,
   quiero un contrato versionado de las operaciones y eventos de `kernel.v1`,
   para generar clientes y comprobar compatibilidad automáticamente.
 - **Criterios de aceptación:**
-  1. Dado `contracts/`, cuando se lista, entonces contiene los `.proto` de las operaciones definidas en el ADR 0036 y un JSON Schema por evento emitido por ellas.
+  1. Dado `contracts/`, cuando se lista, entonces contiene los `.proto` de las operaciones definidas en el ADR 0037 y un JSON Schema por evento emitido por ellas.
   2. Dado un `.proto` con un campo renombrado respecto de `main`, cuando corre `buf breaking`, entonces falla.
   3. Dado el repositorio limpio, cuando se ejecuta `task gen`, entonces genera el código Go y TypeScript con plugins locales sin acceso a red, y un segundo `task gen` no cambia ningún archivo.
   4. Dado el contrato de la operación `money`, cuando se lee, entonces declara `idempotent = true`, riesgo `money`, permiso y capability.
