@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package kernel.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "kernel/v1/policy.proto";
+
+option go_package = "github.com/nexusthrive/nexusthrive/kernel/gen/kernel/v1;kernelv1";
+
+// KernelService exposes only operations whose actor is resolved by the server.
+service KernelService {
+  // WriteExchange records an exchange and an open commitment atomically.
+  rpc WriteExchange(WriteExchangeRequest) returns (WriteExchangeResponse) {
+    option (operation) = {
+      name: "kernel.exchange.write"
+      permissions: "kernel.exchange.write"
+      permissions: "kernel.commitment.write"
+      capability: ""
+      risk: RISK_MONEY
+      idempotent: true
+    };
+  }
+  // ReadEvents returns an inclusive cursor page within the authorized space.
+  rpc ReadEvents(ReadEventsRequest) returns (ReadEventsResponse) {
+    option (operation) = {
+      name: "kernel.event.read"
+      permissions: "kernel.event.read"
+      capability: ""
+      risk: RISK_READ
+      idempotent: false
+    };
+  }
+}
+
+message EntryInput {
+  string account_id = 1;
+  string resource_id = 2;
+  // Exact, nonzero decimal in the resource scale; never a floating point value.
+  string amount = 3;
+}
+
+message CommitmentInput {
+  string debtor_participant_id = 1;
+  string creditor_participant_id = 2;
+  string resource_id = 3;
+  // Exact positive decimal in the resource scale.
+  string amount = 4;
+  google.protobuf.Timestamp due_at = 5;
+  // Omission uses the database clock.
+  google.protobuf.Timestamp starts_at = 6;
+}
+
+message WriteExchangeRequest {
+  // Required unless the JSON/HTTP compatibility header supplies the same key.
+  string idempotency_key = 1;
+  // Between 2 and 100 entries, balanced per resource.
+  repeated EntryInput entries = 2;
+  string memo = 3;
+  // Required: this operation always creates one open commitment.
+  CommitmentInput commitment = 4;
+}
+
+message WriteExchangeResponse {
+  string exchange_id = 1;
+  string commitment_id = 2;
+  string event_id = 3;
+}
+
+message ReadEventsRequest {
+  // Inclusive, nonnegative cursor. Consumers overlap and deduplicate by id.
+  int64 from_seq = 1;
+  // Required page size from 1 to 1000.
+  int32 limit = 2;
+}
+
+message ReadEventsResponse {
+  repeated Event events = 1;
+}
+
+// Event contains only committed facts from the authorized space.
+message Event {
+  string id = 1;
+  // Allocation order, not commit order. JSON encodes this value as a string.
+  int64 seq = 2;
+  string space_id = 3;
+  string type = 4;
+  int32 version = 5;
+  string subject_ref = 6;
+  google.protobuf.Struct payload = 7;
+  string actor_kind = 8;
+  string actor_participant_id = 9;
+  string request_id = 10;
+  google.protobuf.Timestamp occurred_at = 11;
+}

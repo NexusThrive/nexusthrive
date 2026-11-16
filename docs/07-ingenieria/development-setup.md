@@ -66,7 +66,9 @@ DATABASE_URL="postgres://nexusthrive:nexusthrive@localhost:55432/nexusthrive?ssl
 
 ### Herramientas que se descargan solas
 
-`staticcheck` y `buf` se ejecutan con `go run` en la versión fijada en `Taskfile.yml`; no hace falta instalarlas. Go, Node.js, pnpm y Task sí deben estar instalados.
+`staticcheck` se ejecuta con `go run` en la versión fijada en `Taskfile.yml`. `task setup` prepara también los generadores del contrato; para prepararlos por separado se ejecuta `task tools:contracts` después de instalar las dependencias con pnpm. Las versiones están fijadas en `tools/contracts-setup.mjs` y `package.json`; los ejecutables Go quedan en `tools/bin`, fuera del control de versiones. Después, `task gen` no requiere red ni plugins remotos de Buf. Go, Node.js, pnpm y Task sí deben estar instalados.
+
+Si el servidor usa una versión de Go más nueva que la admitida por el Staticcheck fijado, se ejecutan las comprobaciones con `GOTOOLCHAIN=go1.24.7`. Sin Task instalado, `go run github.com/go-task/task/v3/cmd/task@v3.40.1 <tarea>` permite ejecutar las mismas tareas. El render de Mermaid admite `CI=1` para el entorno de servidor sin sandbox de Chrome, igual que en CI.
 
 ## Reglas e invariantes
 

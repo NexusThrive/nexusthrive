@@ -1,0 +1,14 @@
+{
+  "name": "@nexusthrive/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { "./gen/*": "./src/gen/*" },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test ../../tools/contracts-schema.test.mjs ../../tools/contracts-tooling.test.mjs"
+  },
+  "dependencies": { "@bufbuild/protobuf": "2.2.3" },
+  "devDependencies": { "typescript": "~5.9" }
+}

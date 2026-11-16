@@ -1,11 +1,11 @@
 version: v2
 plugins:
-  - remote: buf.build/protocolbuffers/go
+  - local: ../tools/bin/protoc-gen-go
     out: ../kernel/gen
     opt: paths=source_relative
-  - remote: buf.build/connectrpc/go
+  - local: ../tools/bin/protoc-gen-connect-go
     out: ../kernel/gen
     opt: paths=source_relative
-  - remote: buf.build/bufbuild/es
+  - local: ../node_modules/.bin/protoc-gen-es
     out: ../packages/sdk/src/gen
     opt: target=ts

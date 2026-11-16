@@ -190,7 +190,8 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-08 · Declarar los contratos de `kernel.v1` (R1)
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-08`. **ADR exigidos antes del código:** [0037, aceptado](../../05-decisiones/0037-contrato-inicial-del-kernel.md).
+- **Estado:** En curso, implementación local y validación. **Tamaño:** M. **Rama:** `feature/HU-gateway-08`. **ADR exigidos antes del código:** [0037, aceptado](../../05-decisiones/0037-contrato-inicial-del-kernel.md).
+- **Avance 2026-11-15:** implementación local validada; pendientes revisión e integración. Pasan lint, suite completa (incluidas leyes), typecheck, compilación, pruebas de metadatos y precisión, esquema del evento, rechazo de un campo renombrado y segunda generación idéntica. [Evidencia y límites](../../ingenieria/diseno/HU-gateway-08.md). El servidor Connect y las operaciones del motor corresponden a 09 y 10.
 - **Historia:**
   Como desarrollador integrador,
   quiero un contrato versionado de las operaciones y eventos de `kernel.v1`,

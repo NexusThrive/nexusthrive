@@ -31,12 +31,21 @@ El [ADR-0037](../05-decisiones/0037-contrato-inicial-del-kernel.md), aceptado po
 
 La decisión define entradas, respuestas, errores, la clave en el campo `idempotency_key`, métodos específicos del `Engine` para preservar el prefijo reservado y plugins locales con versiones fijadas. Añade el código `retryable` para abortos de transacción; aún no forma parte del catálogo implementado. El transporte inicial para dinero es JSON, para conservar el cuerpo original que exige la idempotencia del motor.
 
-El ADR está **Aceptado** y habilita HU-gateway-08. La implementación sigue pendiente: la configuración actual aún usa plugins remotos y no tiene operaciones Protobuf. El corte HTTP vigente está descrito en el [ADR-0036](../05-decisiones/0036-primera-puerta-http-del-kernel.md).
+El ADR está **Aceptado**. HU-gateway-08 incorpora los contratos en `contracts/proto/kernel/v1`, el esquema del payload en `contracts/events/kernel.exchange.recorded.v1.json` y código generado en `kernel/gen` y `packages/sdk/src/gen`. La ejecución de estas operaciones en el motor y su exposición por la puerta siguen pendientes de HU-gateway-09 y HU-gateway-10. El corte HTTP vigente está descrito en el [ADR-0036](../05-decisiones/0036-primera-puerta-http-del-kernel.md).
+
+### Preparación y generación
+
+1. `pnpm install --frozen-lockfile` instala el generador TypeScript fijado y las dependencias.
+2. `task tools:contracts` instala Buf 1.50.0, protoc-gen-go 1.36.5 y protoc-gen-connect-go 1.18.1 en `tools/bin` (ignorado por Git). Esta preparación requiere red; el generador ES está fijado en 2.2.3.
+3. `task gen` utiliza solo ejecutables locales y genera Go y TypeScript sin acceso a red. Los archivos generados se versionan.
+4. `task contracts:check` ejecuta lint y compatibilidad contra `CONTRACT_BASE_REF` (por defecto `main`). Una base sin `.proto` informa expresamente el arranque inicial; una referencia inválida falla.
+
+CI prepara las herramientas, ejecuta la comparación contra el commit base del PR, genera dos veces y rechaza diferencias o archivos generados sin seguimiento. Las pruebas comprueban que renombrar un campo rompe compatibilidad, que una segunda generación conserva todos los bytes, que los decimales y cursores conservan precisión y que el evento rechaza payloads inválidos.
 
 ## Funcionamiento
 
 - Cada operación declara su **permiso**, su **capacidad**, su **riesgo** (`read`, `write`, `money`) y si es **idempotente**. Las de dinero siempre lo son.
-  Mientras no exista `contracts/`, la declaración vive en Go (`execution.Operation`, [ADR-0035](../05-decisiones/0035-motor-de-ejecucion.md)): una **lista** de permisos que se verifican todos, una capacidad opcional, el riesgo (igual al mayor de sus permisos) y la idempotencia. El motor se niega a registrar una operación de dinero sin idempotencia.
+  Los contratos nuevos declaran esa política mediante `OperationPolicy` en las opciones de cada método. El motor existente todavía usa `execution.Operation` ([ADR-0035](../05-decisiones/0035-motor-de-ejecucion.md)); HU-gateway-09 consumirá las declaraciones generadas: una **lista** de permisos que se verifican todos, una capacidad opcional, el riesgo (igual al mayor de sus permisos) y la idempotencia. El motor se niega a registrar una operación de dinero sin idempotencia.
   Una operación idempotente recibe una **clave** (`^[A-Za-z0-9._:-]{1,128}$`) y el cuerpo de la solicitud: repetir la misma clave con la misma **huella** (operación, actor y cuerpo canónico) devuelve la respuesta guardada sin ejecutar de nuevo, y la misma clave con otra huella devuelve `idempotency_conflict` ([ADR-0026](../05-decisiones/0026-idempotencia-por-registro.md)). El registro vence a las 24 horas.
 - Los nombres de operaciones, campos y eventos están en inglés.
 - Los eventos llevan versión. Un cambio incompatible crea `.v2`; el anterior se mantiene durante un periodo de transición.
