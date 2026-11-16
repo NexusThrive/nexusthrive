@@ -58,6 +58,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0037](0037-contrato-inicial-del-kernel.md) | Contrato inicial de `kernel.v1` y generación local (HU-gateway-01) | Aceptada |
 | [0038](0038-resolucion-de-actor-y-espacio.md) | Actor verificado y resolución del espacio por slug (HU-gateway-02) | Aceptada |
 | [0039](0039-identidad-en-el-primer-ingreso.md) | Primer ingreso sin creación automática de identidad (HU-gateway-02) | Aceptada |
+| [0040](0040-validacion-de-clerk-y-cache-jwks.md) | Validación de Clerk y vigencia de la caché JWKS (HU-gateway-04) | Aceptada |
 
 ## Pendientes
 
