@@ -453,7 +453,8 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-21 · Arrancar el programador de timers y el despachador en la API (R-P13) (*)
 
-- **Estado:** Lista; S-P13 y ADR aceptados. **Tamaño:** S. **Rama:** `feature/HU-gateway-21`. **ADR exigidos:** 0043.
+- **Estado:** En curso; programador implementado y en validación. **Tamaño:** S. **Rama:** `feature/HU-gateway-21`. **ADR exigidos:** 0043.
+- **Avance:** [Diseño y pruebas](../../ingenieria/diseno/HU-gateway-21.md).
 - **Historia:**
   Como equipo NexusThrive,
   quiero que la API dispare los timers vencidos y despache el outbox por sí misma,

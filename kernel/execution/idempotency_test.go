@@ -85,6 +85,9 @@ func (w *world) recordsOf(key string) (generations []int, ids []string, response
 		}
 		generations, ids, responses = append(generations, generation), append(ids, id), append(responses, response)
 	}
+	if err := rows.Err(); err != nil {
+		w.t.Fatalf("read records: %v", err)
+	}
 	return generations, ids, responses
 }
 
@@ -531,6 +534,9 @@ func (w *world) stringColumn(query string) []string {
 			w.t.Fatalf("scan: %v", err)
 		}
 		out = append(out, value)
+	}
+	if err := rows.Err(); err != nil {
+		w.t.Fatalf("read string column: %v", err)
 	}
 	return out
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/nexusthrive/nexusthrive/kernel/execution"
 	"github.com/nexusthrive/nexusthrive/kernel/gateway"
 	"github.com/nexusthrive/nexusthrive/kernel/model"
+	"github.com/nexusthrive/nexusthrive/services/api/internal/scheduler"
 )
 
 func main() {
@@ -61,11 +62,15 @@ func run(log *slog.Logger) error {
 		return fmt.Errorf("build engine: %w", err)
 	}
 
+	hooks, err := webhooksFromEnv(engine, dev)
+	if err != nil {
+		return err
+	}
 	var handler http.Handler
 	if dev {
-		handler, err = devServer(engine, log)
+		handler, err = devServer(engine, log, hooks)
 	} else {
-		handler, err = clerkServer(engine, log)
+		handler, err = clerkServer(engine, log, hooks)
 	}
 	if err != nil {
 		return err
@@ -78,17 +83,16 @@ func run(log *slog.Logger) error {
 	srv := &http.Server{Addr: addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	go func() {
-		<-ctx.Done()
-		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		_ = srv.Shutdown(shutdown)
-	}()
-	log.Info("api listening", "addr", addr, "dev", dev)
-	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	var delivery scheduler.Delivery
+	if hooks != nil {
+		delivery = hooks
+	}
+	worker, err := scheduler.New(engine, delivery, log)
+	if err != nil {
 		return err
 	}
-	return nil
+	log.Info("api listening", "addr", addr, "dev", dev)
+	return runHTTP(ctx, srv, worker)
 }
 
 // openPool opens the pool of the API. In development the connection is made by a
@@ -110,7 +114,7 @@ func openPool(url string, dev bool) (*sql.DB, error) {
 }
 
 // devServer serves the console page and signs tokens with a key of its own.
-func devServer(engine *execution.Engine, log *slog.Logger) (http.Handler, error) {
+func devServer(engine *execution.Engine, log *slog.Logger, hooks *gateway.WebhookGateway) (http.Handler, error) {
 	issuer, err := gateway.NewDevIssuer("http://nexusthrive.dev")
 	if err != nil {
 		return nil, err
@@ -123,11 +127,11 @@ func devServer(engine *execution.Engine, log *slog.Logger) (http.Handler, error)
 	if space == "" || subject == "" {
 		return nil, errors.New("development mode needs DEMO_SPACE_ID and DEMO_SUBJECT: run the seed command first")
 	}
-	return composeGateway(engine, verifier, &gateway.Dev{Issuer: issuer, SpaceID: space, Subject: subject, Name: os.Getenv("DEMO_NAME")}, log)
+	return composeGatewayWithHooks(engine, verifier, &gateway.Dev{Issuer: issuer, SpaceID: space, Subject: subject, Name: os.Getenv("DEMO_NAME")}, hooks, log)
 }
 
 // clerkServer verifies the tokens of Clerk against its published keys.
-func clerkServer(engine *execution.Engine, log *slog.Logger) (http.Handler, error) {
+func clerkServer(engine *execution.Engine, log *slog.Logger, hooks *gateway.WebhookGateway) (http.Handler, error) {
 	issuer, jwks := os.Getenv("CLERK_ISSUER"), os.Getenv("CLERK_JWKS_URL")
 	if issuer == "" || jwks == "" {
 		return nil, errors.New("CLERK_ISSUER and CLERK_JWKS_URL are required")
@@ -137,16 +141,20 @@ func clerkServer(engine *execution.Engine, log *slog.Logger) (http.Handler, erro
 	if err != nil {
 		return nil, err
 	}
-	return composeGateway(engine, verifier, nil, log)
+	return composeGatewayWithHooks(engine, verifier, nil, hooks, log)
 }
 
 // composeGateway wires verified slug routes while retaining the development cut.
 func composeGateway(engine *execution.Engine, verifier *gateway.Verifier, dev *gateway.Dev, log *slog.Logger) (http.Handler, error) {
-	auth, err := gateway.NewClerkAuthenticator(engine, verifier)
+	hooks, err := webhooksFromEnv(engine, dev != nil)
 	if err != nil {
 		return nil, err
 	}
-	hooks, err := webhooksFromEnv(engine, dev != nil)
+	return composeGatewayWithHooks(engine, verifier, dev, hooks, log)
+}
+
+func composeGatewayWithHooks(engine *execution.Engine, verifier *gateway.Verifier, dev *gateway.Dev, hooks *gateway.WebhookGateway, log *slog.Logger) (http.Handler, error) {
+	auth, err := gateway.NewClerkAuthenticator(engine, verifier)
 	if err != nil {
 		return nil, err
 	}
@@ -190,4 +198,39 @@ func webhooksFromEnv(engine *execution.Engine, local bool) (*gateway.WebhookGate
 		return nil, err
 	}
 	return gateway.NewWebhookGateway(engine, ring, local)
+}
+
+// backgroundWorker lets the lifecycle wait for shutdown without exposing any state access.
+type backgroundWorker interface{ Run(context.Context) }
+
+func runHTTP(parent context.Context, srv *http.Server, worker backgroundWorker) error {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
+	workerDone, httpDone := make(chan struct{}), make(chan struct{})
+	go func() { defer close(workerDone); worker.Run(ctx) }()
+	go func() {
+		defer close(httpDone)
+		<-ctx.Done()
+		shutdown, stop := context.WithTimeout(context.Background(), 10*time.Second)
+		defer stop()
+		_ = srv.Shutdown(shutdown)
+	}()
+	serveErr := srv.ListenAndServe()
+	cancel()
+	timeout := time.NewTimer(10 * time.Second)
+	defer timeout.Stop()
+	for workerDone != nil || httpDone != nil {
+		select {
+		case <-workerDone:
+			workerDone = nil
+		case <-httpDone:
+			httpDone = nil
+		case <-timeout.C:
+			return errors.New("API shutdown exceeded ten seconds")
+		}
+	}
+	if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+		return fmt.Errorf("serve API: %w", serveErr)
+	}
+	return nil
 }

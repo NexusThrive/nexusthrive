@@ -42,6 +42,12 @@ func (w *WebhookGateway) DispatchSpace(ctx context.Context, space string) error 
 	if err := w.engine.FanoutWebhooks(ctx, call, 100); err != nil {
 		return err
 	}
+	return w.DeliverSpace(ctx, space)
+}
+
+// DeliverSpace performs only the HTTP stage after the scheduler's independent fanout stage.
+func (w *WebhookGateway) DeliverSpace(ctx context.Context, space string) error {
+	call := execution.Call{Actor: model.Actor{Kind: model.ActorSystem}, SpaceID: space, RequestID: execution.NewRequestID()}
 	job, err := w.engine.ClaimWebhookDelivery(ctx, call)
 	if err != nil || job == nil {
 		return err
