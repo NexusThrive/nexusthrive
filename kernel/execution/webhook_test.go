@@ -59,15 +59,15 @@ func TestWebhookFanoutIsolationAndClaims(t *testing.T) {
 	if other, err := w.engine.ClaimWebhookDelivery(ctx, call(system, w.spaceA)); err != nil || other != nil {
 		t.Fatal("duplicate claim", other, err)
 	}
-	err = w.engine.FinishWebhookDelivery(ctx, call(system, w.spaceB), *job, 200, 1, true)
+	err = w.engine.FinishWebhookDelivery(ctx, call(system, w.spaceB), *job, 200, 1, true, true)
 	requireCode(t, "cross-space finish", err, model.CodeNotFound)
-	if err := w.engine.FinishWebhookDelivery(ctx, call(system, w.spaceA), *job, 200, 1, true); err != nil {
+	if err := w.engine.FinishWebhookDelivery(ctx, call(system, w.spaceA), *job, 200, 1, true, true); err != nil {
 		t.Fatal(err)
 	}
 	if n := w.count(`SELECT count(*) FROM kernel.webhook_delivery_attempts`); n != 1 {
 		t.Fatalf("attempts %d", n)
 	}
-	if err := w.engine.FinishWebhookDelivery(ctx, call(system, w.spaceA), *job, 200, 1, true); err == nil {
+	if err := w.engine.FinishWebhookDelivery(ctx, call(system, w.spaceA), *job, 200, 1, true, true); err == nil {
 		t.Fatal("stale finish accepted")
 	}
 	deliveries, err := w.engine.ListWebhookDeliveries(ctx, call(writer, w.spaceA), endpoint, 10)
@@ -119,7 +119,7 @@ func TestWebhookFanoutFailureRollsBackAndLeaseFencesLateResults(t *testing.T) {
 		t.Fatal(job, err)
 	}
 	w.clock.Set(w.clock.Now().Add(model.OutboxLease + time.Second))
-	if err := w.engine.FinishWebhookDelivery(ctx, call(system, w.spaceA), *job, 200, 1, true); err == nil {
+	if err := w.engine.FinishWebhookDelivery(ctx, call(system, w.spaceA), *job, 200, 1, true, true); err == nil {
 		t.Fatal("expired result accepted")
 	}
 	if _, err := w.engine.ClaimWebhookDelivery(ctx, call(system, w.spaceA)); err != nil {

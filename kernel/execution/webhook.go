@@ -83,18 +83,18 @@ func (e *Engine) ClaimWebhookDelivery(ctx context.Context, call Call) (*model.We
 }
 
 // FinishWebhookDelivery binds the result to the lease and current space.
-func (e *Engine) FinishWebhookDelivery(ctx context.Context, call Call, job model.WebhookJob, status int, duration int64, success bool) error {
+func (e *Engine) FinishWebhookDelivery(ctx context.Context, call Call, job model.WebhookJob, status int, duration int64, success, observed bool) error {
 	if err := requireWebhookWorker(call); err != nil {
 		return err
 	}
 	if id, err := uuid.Parse(job.ID); err != nil || id == uuid.Nil {
 		return model.NewError(model.CodeInvalidInput, "invalid webhook delivery", nil)
 	}
-	if id, err := uuid.Parse(job.ClaimToken); err != nil || id == uuid.Nil || duration < 0 || status < 0 || (status > 0 && status < 100) || status > 599 || success != (status >= 200 && status < 300) {
+	if id, err := uuid.Parse(job.ClaimToken); err != nil || id == uuid.Nil || duration < 0 || status < 0 || (status > 0 && status < 100) || status > 599 || success != (status >= 200 && status < 300) || (success && !observed) {
 		return model.NewError(model.CodeInvalidInput, "invalid webhook result", nil)
 	}
 	return e.run(ctx, call, operationOutboxClaim, func(ctx context.Context, tx *Tx) error {
-		return state.FinishWebhookDelivery(ctx, tx.conn, tx.clock, job, status, duration, success)
+		return state.FinishWebhookDelivery(ctx, tx.conn, tx.clock, job, status, duration, success, observed)
 	})
 }
 

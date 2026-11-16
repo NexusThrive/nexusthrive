@@ -45,7 +45,7 @@ El código del dominio y su mensaje público viajan en el detalle `OperationErro
 
 ## Reglas e invariantes
 
-La política de reparto y las cifras de intentos están aceptadas en el [ADR-0041](../05-decisiones/0041-despacho-y-reintentos-de-webhooks.md); el cifrado y la firma están aceptados en el [ADR-0042](../05-decisiones/0042-secretos-y-firma-de-webhooks.md). HU-gateway-15 implementa la base de entrega; deshabilitación y rotación siguen en HU-gateway-16 y 17. El quinto fallo del outbox y los veinte fallos consecutivos del endpoint son contadores distintos.
+La política de reparto y las cifras de intentos están aceptadas en el [ADR-0041](../05-decisiones/0041-despacho-y-reintentos-de-webhooks.md); el cifrado y la firma están aceptados en el [ADR-0042](../05-decisiones/0042-secretos-y-firma-de-webhooks.md). HU-gateway-15 implementa la base de entrega; HU-gateway-16 completa la deshabilitación por veinte fallos consecutivos; la rotación sigue en 17. El quinto fallo del outbox y los veinte fallos consecutivos del endpoint son contadores distintos.
 
 - Agregar una puerta no duplica lógica: todas llaman a las mismas operaciones del contrato.
 - Al principio el MCP solo expone operaciones de lectura; las de escritura se habilitan por alcance cuando se aprueben.
@@ -54,3 +54,5 @@ La política de reparto y las cifras de intentos están aceptadas en el [ADR-004
 ### Implementación inicial de webhooks en M2
 
 HU-gateway-15 incorpora `CreateWebhookEndpoint` y `ListWebhookDeliveries` en Connect. El registro presenta el secreto una sola vez; la consulta solo devuelve metadatos. El reparto confirma el outbox al persistir los trabajos, antes de HTTP; el recibo final pertenece a cada entrega. El cuerpo exacto se firma como `timestamp.cuerpo` con HMAC-SHA256 en `NexusThrive-Signature: t=<segundos>,v1=<hex>`. El receptor decodifica la parte base64url tras `whsec_`, verifica la firma en tiempo constante, exige una marca dentro de cinco minutos y deduplica por `event.id`. [Configuración y límites](../ingenieria/diseno/HU-gateway-15.md). El arranque periódico y la rotación siguen en sus historias.
+
+HU-gateway-16 mantiene contadores independientes para reparto, entrega y endpoint. El éxito reinicia los fallos consecutivos; los errores locales de validación o cancelación no afectan a la salud del receptor. La consulta conserva entregas e intentos del endpoint deshabilitado y añade un motivo fijo sin datos sensibles. [Política y pruebas](../ingenieria/diseno/HU-gateway-16.md).

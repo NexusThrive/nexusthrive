@@ -48,7 +48,7 @@ func (w *WebhookGateway) DispatchSpace(ctx context.Context, space string) error 
 		return err
 	}
 	if err := w.network.Validate(ctx, job.URL); err != nil {
-		return w.engine.FinishWebhookDelivery(ctx, call, *job, 0, 0, false)
+		return w.engine.FinishWebhookDelivery(ctx, call, *job, 0, 0, false, false)
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, job.URL, bytes.NewReader(job.Body))
 	if err != nil {
@@ -69,9 +69,12 @@ func (w *WebhookGateway) DispatchSpace(ctx context.Context, space string) error 
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
+	if code < 100 || code > 599 {
+		code = 0
+	}
 	success := sendErr == nil && code >= 200 && code < 300
 	// Redirect failures can carry the redirect's status; they remain failed attempts.
-	return w.engine.FinishWebhookDelivery(ctx, call, *job, code, duration, success)
+	return w.engine.FinishWebhookDelivery(ctx, call, *job, code, duration, success, !errors.Is(sendErr, errWebhookDestination))
 }
 
 // CreateWebhookEndpoint presents the new secret once and never stores a replay response.
@@ -113,7 +116,7 @@ func (s *ConnectServer) ListWebhookDeliveries(ctx context.Context, request *conn
 	}
 	result := &kernelv1.ListWebhookDeliveriesResponse{}
 	for _, row := range rows {
-		result.Deliveries = append(result.Deliveries, &kernelv1.WebhookDelivery{Id: row.ID, EndpointId: row.EndpointID, Status: row.Status, Attempts: int32(row.Attempts), HttpStatus: int32(row.HTTPStatus), DurationMs: row.DurationMS})
+		result.Deliveries = append(result.Deliveries, &kernelv1.WebhookDelivery{Id: row.ID, EndpointId: row.EndpointID, Status: row.Status, Attempts: int32(row.Attempts), HttpStatus: int32(row.HTTPStatus), DurationMs: row.DurationMS, FailureReason: row.FailureReason})
 	}
 	return connect.NewResponse(result), nil
 }

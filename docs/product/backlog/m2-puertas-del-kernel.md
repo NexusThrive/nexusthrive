@@ -359,7 +359,8 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-16 · Reintentar entregas y deshabilitar endpoints con fallos (R8b)
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-16`. **ADR exigidos:** 0041.
+- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** M. **Rama:** `feature/HU-gateway-16`. **ADR exigidos:** 0041.
+- **Avance:** [Política, pruebas y límites](../../ingenieria/diseno/HU-gateway-16.md).
 - **Historia:**
   Como sistema receptor de webhooks,
   quiero que las entregas fallidas se reintenten con espera creciente y que un endpoint roto se deshabilite,
