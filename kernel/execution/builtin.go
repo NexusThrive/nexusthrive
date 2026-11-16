@@ -13,13 +13,12 @@ const (
 	operationOutboxClaim = "kernel.outbox.claim"
 )
 
-// builtinOperations declares the operations of the kernel. Both are write
-// operations, so a suspended or closed space pauses them (follow-up 44).
+// builtinOperations includes internal processes and contract-defined operations.
 func builtinOperations() []Operation {
-	return []Operation{
+	return append(contractOperations(), []Operation{
 		{Name: operationTimerFire, Permissions: []string{model.PermissionTimerProcess}, Risk: model.RiskWrite},
 		{Name: operationOutboxClaim, Permissions: []string{model.PermissionOutboxClaim}, Risk: model.RiskWrite},
-	}
+	}...)
 }
 
 // FireDueTimers runs one firing round in the space of the call as the

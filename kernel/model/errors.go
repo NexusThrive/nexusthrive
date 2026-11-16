@@ -35,6 +35,8 @@ const (
 	// another request still in force: the same key, but another operation, actor
 	// or body (ADR-0026). Nothing is written.
 	CodeIdempotencyConflict Code = "idempotency_conflict"
+	// CodeRetryable marks an aborted transaction that may be repeated safely.
+	CodeRetryable Code = "retryable"
 )
 
 // Error is a typed contract error. Message is safe to show to callers; Err

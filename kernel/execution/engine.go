@@ -212,6 +212,11 @@ func (e *Engine) RunIdempotent(ctx context.Context, call Call, name string, fn R
 	if isKernelName(name) {
 		return Response{}, model.NewError(model.CodeInvalidInput, fmt.Sprintf("operation %q is not registered", name), nil)
 	}
+	return e.runIdempotent(ctx, call, name, fn)
+}
+
+// runIdempotent also serves fixed built-in handlers without exposing the reserved namespace.
+func (e *Engine) runIdempotent(ctx context.Context, call Call, name string, fn ResultHandler) (Response, error) {
 	op, canonical, err := e.prepare(call, name, fn != nil)
 	if err != nil {
 		return Response{}, err
