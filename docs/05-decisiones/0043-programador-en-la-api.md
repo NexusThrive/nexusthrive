@@ -1,16 +1,17 @@
 # ADR-0043 · Programador de timers y webhooks dentro de la API
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-11-16
 - **Responsables:** santy401
+- **Aceptación:** santy401, 2026-11-16, confirmada en conversación.
 
 ## Contexto
 
-HU-gateway-07 concreta S-P13, cuyo alcance ya aceptó el responsable: ejecutar timers y despacho en el binario de la API durante M2. No están aceptadas todavía las cotas numéricas de este ciclo. M1 ofrece `Engine.FireDueTimers` y reclamos del outbox por espacio, pero ningún proceso los invoca periódicamente en producción.
+HU-gateway-07 concreta S-P13, cuyo alcance ya aceptó el responsable: ejecutar timers y despacho en el binario de la API durante M2. El responsable aceptó también las cotas numéricas de este ciclo. M1 ofrece `Engine.FireDueTimers` y reclamos del outbox por espacio, pero ningún proceso los invoca periódicamente en producción.
 
 El directorio interno y el reparto duradero se proponen en el [ADR-0041](0041-despacho-y-reintentos-de-webhooks.md). El ciclo no puede eludir RLS ni recibir el pool para descubrir espacios. Las operaciones propias del motor exigen un actor de sistema que nunca procede de una petición.
 
-## Decisión propuesta
+## Decisión
 
 ### Ubicación y límites
 
@@ -18,7 +19,7 @@ El directorio interno y el reparto duradero se proponen en el [ADR-0041](0041-de
 
 M2 despliega una sola instancia activa de la API. No crea `kernel/coordination`, elección de líder ni `scheduler_runs`. Los bloqueos y reclamos de M1 siguen protegiendo cada operación, pero no sustituyen una política de coordinación para varias instancias. El despliegue debe detener la instancia anterior antes de activar el nuevo programador.
 
-| Cota | Valor propuesto |
+| Cota | Valor aceptado |
 |---|---|
 | Intervalo entre señales del ciclo | 1 segundo |
 | Plazo máximo de una pasada | 30 segundos |
@@ -62,7 +63,7 @@ Si el responsable rechaza esta propuesta y pospone el programador a M4, se conse
 - Timers y webhooks progresan sin un servicio adicional, con carga acotada y reparto entre espacios.
 - La API y el trabajo periódico comparten proceso. Las cotas limitan la carga; el volumen real y las métricas podrán justificar otra decisión posterior.
 - Se mantiene el límite de una instancia y no se agregan recordatorios previos al vencimiento ni reintentos de compromisos.
-- La implementación de HU-gateway-15 y 21 requiere aceptar esta propuesta junto con ADR-0041 y 0042. No cambia el estado de aceptación de S-P13.
+- El responsable aceptó esta decisión junto con ADR-0041 y 0042; HU-gateway-15 y 21 quedan habilitadas. No cambia el estado de aceptación de S-P13.
 
 ## Cumplimiento
 
