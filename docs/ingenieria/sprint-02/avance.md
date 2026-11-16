@@ -21,10 +21,11 @@ Registrar el trabajo implementado y su validación sin confundirlo con una promo
 | HU-gateway-15 | Registro Connect, cifrado, firma y colas duraderas con RLS | `feature/HU-gateway-15` | [#38](https://github.com/NexusThrive/nexusthrive/pull/38) | #37 |
 | HU-gateway-16 | Reintentos, veinte fallos consecutivos y motivo consultable | `feature/HU-gateway-16` | [#39](https://github.com/NexusThrive/nexusthrive/pull/39) | #38 |
 | HU-gateway-03 | ADR-0044 registra S-P1 aceptado y enmienda paridad MCP | `chore/HU-gateway-03` | [#40](https://github.com/NexusThrive/nexusthrive/pull/40) | #39 |
+| HU-gateway-05 | ADR-0045 aceptado: llaves y alcances transaccionales | `chore/HU-gateway-05` | [#41](https://github.com/NexusThrive/nexusthrive/pull/41) | #40 |
 
-Las trece ramas están publicadas y sus PR están en borrador, cada uno con la rama precedente como base temporal. El [PR #27](https://github.com/NexusThrive/nexusthrive/pull/27) del primer corte sigue siendo el antecedente de integración. El destino final es `sprint/S02`; después de integrar cada antecedente se actualiza la rama, se cambia la base y se revisan diff y CI. No se ha fusionado ninguna historia. `go.work.sum` estaba sin seguimiento al comenzar y permanece fuera de los commits.
+Los PR #27 a #41 están fusionados en `sprint/S02`, con autorización explícita del responsable el 2026-11-16. Cada uno pasó CI; antes de integrar se comprobó que el árbol candidato coincidía con el head validado y se cambió la base al sprint. `main` no se modificó. ADR-0045 está aceptado. La tabla anterior conserva las dependencias históricas, no PR pendientes. `go.work.sum` continúa fuera de los commits.
 
-La primera ejecución de CI de los ocho PR #28 a #35 terminó correctamente, comprobada el 2026-11-15 a las 23:48 UTC. Los checks vigentes de cada nueva cabecera se consultan en su PR; cualquier actualización vuelve a comprobarse antes de revisión. El modo de publicación y seguimiento está fijado en [flujo de Git](../../07-ingenieria/git-workflow.md) y `AGENTS.md`.
+HU-gateway-05 está integrada en [#41](https://github.com/NexusThrive/nexusthrive/pull/41); reserva 00018 para llaves. HU-gateway-17 está en implementación con migración 00017. Los PR nuevos se fusionan al pasar CI, según la autorización registrada en `AGENTS.md` y el flujo de Git.
 
 ## Validación
 
@@ -38,19 +39,11 @@ Se utiliza Go 1.24.7, porque el Staticcheck fijado no admite Go 1.27 del servido
 
 ## Lo que todavía falta
 
-M2 sigue abierto: decisiones y construcción de webhooks, llaves por espacio, MCP de lectura, nodo n8n, proceso programador, imagen y arranque, prueba completa del criterio B3 y staging. El token real de Clerk y el despliegue dependen de las cuentas y accesos del responsable. No hay consola ni producto Business implementados por este avance.
+HU-gateway-17 tiene implementada y validada la rotación con doble firma y el reenvío idempotente; queda publicar e integrar su PR. Después siguen llaves (13), MCP (14), nodo n8n (19), imagen y arranque (20), programador (21) y la prueba completa de B3 (18). Las migraciones 00015, 00016 y 00017 pertenecen a directorio, webhooks y rotación; 00018 está reservada a llaves.
 
-La migración 00015 pertenece al directorio; las historias de llaves y webhooks deben reservar números posteriores. La API debe tener aplicadas las migraciones antes de servir las rutas Connect. Los métodos del outbox siguen fuera de la API pública.
+Por instrucción del responsable se completa primero desarrollo y pruebas locales. La validación con token real de Clerk y el despliegue de staging se difieren. Las claves están en archivos locales ignorados, nunca en commits. El servidor tiene Dokploy, n8n y Tailscale; la publicación futura usará Cloudflare, sin abrir puertos del router durante este trabajo. No hay consola ni producto Business implementado por M2.
 
 ## Referencias
 
-- [Plan](../../product/plan.md) y [backlog](../../product/backlog/m2-puertas-del-kernel.md).
-- [Hoja de ruta](../../02-arquitectura/hoja-de-ruta.md).
-
-Los PR #36 y #37 pasaron CI antes de su aceptación. santy401 aceptó ADR-0041, 0042 y 0043 el 2026-11-16 en conversación. Sus actualizaciones registran la aceptación; HU-gateway-15 queda habilitada.
-
-HU-gateway-15 pasó lint, suite completa con leyes, compatibilidad del contrato, regeneración, detector de carreras de las pruebas nuevas y 58 diagramas. CI del PR #38 se comprueba tras cada push. Reintentos operativos y deshabilitación siguen en HU-gateway-16; reenvío y rotación en 17; arranque automático en 21.
-
-El PR #38 pasó toda la CI el 2026-11-16. HU-gateway-16 está publicada en #39 con suite completa, leyes, lint, detector de carreras, compatibilidad y 58 diagramas aprobados localmente; se comprueba su CI tras publicar. Sus contadores no mezclan fallos de reparto, entrega y receptor. Quedan reenvío y rotación (17) y arranque automático (21), además de las otras historias pendientes de M2.
-
-El PR #39 pasó toda la CI. El repositorio no tiene secretos ni entornos de GitHub configurados, según consulta de nombres del 2026-11-16; Clerk real y staging siguen pendientes de accesos externos. HU-gateway-05 prepara ADR-0045 para aceptar antes del código de llaves.
+- [Plan](../../product/plan.md), [backlog](../../product/backlog/m2-puertas-del-kernel.md) y [hoja de ruta](../../02-arquitectura/hoja-de-ruta.md).
+- [Rotación y reenvío](../diseno/HU-gateway-17.md) y [flujo de Git](../../07-ingenieria/git-workflow.md).

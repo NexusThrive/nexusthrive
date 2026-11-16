@@ -13,7 +13,7 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file kernel/v1/kernel.proto.
  */
 export const file_kernel_v1_kernel: GenFile = /*@__PURE__*/
-  fileDesc("ChZrZXJuZWwvdjEva2VybmVsLnByb3RvEglrZXJuZWwudjEiRQoKRW50cnlJbnB1dBISCgphY2NvdW50X2lkGAEgASgJEhMKC3Jlc291cmNlX2lkGAIgASgJEg4KBmFtb3VudBgDIAEoCSLRAQoPQ29tbWl0bWVudElucHV0Eh0KFWRlYnRvcl9wYXJ0aWNpcGFudF9pZBgBIAEoCRIfChdjcmVkaXRvcl9wYXJ0aWNpcGFudF9pZBgCIAEoCRITCgtyZXNvdXJjZV9pZBgDIAEoCRIOCgZhbW91bnQYBCABKAkSKgoGZHVlX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglzdGFydHNfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpUBChRXcml0ZUV4Y2hhbmdlUmVxdWVzdBIXCg9pZGVtcG90ZW5jeV9rZXkYASABKAkSJgoHZW50cmllcxgCIAMoCzIVLmtlcm5lbC52MS5FbnRyeUlucHV0EgwKBG1lbW8YAyABKAkSLgoKY29tbWl0bWVudBgEIAEoCzIaLmtlcm5lbC52MS5Db21taXRtZW50SW5wdXQiVQoVV3JpdGVFeGNoYW5nZVJlc3BvbnNlEhMKC2V4Y2hhbmdlX2lkGAEgASgJEhUKDWNvbW1pdG1lbnRfaWQYAiABKAkSEAoIZXZlbnRfaWQYAyABKAkiNAoRUmVhZEV2ZW50c1JlcXVlc3QSEAoIZnJvbV9zZXEYASABKAMSDQoFbGltaXQYAiABKAUiNgoSUmVhZEV2ZW50c1Jlc3BvbnNlEiAKBmV2ZW50cxgBIAMoCzIQLmtlcm5lbC52MS5FdmVudCKHAgoFRXZlbnQSCgoCaWQYASABKAkSCwoDc2VxGAIgASgDEhAKCHNwYWNlX2lkGAMgASgJEgwKBHR5cGUYBCABKAkSDwoHdmVyc2lvbhgFIAEoBRITCgtzdWJqZWN0X3JlZhgGIAEoCRIoCgdwYXlsb2FkGAcgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBISCgphY3Rvcl9raW5kGAggASgJEhwKFGFjdG9yX3BhcnRpY2lwYW50X2lkGAkgASgJEhIKCnJlcXVlc3RfaWQYCiABKAkSLwoLb2NjdXJyZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjsKHENyZWF0ZVdlYmhvb2tFbmRwb2ludFJlcXVlc3QSCwoDdXJsGAEgASgJEg4KBmV2ZW50cxgCIAMoCSI7Ch1DcmVhdGVXZWJob29rRW5kcG9pbnRSZXNwb25zZRIKCgJpZBgBIAEoCRIOCgZzZWNyZXQYAiABKAkiQgocTGlzdFdlYmhvb2tEZWxpdmVyaWVzUmVxdWVzdBITCgtlbmRwb2ludF9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSKWAQoPV2ViaG9va0RlbGl2ZXJ5EgoKAmlkGAEgASgJEhMKC2VuZHBvaW50X2lkGAIgASgJEg4KBnN0YXR1cxgDIAEoCRIQCghhdHRlbXB0cxgEIAEoBRITCgtodHRwX3N0YXR1cxgFIAEoBRITCgtkdXJhdGlvbl9tcxgGIAEoAxIWCg5mYWlsdXJlX3JlYXNvbhgHIAEoCSJPCh1MaXN0V2ViaG9va0RlbGl2ZXJpZXNSZXNwb25zZRIuCgpkZWxpdmVyaWVzGAEgAygLMhoua2VybmVsLnYxLldlYmhvb2tEZWxpdmVyeTL1BAoNS2VybmVsU2VydmljZRKjAQoNV3JpdGVFeGNoYW5nZRIfLmtlcm5lbC52MS5Xcml0ZUV4Y2hhbmdlUmVxdWVzdBogLmtlcm5lbC52MS5Xcml0ZUV4Y2hhbmdlUmVzcG9uc2UiT4q1GEsKFWtlcm5lbC5leGNoYW5nZS53cml0ZRIVa2VybmVsLmV4Y2hhbmdlLndyaXRlEhdrZXJuZWwuY29tbWl0bWVudC53cml0ZSADKAESdwoKUmVhZEV2ZW50cxIcLmtlcm5lbC52MS5SZWFkRXZlbnRzUmVxdWVzdBodLmtlcm5lbC52MS5SZWFkRXZlbnRzUmVzcG9uc2UiLIq1GCgKEWtlcm5lbC5ldmVudC5yZWFkEhFrZXJuZWwuZXZlbnQucmVhZCABEp8BChVDcmVhdGVXZWJob29rRW5kcG9pbnQSJy5rZXJuZWwudjEuQ3JlYXRlV2ViaG9va0VuZHBvaW50UmVxdWVzdBooLmtlcm5lbC52MS5DcmVhdGVXZWJob29rRW5kcG9pbnRSZXNwb25zZSIzirUYLwoVa2VybmVsLndlYmhvb2suY3JlYXRlEhRrZXJuZWwud2ViaG9vay53cml0ZSACEqIBChVMaXN0V2ViaG9va0RlbGl2ZXJpZXMSJy5rZXJuZWwudjEuTGlzdFdlYmhvb2tEZWxpdmVyaWVzUmVxdWVzdBooLmtlcm5lbC52MS5MaXN0V2ViaG9va0RlbGl2ZXJpZXNSZXNwb25zZSI2irUYMgoZa2VybmVsLndlYmhvb2suZGVsaXZlcmllcxITa2VybmVsLndlYmhvb2sucmVhZCABQkJaQGdpdGh1Yi5jb20vbmV4dXN0aHJpdmUvbmV4dXN0aHJpdmUva2VybmVsL2dlbi9rZXJuZWwvdjE7a2VybmVsdjFiBnByb3RvMw", [file_google_protobuf_struct, file_google_protobuf_timestamp, file_kernel_v1_policy]);
+  fileDesc("ChZrZXJuZWwvdjEva2VybmVsLnByb3RvEglrZXJuZWwudjEiRQoKRW50cnlJbnB1dBISCgphY2NvdW50X2lkGAEgASgJEhMKC3Jlc291cmNlX2lkGAIgASgJEg4KBmFtb3VudBgDIAEoCSLRAQoPQ29tbWl0bWVudElucHV0Eh0KFWRlYnRvcl9wYXJ0aWNpcGFudF9pZBgBIAEoCRIfChdjcmVkaXRvcl9wYXJ0aWNpcGFudF9pZBgCIAEoCRITCgtyZXNvdXJjZV9pZBgDIAEoCRIOCgZhbW91bnQYBCABKAkSKgoGZHVlX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglzdGFydHNfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpUBChRXcml0ZUV4Y2hhbmdlUmVxdWVzdBIXCg9pZGVtcG90ZW5jeV9rZXkYASABKAkSJgoHZW50cmllcxgCIAMoCzIVLmtlcm5lbC52MS5FbnRyeUlucHV0EgwKBG1lbW8YAyABKAkSLgoKY29tbWl0bWVudBgEIAEoCzIaLmtlcm5lbC52MS5Db21taXRtZW50SW5wdXQiVQoVV3JpdGVFeGNoYW5nZVJlc3BvbnNlEhMKC2V4Y2hhbmdlX2lkGAEgASgJEhUKDWNvbW1pdG1lbnRfaWQYAiABKAkSEAoIZXZlbnRfaWQYAyABKAkiNAoRUmVhZEV2ZW50c1JlcXVlc3QSEAoIZnJvbV9zZXEYASABKAMSDQoFbGltaXQYAiABKAUiNgoSUmVhZEV2ZW50c1Jlc3BvbnNlEiAKBmV2ZW50cxgBIAMoCzIQLmtlcm5lbC52MS5FdmVudCKHAgoFRXZlbnQSCgoCaWQYASABKAkSCwoDc2VxGAIgASgDEhAKCHNwYWNlX2lkGAMgASgJEgwKBHR5cGUYBCABKAkSDwoHdmVyc2lvbhgFIAEoBRITCgtzdWJqZWN0X3JlZhgGIAEoCRIoCgdwYXlsb2FkGAcgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBISCgphY3Rvcl9raW5kGAggASgJEhwKFGFjdG9yX3BhcnRpY2lwYW50X2lkGAkgASgJEhIKCnJlcXVlc3RfaWQYCiABKAkSLwoLb2NjdXJyZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjsKHENyZWF0ZVdlYmhvb2tFbmRwb2ludFJlcXVlc3QSCwoDdXJsGAEgASgJEg4KBmV2ZW50cxgCIAMoCSI7Ch1DcmVhdGVXZWJob29rRW5kcG9pbnRSZXNwb25zZRIKCgJpZBgBIAEoCRIOCgZzZWNyZXQYAiABKAkiQgocTGlzdFdlYmhvb2tEZWxpdmVyaWVzUmVxdWVzdBITCgtlbmRwb2ludF9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSKWAQoPV2ViaG9va0RlbGl2ZXJ5EgoKAmlkGAEgASgJEhMKC2VuZHBvaW50X2lkGAIgASgJEg4KBnN0YXR1cxgDIAEoCRIQCghhdHRlbXB0cxgEIAEoBRITCgtodHRwX3N0YXR1cxgFIAEoBRITCgtkdXJhdGlvbl9tcxgGIAEoAxIWCg5mYWlsdXJlX3JlYXNvbhgHIAEoCSJPCh1MaXN0V2ViaG9va0RlbGl2ZXJpZXNSZXNwb25zZRIuCgpkZWxpdmVyaWVzGAEgAygLMhoua2VybmVsLnYxLldlYmhvb2tEZWxpdmVyeSIxChpSb3RhdGVXZWJob29rU2VjcmV0UmVxdWVzdBITCgtlbmRwb2ludF9pZBgBIAEoCSJnChtSb3RhdGVXZWJob29rU2VjcmV0UmVzcG9uc2USDgoGc2VjcmV0GAEgASgJEjgKFHByZXZpb3VzX3ZhbGlkX3VudGlsGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJMChxSZXBsYXlXZWJob29rRGVsaXZlcnlSZXF1ZXN0EhMKC2RlbGl2ZXJ5X2lkGAEgASgJEhcKD2lkZW1wb3RlbmN5X2tleRgCIAEoCSI0Ch1SZXBsYXlXZWJob29rRGVsaXZlcnlSZXNwb25zZRITCgtkZWxpdmVyeV9pZBgBIAEoCTK1BwoNS2VybmVsU2VydmljZRKjAQoNV3JpdGVFeGNoYW5nZRIfLmtlcm5lbC52MS5Xcml0ZUV4Y2hhbmdlUmVxdWVzdBogLmtlcm5lbC52MS5Xcml0ZUV4Y2hhbmdlUmVzcG9uc2UiT4q1GEsKFWtlcm5lbC5leGNoYW5nZS53cml0ZRIVa2VybmVsLmV4Y2hhbmdlLndyaXRlEhdrZXJuZWwuY29tbWl0bWVudC53cml0ZSADKAESdwoKUmVhZEV2ZW50cxIcLmtlcm5lbC52MS5SZWFkRXZlbnRzUmVxdWVzdBodLmtlcm5lbC52MS5SZWFkRXZlbnRzUmVzcG9uc2UiLIq1GCgKEWtlcm5lbC5ldmVudC5yZWFkEhFrZXJuZWwuZXZlbnQucmVhZCABEp8BChVDcmVhdGVXZWJob29rRW5kcG9pbnQSJy5rZXJuZWwudjEuQ3JlYXRlV2ViaG9va0VuZHBvaW50UmVxdWVzdBooLmtlcm5lbC52MS5DcmVhdGVXZWJob29rRW5kcG9pbnRSZXNwb25zZSIzirUYLwoVa2VybmVsLndlYmhvb2suY3JlYXRlEhRrZXJuZWwud2ViaG9vay53cml0ZSACEqIBChVMaXN0V2ViaG9va0RlbGl2ZXJpZXMSJy5rZXJuZWwudjEuTGlzdFdlYmhvb2tEZWxpdmVyaWVzUmVxdWVzdBooLmtlcm5lbC52MS5MaXN0V2ViaG9va0RlbGl2ZXJpZXNSZXNwb25zZSI2irUYMgoZa2VybmVsLndlYmhvb2suZGVsaXZlcmllcxITa2VybmVsLndlYmhvb2sucmVhZCABEpkBChNSb3RhdGVXZWJob29rU2VjcmV0EiUua2VybmVsLnYxLlJvdGF0ZVdlYmhvb2tTZWNyZXRSZXF1ZXN0GiYua2VybmVsLnYxLlJvdGF0ZVdlYmhvb2tTZWNyZXRSZXNwb25zZSIzirUYLwoVa2VybmVsLndlYmhvb2sucm90YXRlEhRrZXJuZWwud2ViaG9vay53cml0ZSACEqEBChVSZXBsYXlXZWJob29rRGVsaXZlcnkSJy5rZXJuZWwudjEuUmVwbGF5V2ViaG9va0RlbGl2ZXJ5UmVxdWVzdBooLmtlcm5lbC52MS5SZXBsYXlXZWJob29rRGVsaXZlcnlSZXNwb25zZSI1irUYMQoVa2VybmVsLndlYmhvb2sucmVwbGF5EhRrZXJuZWwud2ViaG9vay53cml0ZSACKAFCQlpAZ2l0aHViLmNvbS9uZXh1c3Rocml2ZS9uZXh1c3Rocml2ZS9rZXJuZWwvZ2VuL2tlcm5lbC92MTtrZXJuZWx2MWIGcHJvdG8z", [file_google_protobuf_struct, file_google_protobuf_timestamp, file_kernel_v1_policy]);
 
 /**
  * @generated from message kernel.v1.EntryInput
@@ -404,6 +404,84 @@ export const ListWebhookDeliveriesResponseSchema: GenMessage<ListWebhookDeliveri
   messageDesc(file_kernel_v1_kernel, 11);
 
 /**
+ * @generated from message kernel.v1.RotateWebhookSecretRequest
+ */
+export type RotateWebhookSecretRequest = Message<"kernel.v1.RotateWebhookSecretRequest"> & {
+  /**
+   * @generated from field: string endpoint_id = 1;
+   */
+  endpointId: string;
+};
+
+/**
+ * Describes the message kernel.v1.RotateWebhookSecretRequest.
+ * Use `create(RotateWebhookSecretRequestSchema)` to create a new message.
+ */
+export const RotateWebhookSecretRequestSchema: GenMessage<RotateWebhookSecretRequest> = /*@__PURE__*/
+  messageDesc(file_kernel_v1_kernel, 12);
+
+/**
+ * @generated from message kernel.v1.RotateWebhookSecretResponse
+ */
+export type RotateWebhookSecretResponse = Message<"kernel.v1.RotateWebhookSecretResponse"> & {
+  /**
+   * @generated from field: string secret = 1;
+   */
+  secret: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp previous_valid_until = 2;
+   */
+  previousValidUntil?: Timestamp;
+};
+
+/**
+ * Describes the message kernel.v1.RotateWebhookSecretResponse.
+ * Use `create(RotateWebhookSecretResponseSchema)` to create a new message.
+ */
+export const RotateWebhookSecretResponseSchema: GenMessage<RotateWebhookSecretResponse> = /*@__PURE__*/
+  messageDesc(file_kernel_v1_kernel, 13);
+
+/**
+ * @generated from message kernel.v1.ReplayWebhookDeliveryRequest
+ */
+export type ReplayWebhookDeliveryRequest = Message<"kernel.v1.ReplayWebhookDeliveryRequest"> & {
+  /**
+   * @generated from field: string delivery_id = 1;
+   */
+  deliveryId: string;
+
+  /**
+   * @generated from field: string idempotency_key = 2;
+   */
+  idempotencyKey: string;
+};
+
+/**
+ * Describes the message kernel.v1.ReplayWebhookDeliveryRequest.
+ * Use `create(ReplayWebhookDeliveryRequestSchema)` to create a new message.
+ */
+export const ReplayWebhookDeliveryRequestSchema: GenMessage<ReplayWebhookDeliveryRequest> = /*@__PURE__*/
+  messageDesc(file_kernel_v1_kernel, 14);
+
+/**
+ * @generated from message kernel.v1.ReplayWebhookDeliveryResponse
+ */
+export type ReplayWebhookDeliveryResponse = Message<"kernel.v1.ReplayWebhookDeliveryResponse"> & {
+  /**
+   * @generated from field: string delivery_id = 1;
+   */
+  deliveryId: string;
+};
+
+/**
+ * Describes the message kernel.v1.ReplayWebhookDeliveryResponse.
+ * Use `create(ReplayWebhookDeliveryResponseSchema)` to create a new message.
+ */
+export const ReplayWebhookDeliveryResponseSchema: GenMessage<ReplayWebhookDeliveryResponse> = /*@__PURE__*/
+  messageDesc(file_kernel_v1_kernel, 15);
+
+/**
  * KernelService exposes only operations whose actor is resolved by the server.
  *
  * @generated from service kernel.v1.KernelService
@@ -448,6 +526,26 @@ export const KernelService: GenService<{
     methodKind: "unary";
     input: typeof ListWebhookDeliveriesRequestSchema;
     output: typeof ListWebhookDeliveriesResponseSchema;
+  },
+  /**
+   * RotateWebhookSecret presents a new secret with a fifteen-minute overlap.
+   *
+   * @generated from rpc kernel.v1.KernelService.RotateWebhookSecret
+   */
+  rotateWebhookSecret: {
+    methodKind: "unary";
+    input: typeof RotateWebhookSecretRequestSchema;
+    output: typeof RotateWebhookSecretResponseSchema;
+  },
+  /**
+   * ReplayWebhookDelivery creates a new idempotent work item for a failed delivery.
+   *
+   * @generated from rpc kernel.v1.KernelService.ReplayWebhookDelivery
+   */
+  replayWebhookDelivery: {
+    methodKind: "unary";
+    input: typeof ReplayWebhookDeliveryRequestSchema;
+    output: typeof ReplayWebhookDeliveryResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_kernel_v1_kernel, 0);

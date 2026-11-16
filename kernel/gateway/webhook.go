@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -43,7 +46,7 @@ func (w *WebhookGateway) DispatchSpace(ctx context.Context, space string) error 
 	if err != nil || job == nil {
 		return err
 	}
-	secret, err := w.keys.Open(space, job.EndpointID, job.Secret)
+	signature, err := w.signWebhookJob(*job, w.clock.Now())
 	if err != nil {
 		return err
 	}
@@ -55,7 +58,7 @@ func (w *WebhookGateway) DispatchSpace(ctx context.Context, space string) error 
 		return err
 	}
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("NexusThrive-Signature", WebhookSignature(w.clock.Now(), job.Body, secret))
+	request.Header.Set("NexusThrive-Signature", signature)
 	started := time.Now()
 	response, sendErr := w.client.Do(request)
 	duration := time.Since(started).Milliseconds()
@@ -147,4 +150,65 @@ func (w *WebhookGateway) DispatchPage(ctx context.Context, after string) (string
 		}
 	}
 	return after, errors.Join(failures...)
+}
+
+func (w *WebhookGateway) signWebhookJob(job model.WebhookJob, at time.Time) (string, error) {
+	current, err := w.keys.Open(job.SpaceID, job.EndpointID, job.Secret)
+	if err != nil {
+		return "", err
+	}
+	signature := WebhookSignature(at, job.Body, current)
+	if job.PreviousSecret != nil && job.PreviousValidUntil != nil && at.Before(*job.PreviousValidUntil) {
+		previous, err := w.keys.Open(job.SpaceID, job.EndpointID, *job.PreviousSecret)
+		if err != nil {
+			return "", err
+		}
+		_, tail, _ := strings.Cut(WebhookSignature(at, job.Body, previous), ",")
+		signature += "," + tail
+	}
+	return signature, nil
+}
+
+// RotateWebhookSecret returns only the new presentation and the previous secret's expiry.
+func (s *ConnectServer) RotateWebhookSecret(ctx context.Context, request *connect.Request[kernelv1.RotateWebhookSecretRequest]) (*connect.Response[kernelv1.RotateWebhookSecretResponse], error) {
+	call, ok := ctx.Value(rpcCallKey{}).(execution.Call)
+	if !ok || s.cfg.Webhooks == nil {
+		return nil, s.rpcError(errors.New("webhooks are not configured"))
+	}
+	if call.IdempotencyKey != "" {
+		return nil, s.rpcError(model.NewError(model.CodeInvalidInput, "secret rotation does not support idempotency keys", nil))
+	}
+	endpoint := request.Msg.GetEndpointId()
+	sealed, secret, err := s.cfg.Webhooks.keys.NewSecret(call.SpaceID, endpoint)
+	if err != nil {
+		return nil, s.rpcError(err)
+	}
+	until, err := s.engine.RotateWebhookSecret(ctx, call, endpoint, sealed)
+	if err != nil {
+		return nil, s.rpcError(err)
+	}
+	result := connect.NewResponse(&kernelv1.RotateWebhookSecretResponse{Secret: secret, PreviousValidUntil: timestamppb.New(until)})
+	result.Header().Set("Cache-Control", "no-store")
+	return result, nil
+}
+
+// ReplayWebhookDelivery preserves the original request fingerprint and replay indicator.
+func (s *ConnectServer) ReplayWebhookDelivery(ctx context.Context, _ *connect.Request[kernelv1.ReplayWebhookDeliveryRequest]) (*connect.Response[kernelv1.ReplayWebhookDeliveryResponse], error) {
+	call, ok := ctx.Value(rpcCallKey{}).(execution.Call)
+	if !ok {
+		return nil, s.rpcError(errors.New("missing verified call"))
+	}
+	result, err := s.engine.ReplayWebhookDelivery(ctx, call)
+	if err != nil {
+		return nil, s.rpcError(err)
+	}
+	message := new(kernelv1.ReplayWebhookDeliveryResponse)
+	if err := protojson.Unmarshal(result.Body, message); err != nil {
+		return nil, s.rpcError(err)
+	}
+	response := connect.NewResponse(message)
+	if result.Replayed {
+		response.Header().Set("Idempotent-Replayed", "true")
+	}
+	return response, nil
 }

@@ -69,7 +69,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-01 · Decidir el contrato inicial de `kernel.v1`
 
-- **Estado:** Decisión aceptada; pendiente de validación completa e integración. **Tamaño:** M. **Rama:** `chore/HU-gateway-01`. **ADR que escribe:** [0037](../../05-decisiones/0037-contrato-inicial-del-kernel.md) (contrato inicial de `kernel.v1`, herramienta `buf` y alcance de lenguajes; cubre P2 y P10).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** M. **Rama:** `chore/HU-gateway-01`. **ADR que escribe:** [0037](../../05-decisiones/0037-contrato-inicial-del-kernel.md) (contrato inicial de `kernel.v1`, herramienta `buf` y alcance de lenguajes; cubre P2 y P10).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero fijar la lista inicial de operaciones de `kernel.v1` y la política de generación con `buf`,
@@ -90,7 +90,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-02 · Decidir la resolución del actor, la selección del espacio y el primer ingreso
 
-- **Estado:** Decisiones aceptadas; pendiente de integración. **Tamaño:** M. **Rama:** `chore/HU-gateway-02`. **ADR que escribe:** [0038](../../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (resolución de actor y espacio, composición en `services/api`; cubre P3 y P5) y [0039](../../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (identidad en el primer ingreso; cubre P4).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** M. **Rama:** `chore/HU-gateway-02`. **ADR que escribe:** [0038](../../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (resolución de actor y espacio, composición en `services/api`; cubre P3 y P5) y [0039](../../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (identidad en el primer ingreso; cubre P4).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero decidir dónde se resuelve el token a participante, cómo se elige el espacio y qué pasa con un token sin participante,
@@ -109,7 +109,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-03 · Decidir el MCP de solo lectura (*)
 
-- **Estado:** Decisión aceptada; pendiente de integración. S-P1 ya confirmado. **Tamaño:** S. **Rama:** `chore/HU-gateway-03`. **ADR que escribe:** 0044 (enmienda a ADR-0018 y ADR-0020: MCP de solo lectura en M2).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** S. **Rama:** `chore/HU-gateway-03`. **ADR que escribe:** 0044 (enmienda a ADR-0018 y ADR-0020: MCP de solo lectura en M2).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero resolver la contradicción entre los documentos sobre el alcance del MCP,
@@ -124,7 +124,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-04 · Decidir la validación de tokens de Clerk
 
-- **Estado:** Decisión aceptada; pendiente de integración. **Tamaño:** S. **Rama:** `chore/HU-gateway-04`. **ADR que escribe:** [0040](../../05-decisiones/0040-validacion-de-clerk-y-cache-jwks.md) (validación de tokens de Clerk y caché de JWKS; cubre P6).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** S. **Rama:** `chore/HU-gateway-04`. **ADR que escribe:** [0040](../../05-decisiones/0040-validacion-de-clerk-y-cache-jwks.md) (validación de tokens de Clerk y caché de JWKS; cubre P6).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero fijar qué se valida de un token de Clerk y qué pasa si el emisor cae,
@@ -140,7 +140,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-05 · Decidir las llaves por espacio
 
-- **Estado:** Decisión aceptada; pendiente de integración. **Tamaño:** S. **Rama:** `chore/HU-gateway-05`. **ADR que escribe:** 0045 (llaves de API por espacio, alcances y migración `api_keys`; cubre P7).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** S. **Rama:** `chore/HU-gateway-05`. **ADR que escribe:** 0045 (llaves de API por espacio, alcances y migración `api_keys`; cubre P7).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero decidir el modelo de las llaves por espacio,
@@ -155,7 +155,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-06 · Decidir despacho, reintentos y secreto de los webhooks
 
-- **Estado:** Decisiones aceptadas; pendiente de integración. **Tamaño:** M. **Rama:** `chore/HU-gateway-06`. **ADR que escribe:** 0041 (despacho del outbox y política de reintentos; cubre P8) y 0042 (secreto de webhooks; cubre P9).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** M. **Rama:** `chore/HU-gateway-06`. **ADR que escribe:** 0041 (despacho del outbox y política de reintentos; cubre P8) y 0042 (secreto de webhooks; cubre P9).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero fijar quién despacha el outbox, con qué política y cómo se guarda el secreto de firma,
@@ -171,7 +171,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-07 · Decidir el proceso programador en el binario de la API (*)
 
-- **Estado:** Decisión aceptada; pendiente de integración. S-P13 ya confirmado. **Tamaño:** S. **Rama:** `chore/HU-gateway-07`. **ADR que escribe:** 0043 (proceso programador de M2; cubre P13, seguimientos 60 y 61).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** S. **Rama:** `chore/HU-gateway-07`. **ADR que escribe:** 0043 (proceso programador de M2; cubre P13, seguimientos 60 y 61).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero decidir cómo se ejecutan los timers vencidos y el despachador en M2,
@@ -190,7 +190,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-08 · Declarar los contratos de `kernel.v1` (R1)
 
-- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** M. **Rama:** `feature/HU-gateway-08`. **ADR exigidos antes del código:** [0037, aceptado](../../05-decisiones/0037-contrato-inicial-del-kernel.md).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** M. **Rama:** `feature/HU-gateway-08`. **ADR exigidos antes del código:** [0037, aceptado](../../05-decisiones/0037-contrato-inicial-del-kernel.md).
 - **Avance 2026-11-15:** implementación local validada; pendientes revisión e integración. Pasan lint, suite completa (incluidas leyes), typecheck, compilación, pruebas de metadatos y precisión, esquema del evento, rechazo de un campo renombrado y segunda generación idéntica. [Evidencia y límites](../../ingenieria/diseno/HU-gateway-08.md). El servidor Connect y las operaciones del motor corresponden a 09 y 10.
 - **Historia:**
   Como desarrollador integrador,
@@ -209,7 +209,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-09 · Registrar las primeras operaciones y componer el `Engine` (R2)
 
-- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** S. **Rama:** `feature/HU-gateway-09`. **ADR exigidos:** 0037 (contrato, aceptado), 0038 y 0039 (actor y primer ingreso, aceptados).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** S. **Rama:** `feature/HU-gateway-09`. **ADR exigidos:** 0037 (contrato, aceptado), 0038 y 0039 (actor y primer ingreso, aceptados).
 - **Avance:** métodos fijos del motor, políticas generadas y código `retryable` implementados. [Diseño y pruebas](../../ingenieria/diseno/HU-gateway-09.md). La selección por slug y el directorio permanecen en HU-gateway-12; la puerta Connect permanece en HU-gateway-10.
 - **Historia:**
   Como desarrollador integrador,
@@ -229,7 +229,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-10 · Servir las operaciones por Connect-RPC y JSON/HTTP (R3)
 
-- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** L. **Rama:** `feature/HU-gateway-10`. **ADR exigidos:** 0037, 0038, 0039, 0040, aceptados (la autenticación entra con HU-gateway-11 y 12; esta historia usa un autenticador inyectable de pruebas).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** L. **Rama:** `feature/HU-gateway-10`. **ADR exigidos:** 0037, 0038, 0039, 0040, aceptados (la autenticación entra con HU-gateway-11 y 12; esta historia usa un autenticador inyectable de pruebas).
 - **Avance:** [servidor Connect, errores y límites](../../ingenieria/diseno/HU-gateway-10.md) implementados con pruebas de HTTP e idempotencia. El cableado del directorio por slug sigue en HU-gateway-12.
 - **Historia:**
   Como desarrollador integrador,
@@ -252,7 +252,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-11 · Validar tokens JWT de Clerk (R4)
 
-- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** M. **Rama:** `feature/HU-gateway-11`. **ADR exigidos:** 0040 (aceptado).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** M. **Rama:** `feature/HU-gateway-11`. **ADR exigidos:** 0040 (aceptado).
 - **Avance:** [verificación de tokens y JWKS acotado](../../ingenieria/diseno/HU-gateway-11.md), con pruebas locales de rotación, caída, antigüedad, concurrencia y validación de claims. Sin cuenta real de Clerk ni cambios en la resolución por slug.
 - **Historia:**
   Como desarrollador integrador,
@@ -275,7 +275,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-12 · Construir el `Actor` desde el token y elegir el espacio por la ruta (R5)
 
-- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** M. **Rama:** `feature/HU-gateway-12`. **ADR exigidos:** 0038, 0039 y 0040, aceptados.
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** M. **Rama:** `feature/HU-gateway-12`. **ADR exigidos:** 0038, 0039 y 0040, aceptados.
 - **Avance:** [directorio, actor y cableado por slug](../../ingenieria/diseno/HU-gateway-12.md). La migración 00015 queda reservada para el directorio; no se reutiliza en llaves ni webhooks.
 - **Historia:**
   Como desarrollador integrador,
@@ -336,7 +336,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-15 · Firmar y entregar webhooks desde el outbox (R8a)
 
-- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** L. **Rama:** `feature/HU-gateway-15`. **ADR exigidos:** 0041, 0042 y 0043 (programador, aceptado en HU-gateway-07).
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** L. **Rama:** `feature/HU-gateway-15`. **ADR exigidos:** 0041, 0042 y 0043 (programador, aceptado en HU-gateway-07).
 - **Avance:** [Diseño, pruebas y límites](../../ingenieria/diseno/HU-gateway-15.md).
 - **Historia:**
   Como sistema receptor de webhooks,
@@ -359,7 +359,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-16 · Reintentar entregas y deshabilitar endpoints con fallos (R8b)
 
-- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** M. **Rama:** `feature/HU-gateway-16`. **ADR exigidos:** 0041.
+- **Estado:** Terminada e integrada en `sprint/S02` el 2026-11-16. **Tamaño:** M. **Rama:** `feature/HU-gateway-16`. **ADR exigidos:** 0041.
 - **Avance:** [Política, pruebas y límites](../../ingenieria/diseno/HU-gateway-16.md).
 - **Historia:**
   Como sistema receptor de webhooks,
@@ -379,7 +379,8 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-17 · Reenviar entregas y rotar el secreto del endpoint (R8c)
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-17`. **ADR exigidos:** 0042.
+- **Estado:** Implementación local validada; pendiente de CI e integración. **Tamaño:** M. **Rama:** `feature/HU-gateway-17`. **ADR exigidos:** 0042.
+- **Avance:** [Diseño, pruebas y límites](../../ingenieria/diseno/HU-gateway-17.md).
 - **Historia:**
   Como desarrollador integrador,
   quiero reenviar una entrega y rotar el secreto sin perder eventos,

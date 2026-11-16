@@ -99,6 +99,7 @@ Product names (NexusThrive, Thrive Business) are never translated. Full policy: 
 - After validating a story, push its branch and open or update its pull request before starting another story. Keep GitHub and the sprint plan current; do not accumulate unpublished completed work.
 - Dependent stories may use draft PRs against the preceding story branch to keep each diff focused. Link the predecessor and name `sprint/S<nn>` as the final target. Update the base and branch after the predecessor is integrated, then verify the diff and CI again.
 - Keep dependent or failing PRs in draft. Check GitHub CI after every push, address failures, and record PR links in the sprint tracking document. Do not merge without the owner's authorization.
+- For M2, santy401 authorized progressive integration of validated PRs into `sprint/S02` on 2026-11-16. Merge each story after CI passes; do not merge into `main`. Deployment remains deferred while local development and tests finish.
 
 ## Testing
 

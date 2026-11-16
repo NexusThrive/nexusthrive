@@ -19,49 +19,25 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Backlog:
 
 ## Resumen de estado (S02)
 
-HU-gateway-05 propone ADR-0045: llaves aleatorias con hash, alcances efectivos revalidados dentro de la transacción, revocación inmediata y respuestas de secreto sin caché idempotente. Espera aceptación antes de HU-gateway-13. Reserva 00018; 00017 queda para HU-gateway-17.
+Actualización 2026-11-16: santy401 autorizó fusionar progresivamente los PR validados en `sprint/S02`. Los PR #27 a #41 están integrados: el corte HTTP previo y catorce historias del backlog. `main` no se modificó. [Seguimiento de integración](../ingenieria/sprint-02/avance.md).
 
-HU-gateway-03 registra S-P1 ya confirmado en ADR-0044 aceptado y enmienda ADR-0018/0020: MCP solo de lectura, con paridad por riesgo. No introduce una nueva decisión de alcance.
+Los ADR-0037 a 0045 están aceptados. ADR-0044 registra S-P1 ya confirmado, MCP solo de lectura; ADR-0045 fija las llaves y sus alcances transaccionales. S-P12 y S-P13 también están confirmados. Las reservas originales de números de ADR de las secciones históricas se resuelven por historia; nunca se reutilizan números existentes.
 
-HU-gateway-16 está publicada en el [PR #39](https://github.com/NexusThrive/nexusthrive/pull/39), sobre #38, y completa el contador de fallos remotos y la deshabilitación a veinte fallos consecutivos, con motivo consultable y sin atribuir cancelaciones o rechazos locales al endpoint. [Diseño y pruebas](../ingenieria/diseno/HU-gateway-16.md).
-
-HU-gateway-15 está publicada en el [PR #38](https://github.com/NexusThrive/nexusthrive/pull/38), sobre #37, e implementa registro y consulta Connect, cifrado y firma, migración 00016, reparto duradero y transporte HTTP con validación de destinos. [Diseño y límites](../ingenieria/diseno/HU-gateway-15.md). El ciclo automático, la deshabilitación consecutiva y la rotación siguen separados en HU-gateway-21, 16 y 17.
-
-Actualización 2026-11-16: santy401 aceptó ADR-0041, 0042 y 0043 en conversación. Los PR [#36](https://github.com/NexusThrive/nexusthrive/pull/36) y [#37](https://github.com/NexusThrive/nexusthrive/pull/37) registran despacho, cifrado y firma, y ciclo del programador. HU-gateway-15 queda habilitada; se toma antes de reintentos, rotación y arranque del ciclo. La integración de los antecedentes sigue pendiente.
-
-Publicación 2026-11-15: las ocho historias implementadas o decididas están subidas y tienen PR en borrador [#28 a #35](../ingenieria/sprint-02/avance.md), con una historia por diff y dependencias enlazadas. Sus primeras ejecuciones de CI pasaron. Se mantienen bases temporales en cadena hasta integrar los antecedentes; el destino final es `sprint/S02`. La publicación no cambia el conteo de terminadas: ninguna se ha fusionado.
-
-HU-gateway-12 implementa la resolución del actor por slug, la función y el rol acotados del directorio (migración 00015), y el cableado Connect del binario con el token validado. [Avance local y límites de M2](../ingenieria/sprint-02/avance.md). La integración y el criterio completo de B3 con webhook siguen pendientes.
-
-HU-gateway-10 implementa el servidor Connect con autenticador inyectable, cuerpo original, errores tipados y límites en memoria. Pasan las pruebas completas, lint y compilación; su cableado con la resolución real por slug corresponde a HU-gateway-12.
-
-HU-gateway-11 está implementada localmente en `feature/HU-gateway-11`: verificador ampliado y caché JWKS acotada según ADR-0040. Pasan lint, suite completa y detector de carreras de las pruebas nuevas. La cuenta real de Clerk sigue siendo un requisito de HU-gateway-22, no de esta implementación.
-
-Actualización 2026-11-15: santy401 aceptó el [ADR-0037](../05-decisiones/0037-contrato-inicial-del-kernel.md) de HU-gateway-01 en `chore/HU-gateway-01`; quedan pendientes la validación completa y la integración de la historia. HU-gateway-08 tiene su decisión aceptada y es la siguiente historia de código habilitada. El ADR-0036 es la primera puerta HTTP aceptada; los números de ADR del plan original son reservas históricas y se reasignan al redactar cada historia. Los conteos siguientes reflejan este avance; las discrepancias del backlog descritas más abajo corresponden a su resumen original.
-
-Validación local de HU-gateway-01: enlaces relativos y bloques de código comprobados, `git diff --check` sin errores. `task lint` pasó con Go 1.24.7 (el Staticcheck fijado no admite Go 1.27 del servidor) y `task test` pasó, incluidas las leyes del kernel contra PostgreSQL en 55432. Se ejecutó Task 3.40.1 mediante `go run` porque no está instalado como comando. Mermaid pasó con `CI=1`: 58 diagramas renderizados. La decisión está en el commit `9f19a48`; su integración sigue pendiente.
-
-HU-gateway-08 está implementada y validada en `feature/HU-gateway-08`, commit `387b33e`, y publicada en el PR #29, sobre la decisión aceptada. Incluye contratos, esquema del evento, generación local, SDK generado, pruebas del contrato y CI de compatibilidad y regeneración. No incluye las implementaciones del motor ni del servidor. Lint, pruebas completas, typecheck, compilación y render de 58 diagramas pasaron. La integración espera la cadena previa: PR #27 y HU-gateway-01; no se ha fusionado.
-
-HU-gateway-02 está en curso en `chore/HU-gateway-02`, con los ADR [0038](../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (actor y directorio por slug) y [0039](../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (primer ingreso) aceptados. santy401 aceptó ambos el 2026-11-15; HU-gateway-09 queda habilitada. La numeración antigua 0037/0038 para estos temas queda sustituida por 0038/0039; las reservas posteriores se reasignan al redactar cada historia.
-
-HU-gateway-09 está implementada y validada localmente en `feature/HU-gateway-09`: operaciones fijas de escritura y lectura, políticas del contrato consumidas al construir el motor y errores `retryable` para abortos de transacción, sin reintento automático. Pasan lint, suite completa y compilación. No se cambia la puerta HTTP ni se implementa el directorio de HU-gateway-12. HU-gateway-10 ya cuenta con la decisión de Clerk aceptada.
-
-HU-gateway-04 tiene el [ADR-0040](../05-decisiones/0040-validacion-de-clerk-y-cache-jwks.md) aceptado por santy401 el 2026-11-15 en `chore/HU-gateway-04`. Fija RS256, lista de partes autorizadas, caché fresca de 5 minutos, máximo de uso de una hora desde la última descarga válida y separación de intentos de 30 segundos. HU-gateway-10 y HU-gateway-11 tienen esta decisión aceptada.
+HU-gateway-17 tiene implementados y validados el reenvío idempotente, la convivencia de secretos durante quince minutos y la auditoría sin secretos, con migración 00017. [Diseño y pruebas](../ingenieria/diseno/HU-gateway-17.md). Pendiente de publicar e integrar su PR con CI aprobada.
 
 | Concepto | Cantidad |
 |---|---|
 | Historias | 23 |
-| Listas | 7 |
-| Bloqueadas | 2 (HU-gateway-22 por Q1, HU-gateway-23 por Q2) |
-| Terminadas / en curso | 0 / 14 (incluye historias pendientes de revisión o integración) |
+| Terminadas e integradas | 14 |
+| En curso | 1 (HU-gateway-17) |
+| Listas | 6 (13, 14, 18, 19, 20, 21) |
+| Diferidas por alcance local actual | 2 (22 y 23) |
 
-De las 7 listas, 14, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
+Orden local restante: terminar 17, activar el programador (21), llaves (13), MCP (14), nodo n8n (19), imagen y arranque (20), y prueba completa de B3 (18). El plan original de dependencias sigue como referencia; todas las decisiones que habilitan este orden están aceptadas.
 
-Discrepancias del backlog (se rutean al analista, no se corrigen aquí):
+El responsable indicó completar por ahora desarrollo y pruebas locales. Las claves de Clerk están en `.env`; la conexión de Supabase se guardó localmente sin publicarla. Dokploy y n8n existen en el servidor. La prueba con token real de Clerk (22) y la publicación de staging (23) quedan diferidas; Cloudflare se usará después sin abrir puertos del router. No se anuncian como terminadas ni se despliega mientras se trabaja en el alcance local.
 
-- El resumen del backlog dice 20 listas y 3 bloqueadas, pero solo 22 y 23 están marcadas "Bloqueada". Cuenta real: 21 y 2.
-- El resumen dice S = 5, M = 10, L = 8. Contando los campos de tamaño: S = 8 (03, 04, 05, 07, 09, 18, 21, 22), M = 11 (01, 02, 06, 08, 11, 12, 14, 16, 17, 19, 20), L = 4 (10, 13, 15, 23).
+Validación usada: Go 1.24.7, PostgreSQL del proyecto en 55432, suite completa con arquitectura y cinco leyes, lint, compatibilidad de contratos, generación repetible, detector de carreras para las pruebas nuevas y 58 diagramas. Task se ejecuta mediante `go run github.com/go-task/task/v3/cmd/task@v3.40.1`. La CI de cada PR se comprueba antes de fusionarlo.
 
 ## Orden de ejecución (S02)
 

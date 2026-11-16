@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/nexusthrive/nexusthrive/kernel/execution"
 	"github.com/nexusthrive/nexusthrive/kernel/gateway"
 	"github.com/nexusthrive/nexusthrive/kernel/model"
 	"github.com/nexusthrive/nexusthrive/kernel/state"
@@ -129,5 +130,64 @@ func TestWebhookHTTPRegistrationAndSignedDelivery(t *testing.T) {
 	var attempts int
 	if err := f.admin.QueryRow(`SELECT count(*) FROM kernel.webhook_delivery_attempts`).Scan(&attempts); err != nil || attempts != 1 {
 		t.Fatal(attempts, err)
+	}
+}
+
+func TestWebhookHTTPSecretRotationIsOneTime(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	system := model.Actor{Kind: model.ActorSystem}
+	actor, err := f.engine.ResolveActor(ctx, f.spaceID, model.IdentityProviderClerk, subjectOperator)
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, err := state.CreateRole(ctx, f.api, system, f.spaceID, model.NewRole{Key: "rotation", Name: "Rotation", Permissions: []string{model.PermissionWebhookWrite}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := state.GrantRole(ctx, f.api, model.SystemClock{}, system, f.spaceID, model.NewGrant{ParticipantID: actor.ParticipantID, RoleID: role}); err != nil {
+		t.Fatal(err)
+	}
+	keys, _ := gateway.NewWebhookKeys("test", map[string][]byte{"test": bytes.Repeat([]byte{4}, 32)})
+	hooks, _ := gateway.NewWebhookGateway(f.engine, keys, true)
+	id := execution.NewRequestID()
+	sealed, original, err := keys.NewSecret(f.spaceID, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.engine.CreateWebhookEndpoint(ctx, execution.Call{Actor: actor, SpaceID: f.spaceID, RequestID: execution.NewRequestID()}, model.NewWebhookEndpoint{ID: id, URL: "https://example.com", Events: []string{"kernel.exchange.recorded.v1"}, Secret: sealed}); err != nil {
+		t.Fatal(err)
+	}
+	handler, err := gateway.NewConnectServer(f.engine, func(context.Context, *http.Request, string) (gateway.AuthenticatedCall, error) {
+		return gateway.AuthenticatedCall{Actor: actor, SpaceID: f.spaceID, CredentialID: subjectOperator}, nil
+	}, gateway.ConnectConfig{Webhooks: hooks})
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := func(key string) *httptest.ResponseRecorder {
+		r := httptest.NewRequest("POST", "/t/kernel.v1.KernelService/RotateWebhookSecret", strings.NewReader(`{"endpointId":"`+id+`"}`))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("Idempotency-Key", key)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		return w
+	}
+	if w := request("cached"); w.Code != 400 {
+		t.Fatal("rotation accepted cache key", w.Code, w.Body)
+	}
+	w := request("")
+	if w.Code != 200 || w.Header().Get("Cache-Control") != "no-store" {
+		t.Fatal(w.Code, w.Body)
+	}
+	var rotated struct{ Secret string }
+	if err := json.Unmarshal(w.Body.Bytes(), &rotated); err != nil || rotated.Secret == original || rotated.Secret == "" {
+		t.Fatal("new secret not presented", err)
+	}
+	if w := request(""); w.Code != 400 || !strings.Contains(w.Body.String(), "failed_precondition") {
+		t.Fatal("overlapping rotation accepted", w.Code, w.Body)
+	}
+	var audits int
+	if err := f.admin.QueryRow(`SELECT count(*) FROM kernel.events WHERE type='kernel.webhook.secret.rotated' AND NOT payload::text LIKE '%whsec_%'`).Scan(&audits); err != nil || audits != 1 {
+		t.Fatal("secret-free audit missing", audits, err)
 	}
 }

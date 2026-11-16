@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"github.com/nexusthrive/nexusthrive/kernel/model"
 	"net"
 	"net/http"
 	"strings"
@@ -118,5 +119,38 @@ func TestWebhookDialRechecksDNSAndNeverUsesEnvironmentProxy(t *testing.T) {
 	}
 	if called {
 		t.Fatal("dialed a private address")
+	}
+}
+
+func TestWebhookDualSignatureWindow(t *testing.T) {
+	keys, err := NewWebhookKeys("app", map[string][]byte{"app": bytes.Repeat([]byte{7}, 32)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, _, _ := keys.NewSecret("space", "endpoint")
+	current, _, _ := keys.NewSecret("space", "endpoint")
+	until := time.Unix(1800000000, 0)
+	job := model.WebhookJob{SpaceID: "space", WebhookDelivery: model.WebhookDelivery{EndpointID: "endpoint"}, Secret: current, PreviousSecret: &old, PreviousValidUntil: &until, Body: []byte(`{"id":"same"}`)}
+	hooks := &WebhookGateway{keys: keys}
+	signature, err := hooks.signWebhookJob(job, until.Add(-time.Second))
+	if err != nil || len(strings.Split(signature, ",")) != 3 {
+		t.Fatal(signature, err)
+	}
+	previousRaw, _ := keys.Open("space", "endpoint", old)
+	currentRaw, _ := keys.Open("space", "endpoint", current)
+	_, tail, _ := strings.Cut(WebhookSignature(until.Add(-time.Second), job.Body, previousRaw), ",")
+	if signature != WebhookSignature(until.Add(-time.Second), job.Body, currentRaw)+","+tail {
+		t.Fatal("dual signature mismatch")
+	}
+	signature, err = hooks.signWebhookJob(job, until)
+	if err != nil || signature != WebhookSignature(until, job.Body, currentRaw) {
+		t.Fatal("old key signed at expiry", signature, err)
+	}
+	job.PreviousSecret.KeyID = "removed"
+	if _, err := hooks.signWebhookJob(job, until.Add(-time.Second)); err == nil {
+		t.Fatal("missing active old key ignored")
+	}
+	if _, err := hooks.signWebhookJob(job, until); err != nil {
+		t.Fatal("expired key still required", err)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/nexusthrive/nexusthrive/kernel/model"
@@ -66,7 +67,7 @@ func FanoutWebhook(ctx context.Context, tx *sql.Tx, clock model.Clock, row model
 		if err != nil {
 			return err
 		}
-		_, err = tx.ExecContext(ctx, `INSERT INTO kernel.webhook_deliveries(id,space_id,endpoint_id,event_seq,body,next_attempt_at) VALUES($1,kernel.current_space_id(),$2,$3,$4,$5) ON CONFLICT(space_id,endpoint_id,event_seq) DO NOTHING`, id.String(), endpoint, event.Seq, body, outboxTime(clock))
+		_, err = tx.ExecContext(ctx, `INSERT INTO kernel.webhook_deliveries(id,space_id,endpoint_id,event_seq,body,next_attempt_at) VALUES($1,kernel.current_space_id(),$2,$3,$4,$5) ON CONFLICT(space_id,endpoint_id,event_seq) WHERE replay_of IS NULL DO NOTHING`, id.String(), endpoint, event.Seq, body, outboxTime(clock))
 		if err != nil {
 			return fmt.Errorf("materialize webhook: %w", err)
 		}
@@ -103,12 +104,21 @@ func ClaimWebhookDelivery(ctx context.Context, tx *sql.Tx, clock model.Clock) (*
 		}
 	}
 	var job model.WebhookJob
-	err = tx.QueryRowContext(ctx, `SELECT d.id::text,d.endpoint_id::text,d.space_id::text,d.body,e.url,e.secret_ciphertext,e.secret_nonce,e.encryption_key_id FROM kernel.webhook_deliveries d JOIN kernel.webhook_endpoints e ON e.id=d.endpoint_id AND e.space_id=d.space_id WHERE d.status IN ('pending','failed') AND d.claim_token IS NULL AND d.next_attempt_at <= $1 AND e.status='active' ORDER BY d.next_attempt_at,d.id LIMIT 1 FOR UPDATE OF d SKIP LOCKED`, now).Scan(&job.ID, &job.EndpointID, &job.SpaceID, &job.Body, &job.URL, &job.Secret.Ciphertext, &job.Secret.Nonce, &job.Secret.KeyID)
+	var previous model.SealedWebhookSecret
+	var previousKey sql.NullString
+	var previousUntil sql.NullTime
+	err = tx.QueryRowContext(ctx, `SELECT d.id::text,d.endpoint_id::text,d.space_id::text,d.body,e.url,e.secret_ciphertext,e.secret_nonce,e.encryption_key_id,e.previous_ciphertext,e.previous_nonce,e.previous_key_id,e.previous_valid_until FROM kernel.webhook_deliveries d JOIN kernel.webhook_endpoints e ON e.id=d.endpoint_id AND e.space_id=d.space_id WHERE d.status IN ('pending','failed') AND d.claim_token IS NULL AND d.next_attempt_at <= $1 AND e.status='active' ORDER BY d.next_attempt_at,d.id LIMIT 1 FOR UPDATE OF d SKIP LOCKED`, now).Scan(&job.ID, &job.EndpointID, &job.SpaceID, &job.Body, &job.URL, &job.Secret.Ciphertext, &job.Secret.Nonce, &job.Secret.KeyID, &previous.Ciphertext, &previous.Nonce, &previousKey, &previousUntil)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("claim webhook: %w", err)
+	}
+	if previousKey.Valid && previousUntil.Valid {
+		previous.KeyID = previousKey.String
+		job.PreviousSecret = &previous
+		until := previousUntil.Time.UTC()
+		job.PreviousValidUntil = &until
 	}
 	token, err := uuid.NewV7()
 	if err != nil {
@@ -241,4 +251,50 @@ func FailWebhookOutbox(ctx context.Context, tx *sql.Tx, clock model.Clock, row m
 		return model.NewError(model.CodeRuleViolation, "webhook outbox claim lost", nil)
 	}
 	return nil
+}
+
+// RotateWebhookSecret replaces the current ciphertext while retaining the previous secret for fifteen minutes.
+func RotateWebhookSecret(ctx context.Context, tx *sql.Tx, clock model.Clock, endpoint string, secret model.SealedWebhookSecret) (time.Time, error) {
+	var previousUntil sql.NullTime
+	err := tx.QueryRowContext(ctx, `SELECT previous_valid_until FROM kernel.webhook_endpoints WHERE id=$1 FOR UPDATE`, endpoint).Scan(&previousUntil)
+	if errors.Is(err, sql.ErrNoRows) {
+		return time.Time{}, model.NewError(model.CodeNotFound, "webhook endpoint not found", nil)
+	}
+	if err != nil {
+		return time.Time{}, err
+	}
+	now := outboxTime(clock)
+	if previousUntil.Valid && previousUntil.Time.After(now) {
+		return time.Time{}, model.NewError(model.CodeRuleViolation, "a webhook secret rotation is already active", nil)
+	}
+	until := now.Add(15 * time.Minute)
+	_, err = tx.ExecContext(ctx, `UPDATE kernel.webhook_endpoints SET previous_ciphertext=secret_ciphertext,previous_nonce=secret_nonce,previous_key_id=encryption_key_id,previous_valid_until=$2,secret_ciphertext=$3,secret_nonce=$4,encryption_key_id=$5 WHERE id=$1`, endpoint, until, secret.Ciphertext, secret.Nonce, secret.KeyID)
+	return until, err
+}
+
+// ReplayWebhookDelivery creates a separate work item without changing the source or its immutable event bytes.
+func ReplayWebhookDelivery(ctx context.Context, tx *sql.Tx, clock model.Clock, source string) (string, error) {
+	var endpoint, status, endpointStatus string
+	var seq int64
+	var body []byte
+	var claim sql.NullString
+	err := tx.QueryRowContext(ctx, `SELECT d.endpoint_id::text,d.event_seq,d.body,d.status,e.status,d.claim_token::text FROM kernel.webhook_deliveries d JOIN kernel.webhook_endpoints e ON e.id=d.endpoint_id AND e.space_id=d.space_id WHERE d.id=$1 FOR UPDATE OF d,e`, source).Scan(&endpoint, &seq, &body, &status, &endpointStatus, &claim)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", model.NewError(model.CodeNotFound, "webhook delivery not found", nil)
+	}
+	if err != nil {
+		return "", err
+	}
+	if endpointStatus != "active" {
+		return "", model.NewError(model.CodeRuleViolation, "webhook endpoint is disabled", nil)
+	}
+	if (status != "failed" && status != "dead") || claim.Valid {
+		return "", model.NewError(model.CodeRuleViolation, "only unclaimed failed deliveries can be replayed", nil)
+	}
+	id, err := uuid.NewV7()
+	if err != nil {
+		return "", err
+	}
+	_, err = tx.ExecContext(ctx, `INSERT INTO kernel.webhook_deliveries(id,space_id,endpoint_id,event_seq,body,next_attempt_at,replay_of) VALUES($1,kernel.current_space_id(),$2,$3,$4,$5,$6)`, id.String(), endpoint, seq, body, outboxTime(clock), source)
+	return id.String(), err
 }
