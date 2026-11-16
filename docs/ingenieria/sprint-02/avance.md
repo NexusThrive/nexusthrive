@@ -20,8 +20,9 @@ Registrar el trabajo implementado y su validación sin confundirlo con una promo
 | HU-gateway-07 | ADR-0043 aceptado: ciclo, cotas y apagado del programador | `chore/HU-gateway-07` | [#37](https://github.com/NexusThrive/nexusthrive/pull/37) | #36 |
 | HU-gateway-15 | Registro Connect, cifrado, firma y colas duraderas con RLS | `feature/HU-gateway-15` | [#38](https://github.com/NexusThrive/nexusthrive/pull/38) | #37 |
 | HU-gateway-16 | Reintentos, veinte fallos consecutivos y motivo consultable | `feature/HU-gateway-16` | [#39](https://github.com/NexusThrive/nexusthrive/pull/39) | #38 |
+| HU-gateway-03 | ADR-0044 registra S-P1 aceptado y enmienda paridad MCP | `chore/HU-gateway-03` | [#40](https://github.com/NexusThrive/nexusthrive/pull/40) | #39 |
 
-Las doce ramas están publicadas y sus PR están en borrador, cada uno con la rama precedente como base temporal. El [PR #27](https://github.com/NexusThrive/nexusthrive/pull/27) del primer corte sigue siendo el antecedente de integración. El destino final es `sprint/S02`; después de integrar cada antecedente se actualiza la rama, se cambia la base y se revisan diff y CI. No se ha fusionado ninguna historia. `go.work.sum` estaba sin seguimiento al comenzar y permanece fuera de los commits.
+Las trece ramas están publicadas y sus PR están en borrador, cada uno con la rama precedente como base temporal. El [PR #27](https://github.com/NexusThrive/nexusthrive/pull/27) del primer corte sigue siendo el antecedente de integración. El destino final es `sprint/S02`; después de integrar cada antecedente se actualiza la rama, se cambia la base y se revisan diff y CI. No se ha fusionado ninguna historia. `go.work.sum` estaba sin seguimiento al comenzar y permanece fuera de los commits.
 
 La primera ejecución de CI de los ocho PR #28 a #35 terminó correctamente, comprobada el 2026-11-15 a las 23:48 UTC. Los checks vigentes de cada nueva cabecera se consultan en su PR; cualquier actualización vuelve a comprobarse antes de revisión. El modo de publicación y seguimiento está fijado en [flujo de Git](../../07-ingenieria/git-workflow.md) y `AGENTS.md`.
 
@@ -51,3 +52,5 @@ Los PR #36 y #37 pasaron CI antes de su aceptación. santy401 aceptó ADR-0041, 
 HU-gateway-15 pasó lint, suite completa con leyes, compatibilidad del contrato, regeneración, detector de carreras de las pruebas nuevas y 58 diagramas. CI del PR #38 se comprueba tras cada push. Reintentos operativos y deshabilitación siguen en HU-gateway-16; reenvío y rotación en 17; arranque automático en 21.
 
 El PR #38 pasó toda la CI el 2026-11-16. HU-gateway-16 está publicada en #39 con suite completa, leyes, lint, detector de carreras, compatibilidad y 58 diagramas aprobados localmente; se comprueba su CI tras publicar. Sus contadores no mezclan fallos de reparto, entrega y receptor. Quedan reenvío y rotación (17) y arranque automático (21), además de las otras historias pendientes de M2.
+
+El PR #39 pasó toda la CI. El repositorio no tiene secretos ni entornos de GitHub configurados, según consulta de nombres del 2026-11-16; Clerk real y staging siguen pendientes de accesos externos. HU-gateway-05 prepara ADR-0045 para aceptar antes del código de llaves.

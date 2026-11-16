@@ -429,3 +429,7 @@ Un socio paga 50.000 COP en efectivo de un plan de 100.000; queda debiendo 50.00
 - [ADR-0029 · Otorgante entre espacios y reglas contra la escalada de privilegios](../../05-decisiones/0029-otorgante-entre-espacios-y-escalada.md)
 - [ADR-0031 · Outbox: reclamo de un solo espacio, arrendamiento, entrega al menos una vez y valores de partida](../../05-decisiones/0031-outbox-reclamo-y-arrendamiento.md)
 - [ADR-0032 · Catálogo de permisos y verificación](../../05-decisiones/0032-catalogo-de-permisos-y-verificacion.md)
+
+### Llaves por espacio pendientes de decisión
+
+El [ADR-0045 propuesto](../../05-decisiones/0045-llaves-por-espacio-y-alcances.md) reserva 00018 para `api_keys`, con hash SHA-256 de una presentación aleatoria, `live`/`test`, alcances y revocación comprobados en la transacción. `ip_allowlist` y último uso quedan fuera de M2. El diagrama anticipa capacidades posteriores; la tabla todavía no existe y HU-gateway-13 no empieza hasta la aceptación.

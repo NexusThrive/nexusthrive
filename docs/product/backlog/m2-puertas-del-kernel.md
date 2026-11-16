@@ -140,15 +140,15 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-05 · Decidir las llaves por espacio
 
-- **Estado:** Lista. **Tamaño:** S. **Rama:** `chore/HU-gateway-05`. **ADR que escribe:** 0041 (llaves de API por espacio, alcances y migración `api_keys`; cubre P7).
+- **Estado:** En curso; ADR pendiente de aceptación. **Tamaño:** S. **Rama:** `chore/HU-gateway-05`. **ADR que escribe:** 0045 (llaves de API por espacio, alcances y migración `api_keys`; cubre P7).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero decidir el modelo de las llaves por espacio,
   para que n8n y los agentes de IA puedan autenticarse sin token de persona.
 - **Criterios de aceptación:**
-  1. Dado el ADR 0041, cuando se revisa, entonces fija: secreto visible una sola vez, solo hash en base de datos, prefijo identificable, `environment` con valores `live` y `test`, alcances como subconjunto de los permisos del participante, revocación y rotación.
+  1. Dado el ADR 0045, cuando se revisa, entonces fija: secreto visible una sola vez, solo hash en base de datos, prefijo identificable, `environment` con valores `live` y `test`, alcances como subconjunto de los permisos del participante, revocación y rotación.
   2. Dado el ADR, cuando se revisa, entonces declara `ip_allowlist` fuera de M2.
-  3. Dado el ADR, cuando se revisa, entonces indica el número de migración (desde 00015) y actualiza `docs/02-arquitectura/modelo-de-datos/kernel.md`.
+  3. Dado el ADR, cuando se revisa, entonces indica el número de migración (00018 reservado) y actualiza `docs/02-arquitectura/modelo-de-datos/kernel.md`.
 - **Reglas de negocio:** modelo de datos y `puertas.md`; decisión por defecto del Product Owner (P7). `api_keys` no existe hoy (HU-kernel M1, decisión 4 del backlog de M1).
 - **Dependencias:** ninguna.
 - **Fuera de alcance:** `ip_allowlist`, implementación.
@@ -295,7 +295,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-13 · Autenticar con llaves por espacio y alcances (R6)
 
-- **Estado:** Lista. **Tamaño:** L. **Rama:** `feature/HU-gateway-13`. **ADR exigidos:** 0041.
+- **Estado:** Lista. **Tamaño:** L. **Rama:** `feature/HU-gateway-13`. **ADR exigidos:** 0045.
 - **Historia:**
   Como desarrollador integrador (n8n o agente `api_key`),
   quiero llaves por espacio con alcances limitados,
@@ -311,13 +311,13 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
   8. Dada la rotación de una llave, cuando se completa, entonces la nueva funciona, la anterior queda revocada y el secreto nuevo se muestra una sola vez.
   9. Dada la lectura posterior de una llave, cuando se consulta, entonces nunca devuelve el secreto, solo el prefijo y metadatos.
   10. Dada la puerta, cuando se revisa, entonces las llaves se verifican sin entregar el pool a la puerta (solo el `Engine`) y el secreto nunca se escribe en logs.
-- **Reglas de negocio:** ADR 0041 (nuevo); `api_keys` no existe hoy; regla 3 (solo el kernel toca la base); ADR-0035; regla de puerta; mutaciones que no mueven dinero, sin idempotencia obligatoria pero la creación acepta clave de idempotencia por contrato.
+- **Reglas de negocio:** ADR 0045 (nuevo); `api_keys` no existe hoy; regla 3 (solo el kernel toca la base); ADR-0035; regla de puerta; mutaciones que no mueven dinero, sin idempotencia obligatoria pero la el ADR-0045 propone no guardar respuesta idempotente para creación o rotación, porque contienen el secreto de presentación única.
 - **Dependencias:** HU-gateway-05, HU-gateway-10, HU-gateway-12.
 - **Fuera de alcance:** `ip_allowlist`, interfaz de gestión (consola, B5).
 
 ## HU-gateway-14 · Servir el MCP de solo lectura en `/mcp` (R7) (*)
 
-- **Estado:** Lista, con supuesto por confirmar (S-P1). **Tamaño:** M. **Rama:** `feature/HU-gateway-14`. **ADR exigidos:** 0044, 0036, 0041.
+- **Estado:** Lista, con supuesto por confirmar (S-P1). **Tamaño:** M. **Rama:** `feature/HU-gateway-14`. **ADR exigidos:** 0044, 0036, 0045.
 - **Historia:**
   Como agente de IA con identidad propia,
   quiero consultar el kernel por herramientas MCP de lectura,

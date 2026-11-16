@@ -63,6 +63,7 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0042](0042-secretos-y-firma-de-webhooks.md) | Secretos cifrados y firma de webhooks (HU-gateway-06) | Aceptada |
 | [0043](0043-programador-en-la-api.md) | Programador de timers y webhooks en la API (HU-gateway-07) | Aceptada |
 | [0044](0044-mcp-de-solo-lectura-en-m2.md) | MCP de solo lectura durante M2 (HU-gateway-03, S-P1) | Aceptada |
+| [0045](0045-llaves-por-espacio-y-alcances.md) | Llaves por espacio y alcances transaccionales (HU-gateway-05) | Propuesta |
 
 ## Pendientes
 
