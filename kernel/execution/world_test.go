@@ -268,6 +268,10 @@ func (w *world) snapshot() map[string]int {
 		}
 		tables = append(tables, name)
 	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		w.t.Fatalf("read table list: %v", err)
+	}
 	rows.Close()
 	if len(tables) < 14 {
 		w.t.Fatalf("found %d kernel tables, expected the whole schema: %v", len(tables), tables)

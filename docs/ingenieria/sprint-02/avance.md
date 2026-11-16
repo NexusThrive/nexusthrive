@@ -23,9 +23,9 @@ Registrar el trabajo implementado y su validación sin confundirlo con una promo
 | HU-gateway-03 | ADR-0044 registra S-P1 aceptado y enmienda paridad MCP | `chore/HU-gateway-03` | [#40](https://github.com/NexusThrive/nexusthrive/pull/40) | #39 |
 | HU-gateway-05 | ADR-0045 aceptado: llaves y alcances transaccionales | `chore/HU-gateway-05` | [#41](https://github.com/NexusThrive/nexusthrive/pull/41) | #40 |
 
-Los PR #27 a #41 están fusionados en `sprint/S02`, con autorización explícita del responsable el 2026-11-16. Cada uno pasó CI; antes de integrar se comprobó que el árbol candidato coincidía con el head validado y se cambió la base al sprint. `main` no se modificó. ADR-0045 está aceptado. La tabla anterior conserva las dependencias históricas, no PR pendientes. `go.work.sum` continúa fuera de los commits.
+Los PR #27 a #42 están fusionados en `sprint/S02`, con autorización explícita del responsable el 2026-11-16. Cada uno pasó CI; antes de integrar se comprobó que el árbol candidato coincidía con el head validado y se cambió la base al sprint. `main` no se modificó. ADR-0045 está aceptado. La tabla anterior conserva las dependencias históricas, no PR pendientes. `go.work.sum` continúa fuera de los commits.
 
-HU-gateway-05 está integrada en [#41](https://github.com/NexusThrive/nexusthrive/pull/41); reserva 00018 para llaves. HU-gateway-17 está en implementación con migración 00017. Los PR nuevos se fusionan al pasar CI, según la autorización registrada en `AGENTS.md` y el flujo de Git.
+HU-gateway-05 está integrada en [#41](https://github.com/NexusThrive/nexusthrive/pull/41); reserva 00018 para llaves. HU-gateway-17 está integrada con migración 00017; HU-gateway-21 activa el programador y está en validación. Los PR nuevos se fusionan al pasar CI, según la autorización registrada en `AGENTS.md` y el flujo de Git.
 
 ## Validación
 
@@ -39,11 +39,13 @@ Se utiliza Go 1.24.7, porque el Staticcheck fijado no admite Go 1.27 del servido
 
 ## Lo que todavía falta
 
-HU-gateway-17 tiene implementada y validada la rotación con doble firma y el reenvío idempotente; queda publicar e integrar su PR. Después siguen llaves (13), MCP (14), nodo n8n (19), imagen y arranque (20), programador (21) y la prueba completa de B3 (18). Las migraciones 00015, 00016 y 00017 pertenecen a directorio, webhooks y rotación; 00018 está reservada a llaves.
+M2 sigue abierto: programador (21, en validación), llaves (13), MCP de lectura (14), nodo n8n (19), imagen y arranque (20) y prueba completa del criterio B3 (18). El token real de Clerk (22) y staging (23) están diferidos porque el responsable indicó completar primero desarrollo y pruebas locales. No hay consola ni producto Business implementados por este avance.
 
-Por instrucción del responsable se completa primero desarrollo y pruebas locales. La validación con token real de Clerk y el despliegue de staging se difieren. Las claves están en archivos locales ignorados, nunca en commits. El servidor tiene Dokploy, n8n y Tailscale; la publicación futura usará Cloudflare, sin abrir puertos del router durante este trabajo. No hay consola ni producto Business implementado por M2.
+Las migraciones 00015, 00016 y 00017 pertenecen al directorio, webhooks y rotación/reenvío. 00018 queda reservada para llaves. Los métodos de reclamo y marcado siguen fuera de la API pública.
+
+Las claves de Clerk están disponibles en `.env`; la conexión de Supabase está en un archivo local ignorado, sin publicarla. Dokploy y n8n existen en el servidor con Tailscale privado. Cloudflare está elegido para la publicación futura; Render se evalúa como alternativa para la API. No se han cambiado DNS ni puertos del router, ni migrado la base externa. El alcance actual sigue siendo local.
 
 ## Referencias
 
-- [Plan](../../product/plan.md), [backlog](../../product/backlog/m2-puertas-del-kernel.md) y [hoja de ruta](../../02-arquitectura/hoja-de-ruta.md).
-- [Rotación y reenvío](../diseno/HU-gateway-17.md) y [flujo de Git](../../07-ingenieria/git-workflow.md).
+- [Plan](../../product/plan.md) y [backlog](../../product/backlog/m2-puertas-del-kernel.md).
+- [Hoja de ruta](../../02-arquitectura/hoja-de-ruta.md).
