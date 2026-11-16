@@ -1,8 +1,9 @@
 # ADR-0041 · Despacho duradero y reintentos de webhooks
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-11-16
 - **Responsables:** santy401
+- **Aceptación:** santy401, 2026-11-16, confirmada en conversación.
 
 ## Contexto
 
@@ -10,7 +11,7 @@ HU-gateway-06 debe decidir el despacho antes de HU-gateway-15 y 16. El outbox ti
 
 El ADR-0031 fija cinco fallos del outbox; `puertas.md` fija veinte fallos consecutivos de un endpoint; el flujo de tareas fallidas de plataforma menciona ocho reintentos sin distinguirlos. Son contadores diferentes. El archivo de flujos existente es `docs/02-arquitectura/plataforma/flujos.md`; la ruta sin `plataforma/` citada en el backlog original no existe.
 
-## Decisión propuesta
+## Decisión
 
 ### Publicación y entrega
 
@@ -68,7 +69,7 @@ Los permisos se conceden explícitamente en los espacios existentes; no se edita
 - El reparto es duradero y cada endpoint tiene reintentos e historial independientes.
 - Se agrega una tabla de intentos y una función interna para el worker. La transición `sent` del outbox debe interpretarse como aceptación duradera del reparto, no como recibo HTTP final.
 - Se conservan las cinco reglas del outbox del ADR-0031 y se reemplaza la cifra genérica de ocho por límites explícitos para M2.
-- Estas son decisiones nuevas, pendientes de aceptación. No se implementan tablas, permisos ni despacho hasta aceptarlas junto con el ADR de secretos y el del programador.
+- El responsable aceptó estas decisiones junto con los ADR-0042 y 0043. HU-gateway-15 queda habilitada para implementar tablas, permisos y despacho.
 
 ## Cumplimiento
 
