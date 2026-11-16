@@ -90,15 +90,15 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-02 · Decidir la resolución del actor, la selección del espacio y el primer ingreso
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `chore/HU-gateway-02`. **ADR que escribe:** 0037 (resolución de actor y espacio, composición en `services/api`; cubre P3 y P5) y 0038 (identidad en el primer ingreso; cubre P4).
+- **Estado:** Decisiones aceptadas; pendiente de integración. **Tamaño:** M. **Rama:** `chore/HU-gateway-02`. **ADR que escribe:** [0038](../../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (resolución de actor y espacio, composición en `services/api`; cubre P3 y P5) y [0039](../../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (identidad en el primer ingreso; cubre P4).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero decidir dónde se resuelve el token a participante, cómo se elige el espacio y qué pasa con un token sin participante,
   para cerrar los límites aceptados de ADR-0035 sin abrir una ruta por el pool.
 - **Criterios de aceptación:**
-  1. Dado el ADR 0037, cuando se revisa, entonces fija que el espacio viene en la ruta por `slug` (ADR-0023), que la resolución vive en `execution` o en un paquete que la prueba de arquitectura permita, nunca en la puerta, y qué excepción exacta a la regla de importación de `state` se concede.
-  2. Dado el ADR 0037, cuando se revisa, entonces fija que `kernel/extension` no se crea en M2 y que la composición de operaciones vive en `services/api` y pasa solo el `Engine`.
-  3. Dado el ADR 0038, cuando se revisa, entonces fija que no hay creación automática de identidad ni participante en M2 y que un token válido sin participante recibe `permission_denied` genérico, igual a un participante sin permiso, sin enumeración de espacios ni identidades.
+  1. Dado el ADR 0038, cuando se revisa, entonces fija que el espacio viene en la ruta por `slug` (ADR-0023), que la resolución vive en `execution` o en un paquete que la prueba de arquitectura permita, nunca en la puerta, y qué excepción exacta a la regla de importación de `state` se concede (la propuesta conserva la regla sin excepciones nuevas).
+  2. Dado el ADR 0038, cuando se revisa, entonces fija que `kernel/extension` no se crea en M2 y que la composición de operaciones vive en `services/api` y pasa solo el `Engine`.
+  3. Dado el ADR 0039, cuando se revisa, entonces fija que no hay creación automática de identidad ni participante en M2 y que un token válido sin participante recibe `permission_denied` genérico, igual a un participante sin permiso, sin enumeración de espacios ni identidades.
   4. Dados ambos ADR, cuando se revisan, entonces tienen estado Aceptado y enlazan a ADR-0023, ADR-0035 y a los seguimientos 4 y 6.
 - **Reglas de negocio:**
   - El actor lo afirma hoy la aplicación; B3 lo cierra (`docs/product/contexto-dominio.md`, límites aceptados 1; ADR-0035).
@@ -190,7 +190,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-08 · Declarar los contratos de `kernel.v1` (R1)
 
-- **Estado:** En curso, implementación local y validación. **Tamaño:** M. **Rama:** `feature/HU-gateway-08`. **ADR exigidos antes del código:** [0037, aceptado](../../05-decisiones/0037-contrato-inicial-del-kernel.md).
+- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** M. **Rama:** `feature/HU-gateway-08`. **ADR exigidos antes del código:** [0037, aceptado](../../05-decisiones/0037-contrato-inicial-del-kernel.md).
 - **Avance 2026-11-15:** implementación local validada; pendientes revisión e integración. Pasan lint, suite completa (incluidas leyes), typecheck, compilación, pruebas de metadatos y precisión, esquema del evento, rechazo de un campo renombrado y segunda generación idéntica. [Evidencia y límites](../../ingenieria/diseno/HU-gateway-08.md). El servidor Connect y las operaciones del motor corresponden a 09 y 10.
 - **Historia:**
   Como desarrollador integrador,
@@ -209,7 +209,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-09 · Registrar las primeras operaciones y componer el `Engine` (R2)
 
-- **Estado:** Lista. **Tamaño:** S. **Rama:** `feature/HU-gateway-09`. **ADR exigidos:** 0036, 0037.
+- **Estado:** Lista, decisiones aceptadas. **Tamaño:** S. **Rama:** `feature/HU-gateway-09`. **ADR exigidos:** 0037 (contrato, aceptado), 0038 y 0039 (actor y primer ingreso, aceptados).
 - **Historia:**
   Como desarrollador integrador,
   quiero que la operación de intercambio con compromiso y la lectura de eventos existan en el kernel,

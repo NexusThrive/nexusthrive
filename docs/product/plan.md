@@ -23,16 +23,18 @@ Actualización 2026-11-15: santy401 aceptó el [ADR-0037](../05-decisiones/0037-
 
 Validación local de HU-gateway-01: enlaces relativos y bloques de código comprobados, `git diff --check` sin errores. `task lint` pasó con Go 1.24.7 (el Staticcheck fijado no admite Go 1.27 del servidor) y `task test` pasó, incluidas las leyes del kernel contra PostgreSQL en 55432. Se ejecutó Task 3.40.1 mediante `go run` porque no está instalado como comando. Mermaid pasó con `CI=1`: 58 diagramas renderizados. La decisión está en el commit `9f19a48`; su integración sigue pendiente.
 
-HU-gateway-08 está en curso en `feature/HU-gateway-08`, sobre la decisión aceptada. Incluye contratos, esquema del evento, generación local, SDK generado, pruebas del contrato y CI de compatibilidad y regeneración. No incluye las implementaciones del motor ni del servidor. Los PR se preparan en cadena mientras el PR #27 siga abierto, sin fusionarlo.
+HU-gateway-08 está implementada y validada localmente en `feature/HU-gateway-08`, commit `387b33e`, sobre la decisión aceptada. Incluye contratos, esquema del evento, generación local, SDK generado, pruebas del contrato y CI de compatibilidad y regeneración. No incluye las implementaciones del motor ni del servidor. Lint, pruebas completas, typecheck, compilación y render de 58 diagramas pasaron. La integración espera la cadena previa: PR #27 y HU-gateway-01; no se ha fusionado ni abierto un PR nuevo.
+
+HU-gateway-02 está en curso en `chore/HU-gateway-02`, con los ADR [0038](../05-decisiones/0038-resolucion-de-actor-y-espacio.md) (actor y directorio por slug) y [0039](../05-decisiones/0039-identidad-en-el-primer-ingreso.md) (primer ingreso) aceptados. santy401 aceptó ambos el 2026-11-15; HU-gateway-09 queda habilitada. La numeración antigua 0037/0038 para estos temas queda sustituida por 0038/0039; las reservas posteriores se reasignan al redactar cada historia.
 
 | Concepto | Cantidad |
 |---|---|
 | Historias | 23 |
-| Listas | 19 |
+| Listas | 18 |
 | Bloqueadas | 2 (HU-gateway-22 por Q1, HU-gateway-23 por Q2) |
-| Terminadas / en curso | 0 / 2 |
+| Terminadas / en curso | 0 / 3 (incluye historias pendientes de revisión o integración) |
 
-De las 19 listas, 03, 07, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
+De las 18 listas, 03, 07, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
 
 Discrepancias del backlog (se rutean al analista, no se corrigen aquí):
 
