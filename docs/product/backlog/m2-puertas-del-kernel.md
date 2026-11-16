@@ -435,7 +435,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-20 · Empaquetar la API, migrar al arrancar y exponer salud (R10)
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-20`. **ADR exigidos:** ninguno nuevo (ADR-0019, ADR-0024 ya aceptados).
+- **Estado:** En curso; propuesta de arranque seguro pendiente de aceptación. **Tamaño:** M. **Rama:** `feature/HU-gateway-20`. **ADR exigidos:** 0046 (propuesto; enmienda de 0027); 0019 y 0024 aceptados.
 - **Historia:**
   Como equipo NexusThrive,
   quiero una imagen de la API que migre antes de recibir tráfico y use el rol limitado,
@@ -453,7 +453,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-21 · Arrancar el programador de timers y el despachador en la API (R-P13) (*)
 
-- **Estado:** En curso; programador implementado y en validación. **Tamaño:** S. **Rama:** `feature/HU-gateway-21`. **ADR exigidos:** 0043.
+- **Estado:** Terminada e integrada en `sprint/S02`, PR #43. **Tamaño:** S. **Rama:** `feature/HU-gateway-21`. **ADR exigidos:** 0043.
 - **Avance:** [Diseño y pruebas](../../ingenieria/diseno/HU-gateway-21.md).
 - **Historia:**
   Como equipo NexusThrive,
