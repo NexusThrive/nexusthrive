@@ -109,13 +109,13 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-03 · Decidir el MCP de solo lectura (*)
 
-- **Estado:** Lista, con supuesto por confirmar (S-P1). **Tamaño:** S. **Rama:** `chore/HU-gateway-03`. **ADR que escribe:** 0039 (enmienda a ADR-0018 y ADR-0020: MCP de solo lectura en M2).
+- **Estado:** Decisión aceptada; pendiente de integración. S-P1 ya confirmado. **Tamaño:** S. **Rama:** `chore/HU-gateway-03`. **ADR que escribe:** 0044 (enmienda a ADR-0018 y ADR-0020: MCP de solo lectura en M2).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero resolver la contradicción entre los documentos sobre el alcance del MCP,
   para que el MCP y el nodo n8n se generen con el mismo alcance.
 - **Criterios de aceptación:**
-  1. Dado el ADR 0039, cuando se revisa, entonces establece que M2 expone solo herramientas generadas de operaciones `read`, y que la escritura con propuestas aprobadas por una persona queda pospuesta sin fecha de M2.
+  1. Dado el ADR 0044, cuando se revisa, entonces establece que M2 expone solo herramientas generadas de operaciones `read`, y que la escritura con propuestas aprobadas por una persona queda pospuesta sin fecha de M2.
   2. Dado el ADR, cuando se revisa, entonces enmienda explícitamente ADR-0018 y ADR-0020 (nota de enmienda en ambos) y deja `AGENTS.md` y `docs/04-integraciones/puertas.md` coherentes, con la ruta `/mcp` de ADR-0023.
   3. Dado una búsqueda de "lectura y escritura controlada" en `docs/`, cuando se ejecuta, entonces cada aparición queda como pospuesta o enlaza a la enmienda.
 - **Reglas de negocio:** MCP solo lectura en `AGENTS.md` y `puertas.md`; ADR-0018/0020 dicen lo contrario (brief, "Puertas"); decisión por defecto del Product Owner (P1).
@@ -317,7 +317,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-14 · Servir el MCP de solo lectura en `/mcp` (R7) (*)
 
-- **Estado:** Lista, con supuesto por confirmar (S-P1). **Tamaño:** M. **Rama:** `feature/HU-gateway-14`. **ADR exigidos:** 0039, 0036, 0041.
+- **Estado:** Lista, con supuesto por confirmar (S-P1). **Tamaño:** M. **Rama:** `feature/HU-gateway-14`. **ADR exigidos:** 0044, 0036, 0041.
 - **Historia:**
   Como agente de IA con identidad propia,
   quiero consultar el kernel por herramientas MCP de lectura,
@@ -330,7 +330,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
   5. Dado un agente cuya llave no incluye el alcance de lectura, cuando llama, entonces recibe `permission_denied`.
   6. Dada la puerta, cuando se revisa, entonces recibe solo el `Engine`, no importa `kernel/state` y el `Actor` sale de la llave validada (regla de puerta; ADR-0035).
   7. Dada la prueba de paridad de ADR-0020, cuando falta una operación `read` en el MCP, entonces la prueba falla; cuando falta una `write`, no falla.
-- **Reglas de negocio:** `AGENTS.md` y `puertas.md` (solo lectura al principio); ADR-0023 (`/mcp` en la misma API); ADR-0020 (paridad, enmendada por 0039); el agente es un participante con identidad propia (brief); S-P1.
+- **Reglas de negocio:** `AGENTS.md` y `puertas.md` (solo lectura al principio); ADR-0023 (`/mcp` en la misma API); ADR-0020 (paridad, enmendada por 0044); el agente es un participante con identidad propia (brief); S-P1.
 - **Dependencias:** HU-gateway-03, HU-gateway-10, HU-gateway-13.
 - **Fuera de alcance:** MCP de escritura, recursos, prompts, `services/ai`.
 

@@ -8,13 +8,17 @@
 
 NexusThrive debe poder controlarse desde afuera: integradores, agentes de IA y flujos de n8n necesitan hacer lo mismo que la interfaz, con los mismos permisos. Si cada puerta se escribe a mano, se desalinean y la interfaz acaba con atajos privados.
 
+## Enmienda de M2
+
+El [ADR-0044](0044-mcp-de-solo-lectura-en-m2.md) enmienda MCP y su paridad durante M2: solo herramientas generadas de riesgo `read`; ninguna de `write` o `money`. La escritura controlada queda pospuesta y exige otra decisión.
+
 ## Decisión
 
 Cada operación nace **una sola vez** en `contracts/`. De ella se generan, sin editar a mano:
 
 1. el método de la API (Connect-RPC, también expuesto como JSON/HTTP);
 2. el cliente `@nexusthrive/sdk` que usa la interfaz;
-3. la herramienta MCP equivalente;
+3. la herramienta MCP equivalente para operaciones `read` en M2;
 4. el evento que emite (JSON Schema), entregado por webhook firmado;
 5. la operación del nodo de n8n.
 
@@ -22,7 +26,7 @@ La interfaz no tiene atajos: todo lo que hace la web lo puede hacer un integrado
 
 **Credenciales por espacio con alcances (scopes).** Las crea el dueño o el equipo de NexusThrive. Cada credencial declara los alcances que concede; el kernel autoriza con el mismo modelo de permisos de las personas. Se guardan con hash, se muestran una sola vez y se pueden revocar y rotar.
 
-**MCP.** Herramientas de lectura y de escritura controlada. Una escritura que mueve dinero o existencias llega como **propuesta** que una persona aprueba, salvo que la credencial tenga un alcance de escritura explícito otorgado por el dueño.
+**MCP.** En M2, solo herramientas de lectura (ADR-0044). Escritura, propuestas y aprobación humana quedan pospuestas; ni siquiera una credencial con alcance de escritura las habilita.
 
 **Webhooks.** Firmados con HMAC, con reintentos con espera creciente, registro de entregas, reenvío manual y rotación del secreto de firma.
 
@@ -35,7 +39,7 @@ La interfaz no tiene atajos: todo lo que hace la web lo puede hacer un integrado
 | Alternativa | Por qué no se eligió |
 |---|---|
 | Escribir a mano cada puerta | Se desalinean con el tiempo y la interfaz acaba teniendo atajos. |
-| MCP de solo lectura | Impide que agentes y AURI ayuden a operar. |
+| MCP de solo lectura | Elegido para M2 por S-P1 y ADR-0044; la escritura se reconsiderará después. |
 | MCP con escritura libre | Un agente podría mover dinero o existencias sin que nadie lo apruebe. |
 | Webhooks sin firma ni registro | No se puede verificar el origen ni depurar entregas fallidas. |
 
@@ -57,9 +61,9 @@ La interfaz no tiene atajos: todo lo que hace la web lo puede hacer un integrado
 
 ## Cumplimiento
 
-- Una **prueba de arquitectura** falla si una operación existe en la API pero no en MCP, webhooks o n8n, o al revés.
-- Una prueba comprueba que una operación de prueba se ejecuta igual por API, MCP y n8n, y que repetirla con la misma clave no la duplica.
-- Una prueba comprueba que una escritura por MCP que mueve dinero queda como propuesta cuando la credencial no tiene alcance explícito.
+- Una **prueba de arquitectura** comprueba la paridad por puerta: MCP solo incluye las operaciones `read`; API, SDK y n8n siguen el contrato y los eventos publicados tienen esquema.
+- Una prueba comprueba paridad de lecturas por API, MCP y n8n, e idempotencia de escrituras por las puertas habilitadas.
+- Una prueba comprueba que toda escritura por MCP se rechaza sin ejecutar el motor durante M2.
 
 ## Referencias
 
