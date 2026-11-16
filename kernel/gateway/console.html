@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NexusThrive · Kernel</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14171f;--mute:#667085;--line:#e4e7ec;--brand:#4f46e5;--brand-ink:#fff;--ok:#067647;--okbg:#ecfdf3;--warn:#b54708;--warnbg:#fffaeb;--err:#b42318;--errbg:#fef3f2}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--ink:#eef0f4;--mute:#98a2b3;--line:#2a303a;--brand:#818cf8;--brand-ink:#0e1116;--ok:#6ce9a6;--okbg:#0b2a1b;--warn:#fec84b;--warnbg:#2a2008;--err:#fda29b;--errbg:#2c1311}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--card);flex-wrap:wrap}
+h1{font-size:16px;margin:0;letter-spacing:.2px}h1 span{color:var(--mute);font-weight:400}
+.pill{font-size:12px;padding:3px 10px;border-radius:99px;background:var(--okbg);color:var(--ok)}
+main{max-width:1040px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:860px){main{grid-template-columns:1.1fr .9fr}.wide{grid-column:1/-1}}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mute);margin:0 0 12px}
+.acc{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
+.acc:first-of-type{border-top:0}.acc small{color:var(--mute);display:block}
+.bal{font-variant-numeric:tabular-nums;font-weight:600;font-size:17px;white-space:nowrap}.neg{color:var(--err)}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+select,input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{margin-top:14px;padding:10px 14px;border:0;border-radius:8px;background:var(--brand);color:var(--brand-ink);font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--brand);border:1px solid var(--line);margin-left:8px}
+button:disabled{opacity:.5;cursor:default}
+.msg{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:14px;display:none;word-break:break-word}
+.msg.ok{display:block;background:var(--okbg);color:var(--ok)}.msg.warn{display:block;background:var(--warnbg);color:var(--warn)}.msg.err{display:block;background:var(--errbg);color:var(--err)}
+.ev{padding:9px 0;border-top:1px solid var(--line);font-size:13px}.ev:first-of-type{border-top:0}
+.ev b{font-weight:600}.ev code{color:var(--mute);font-size:12px}
+.empty{color:var(--mute);font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>NexusThrive <span>· kernel</span></h1>
+  <div><span id="who" class="pill">conectando…</span></div>
+</header>
+<main>
+  <section>
+    <h2>Cuentas del espacio</h2>
+    <div id="accounts"><p class="empty">Cargando…</p></div>
+  </section>
+  <section>
+    <h2>Mover valor</h2>
+    <form id="f">
+      <div class="row">
+        <div><label for="from">Desde</label><select id="from"></select></div>
+        <div><label for="to">Hacia</label><select id="to"></select></div>
+      </div>
+      <div class="row">
+        <div><label for="amount">Monto</label><input id="amount" inputmode="decimal" value="25000.00"></div>
+        <div><label for="memo">Nota</label><input id="memo" value="Demo"></div>
+      </div>
+      <label for="key">Clave de idempotencia</label>
+      <input id="key" readonly>
+      <button id="send" type="submit">Enviar</button>
+      <button id="again" type="button" class="ghost">Repetir con la misma clave</button>
+    </form>
+    <div id="msg" class="msg"></div>
+  </section>
+  <section class="wide">
+    <h2>Memoria del espacio (eventos)</h2>
+    <div id="events"><p class="empty">Cargando…</p></div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let S=null,accounts=[];
+const newKey=()=>{$('key').value='demo-'+crypto.randomUUID()};
+const fmt=(v,s)=>{const n=Number(v);return n.toLocaleString('es-CO',{minimumFractionDigits:s,maximumFractionDigits:s})};
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const say=(cls,t)=>{const m=$('msg');m.className='msg '+cls;m.textContent=t};
+async function api(path,opt={}){
+  const r=await fetch('/v1/spaces/'+S.space_id+path,{...opt,headers:{Authorization:'Bearer '+S.token,...(opt.headers||{})}});
+  return {r,body:await r.json()};
+}
+async function load(){
+  const [a,e]=await Promise.all([api('/balances'),api('/events')]);
+  if(!a.r.ok){say('err',a.body.error.message);return}
+  accounts=a.body.accounts;
+  $('accounts').innerHTML=accounts.map(x=>`<div class="acc"><div><b>${esc(x.name)}</b><small>${esc(x.holder_name)} · ${esc(x.code)}</small></div><div class="bal ${Number(x.balance)<0?'neg':''}">${fmt(x.balance,x.resource_scale)} <small>${esc(x.resource_code)}</small></div></div>`).join('')||'<p class="empty">Sin cuentas.</p>';
+  const opts=accounts.map(x=>`<option value="${esc(x.account_id)}">${esc(x.name)} (${esc(x.holder_name)})</option>`).join('');
+  const keep=[$('from').value,$('to').value];
+  $('from').innerHTML=opts;$('to').innerHTML=opts;
+  if(keep[0])$('from').value=keep[0];
+  if(keep[1])$('to').value=keep[1];else if(accounts.length>1)$('to').selectedIndex=1;
+  const evs=e.body.events||[];
+  $('events').innerHTML=evs.slice().reverse().map(v=>`<div class="ev"><b>#${v.seq} ${esc(v.type)}</b> <code>${new Date(v.occurred_at).toLocaleString('es-CO')}</code><br><code>${esc(JSON.stringify(v.payload))}</code></div>`).join('')||'<p class="empty">Aún no hay eventos.</p>';
+}
+async function send(){
+  const body=JSON.stringify({from_account_id:$('from').value,to_account_id:$('to').value,amount:$('amount').value,memo:$('memo').value});
+  const {r,body:out}=await api('/transfers',{method:'POST',body,headers:{'Idempotency-Key':$('key').value,'Content-Type':'application/json'}});
+  if(!r.ok){say('err',`${out.error.code}: ${out.error.message}`);return}
+  say(r.headers.get('Idempotent-Replayed')?'warn':'ok',r.headers.get('Idempotent-Replayed')
+    ?`Repetición detectada: devolvió la respuesta guardada (intercambio ${out.exchange_id}). No se movió valor otra vez.`
+    :`Listo: ${out.amount} ${out.resource} movidos. Intercambio ${out.exchange_id}.`);
+  await load();
+}
+$('f').addEventListener('submit',async e=>{e.preventDefault();await send();newKey()});
+$('again').addEventListener('click',send);
+(async()=>{
+  newKey();
+  S=await (await fetch('/dev/session')).json();
+  $('who').textContent=S.name;
+  await load();
+})().catch(e=>say('err',String(e)));
+</script>
+</body>
+</html>
