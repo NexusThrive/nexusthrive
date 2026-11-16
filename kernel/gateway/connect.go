@@ -36,6 +36,8 @@ type AuthenticateConnect func(context.Context, *http.Request, string) (Authentic
 
 // ConnectConfig controls bounded in-memory admission and operation deadlines.
 type ConnectConfig struct {
+	// Webhooks enables only the implemented webhook operations. Nil keeps them hidden.
+	Webhooks          *WebhookGateway
 	Timeout           time.Duration
 	RequestsPerMinute int
 	MaxClients        int
@@ -95,7 +97,7 @@ func (s *ConnectServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 	slug, path, found := strings.Cut(strings.TrimPrefix(r.URL.Path, "/"), "/")
 	path = "/" + path
-	if !found || slug == "" || (path != kernelv1connect.KernelServiceWriteExchangeProcedure && path != kernelv1connect.KernelServiceReadEventsProcedure) {
+	if !found || slug == "" || (path != kernelv1connect.KernelServiceWriteExchangeProcedure && path != kernelv1connect.KernelServiceReadEventsProcedure && !(s.cfg.Webhooks != nil && (path == kernelv1connect.KernelServiceCreateWebhookEndpointProcedure || path == kernelv1connect.KernelServiceListWebhookDeliveriesProcedure))) {
 		http.NotFound(w, r)
 		return
 	}

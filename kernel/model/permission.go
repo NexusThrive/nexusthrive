@@ -52,6 +52,10 @@ const (
 	PermissionTimerProcess = "kernel.timer.process"
 	// PermissionOutboxClaim claims outbox rows.
 	PermissionOutboxClaim = "kernel.outbox.claim"
+	// PermissionWebhookRead reads delivery status within a space.
+	PermissionWebhookRead = "kernel.webhook.read"
+	// PermissionWebhookWrite manages webhook endpoints.
+	PermissionWebhookWrite = "kernel.webhook.write"
 )
 
 // PermissionDef describes one permission key. PlatformOnly marks a key that
@@ -77,7 +81,7 @@ type Catalog struct {
 	defs map[string]PermissionDef
 }
 
-// KernelCatalog returns the catalog of the 13 keys of the kernel.
+// KernelCatalog returns the catalog of the 15 keys of the kernel.
 func KernelCatalog() Catalog {
 	defs := []PermissionDef{
 		{PermissionParticipantRead, RiskRead, false},
@@ -93,6 +97,8 @@ func KernelCatalog() Catalog {
 		{PermissionEventRead, RiskRead, false},
 		{PermissionTimerProcess, RiskWrite, false},
 		{PermissionOutboxClaim, RiskWrite, false},
+		{PermissionWebhookRead, RiskRead, false},
+		{PermissionWebhookWrite, RiskWrite, false},
 	}
 	catalog := Catalog{defs: make(map[string]PermissionDef, len(defs))}
 	for _, def := range defs {
@@ -174,7 +180,7 @@ func (c Catalog) Extend(namespace string, defs []PermissionDef) (Catalog, error)
 }
 
 // OwnerRole returns the system role every space receives at bootstrap. It has
-// ten keys and never kernel.capability.write (rule 9), nor the keys of the
+// twelve keys and never kernel.capability.write (rule 9), nor the keys of the
 // processes of the kernel: timer.process and outbox.claim belong to the system
 // actor. Nothing in the code gives the role any authority beyond its list.
 func OwnerRole() NewRole {
@@ -185,7 +191,7 @@ func OwnerRole() NewRole {
 			PermissionParticipantRead, PermissionParticipantWrite, PermissionRoleWrite,
 			PermissionGrantWrite, PermissionResourceWrite, PermissionLedgerRead,
 			PermissionExchangeWrite, PermissionCommitmentRead, PermissionCommitmentWrite,
-			PermissionEventRead,
+			PermissionEventRead, PermissionWebhookRead, PermissionWebhookWrite,
 		},
 		System: true,
 	}

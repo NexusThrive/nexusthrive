@@ -49,7 +49,7 @@ Si cualquier paso falla, no queda nada a medias.
 
 ## Permisos y verificación
 
-`capability/` verifica dentro de la transacción que ya fijó el espacio (`state.InSpace`), con la misma RLS que la operación. No recibe un espacio aparte: el espacio es el de la transacción, y sin espacio fijado todo es `permission_denied`. El catálogo mínimo tiene 13 claves con su riesgo (`read`, `write`, `money`) y vive en `model.KernelCatalog()`; las distribuciones lo amplían con `Extend`, que nunca admite el espacio de nombres `kernel`.
+`capability/` verifica dentro de la transacción que ya fijó el espacio (`state.InSpace`), con la misma RLS que la operación. No recibe un espacio aparte: el espacio es el de la transacción, y sin espacio fijado todo es `permission_denied`. El catálogo tiene 15 claves desde HU-gateway-15 (las 13 iniciales y `kernel.webhook.read`/`kernel.webhook.write`) con su riesgo (`read`, `write`, `money`) y vive en `model.KernelCatalog()`; las distribuciones lo amplían con `Extend`, que nunca admite el espacio de nombres `kernel`.
 
 `Check` evalúa en este orden y corta en el primer fallo:
 

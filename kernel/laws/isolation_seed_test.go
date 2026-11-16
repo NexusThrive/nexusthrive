@@ -3,6 +3,7 @@ package laws_test
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/nexusthrive/nexusthrive/kernel/db"
+	"github.com/nexusthrive/nexusthrive/kernel/execution"
 	"github.com/nexusthrive/nexusthrive/kernel/model"
 	"github.com/nexusthrive/nexusthrive/kernel/state"
 )
@@ -156,6 +158,9 @@ func synthesizedValue(t *testing.T, name, typ, space string) (any, error) {
 // constraints on. A table whose constraints the synthesized row cannot meet
 // needs an entry here; fillMissingTables says so when it does not have one.
 var seedOverrides = map[string]func(t *testing.T, w *isolationWorld, space string) error{
+	"webhook_endpoints":         seedWebhookFlow,
+	"webhook_deliveries":        seedWebhookFlow,
+	"webhook_delivery_attempts": seedWebhookFlow,
 	// A record has a dotted operation, a 32-byte fingerprint and an actor of the
 	// space; the generation and the expiry are stamped by the trigger.
 	"idempotency_records": func(t *testing.T, w *isolationWorld, space string) error {
@@ -296,4 +301,31 @@ func crossInsert(t *testing.T, w *isolationWorld, table, acting, other string) (
 		return pgCode(err)
 	}
 	return attempt(acting), attempt(other), nil
+}
+
+// seedWebhookFlow populates every webhook table through the checked engine path.
+func seedWebhookFlow(t *testing.T, w *isolationWorld, space string) error {
+	ctx := context.Background()
+	call := execution.Call{Actor: system, SpaceID: space, RequestID: execution.NewRequestID()}
+	id := newID(t)
+	if err := w.engine.CreateWebhookEndpoint(ctx, call, model.NewWebhookEndpoint{ID: id, URL: "https://example.com", Events: []string{"kernel.exchange.recorded.v1"}, Secret: model.SealedWebhookSecret{KeyID: "isolation", Nonce: make([]byte, 12), Ciphertext: make([]byte, 48)}}); err != nil {
+		return err
+	}
+	if err := state.InSpace(ctx, w.api, space, func(ctx context.Context, tx *sql.Tx) error {
+		_, err := state.AppendEventAndEnqueue(ctx, tx, w.clock, model.NewEvent{Type: "kernel.exchange.recorded", Version: 1, Payload: json.RawMessage(`{}`), Actor: system}, model.SubscriberWebhooks)
+		return err
+	}); err != nil {
+		return err
+	}
+	if err := w.engine.FanoutWebhooks(ctx, call, 100); err != nil {
+		return err
+	}
+	job, err := w.engine.ClaimWebhookDelivery(ctx, call)
+	if err != nil {
+		return err
+	}
+	if job == nil {
+		return fmt.Errorf("isolation delivery missing")
+	}
+	return w.engine.FinishWebhookDelivery(ctx, call, *job, 200, 1, true)
 }
