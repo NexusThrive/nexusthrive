@@ -2,6 +2,7 @@ package gateway_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"io"
@@ -22,12 +23,14 @@ const issuer = "https://clerk.test"
 
 // fixture is a gateway over a disposable database.
 type fixture struct {
-	t       *testing.T
-	server  *httptest.Server
-	issuer  *gateway.DevIssuer
-	spaceID string
-	wallet  string
-	other   string
+	t          *testing.T
+	server     *httptest.Server
+	issuer     *gateway.DevIssuer
+	spaceID    string
+	wallet     string
+	other      string
+	engine     *execution.Engine
+	admin, api *sql.DB
 }
 
 func newFixture(t *testing.T) *fixture {
@@ -50,7 +53,7 @@ func newFixture(t *testing.T) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &fixture{t: t, issuer: dev}
+	f := &fixture{t: t, issuer: dev, engine: engine, admin: admin, api: api}
 	f.spaceID, f.wallet, f.other = seed(t, admin, api)
 	f.server = httptest.NewServer(gateway.NewServer(engine, verifier, nil, nil))
 	t.Cleanup(f.server.Close)

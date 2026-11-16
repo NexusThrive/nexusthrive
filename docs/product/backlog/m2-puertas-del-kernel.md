@@ -229,7 +229,8 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-10 · Servir las operaciones por Connect-RPC y JSON/HTTP (R3)
 
-- **Estado:** Lista. **Tamaño:** L. **Rama:** `feature/HU-gateway-10`. **ADR exigidos:** 0036, 0037, 0040 (la autenticación entra con HU-gateway-11 y 12; esta historia usa un autenticador inyectable de pruebas).
+- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** L. **Rama:** `feature/HU-gateway-10`. **ADR exigidos:** 0037, 0038, 0039, 0040, aceptados (la autenticación entra con HU-gateway-11 y 12; esta historia usa un autenticador inyectable de pruebas).
+- **Avance:** [servidor Connect, errores y límites](../../ingenieria/diseno/HU-gateway-10.md) implementados con pruebas de HTTP e idempotencia. El cableado del directorio por slug sigue en HU-gateway-12.
 - **Historia:**
   Como desarrollador integrador,
   quiero llamar las operaciones por Connect-RPC y JSON/HTTP en `/{slug}/...`,
