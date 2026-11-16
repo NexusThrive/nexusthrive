@@ -19,21 +19,21 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Backlog:
 
 ## Resumen de estado (S02)
 
-Actualización 2026-11-16: santy401 autorizó fusionar progresivamente los PR validados en `sprint/S02`. Los PR #27 a #42 están integrados: el corte HTTP previo y quince historias del backlog. `main` no se modificó. [Seguimiento de integración](../ingenieria/sprint-02/avance.md).
+Actualización 2026-11-16: santy401 autorizó fusionar progresivamente los PR validados en `sprint/S02`. Los PR #27 a #43 están integrados: el corte HTTP previo y dieciséis historias del backlog. `main` no se modificó. [Seguimiento de integración](../ingenieria/sprint-02/avance.md).
 
 Los ADR-0037 a 0045 están aceptados. ADR-0044 registra S-P1 ya confirmado, MCP solo de lectura; ADR-0045 fija las llaves y sus alcances transaccionales. S-P12 y S-P13 también están confirmados. Las reservas originales de números de ADR de las secciones históricas se resuelven por historia; nunca se reutilizan números existentes.
 
-HU-gateway-17 quedó integrada en #42 con reenvío idempotente, convivencia de secretos y auditoría. HU-gateway-21 implementa el ciclo periódico, límites por pasada y apagado de la API. [Diseño y pruebas](../ingenieria/diseno/HU-gateway-21.md).
+HU-gateway-17 quedó integrada en #42 con reenvío idempotente, convivencia de secretos y auditoría. HU-gateway-21 está integrada en #43 con el ciclo periódico, límites por pasada y apagado de la API. [Diseño y pruebas](../ingenieria/diseno/HU-gateway-21.md).
 
 | Concepto | Cantidad |
 |---|---|
 | Historias | 23 |
-| Terminadas e integradas | 15 |
-| En curso | 1 (HU-gateway-21) |
-| Listas | 5 (13, 14, 18, 19, 20) |
+| Terminadas e integradas | 16 |
+| En curso | 1 (HU-gateway-20, decisión de arranque) |
+| Listas | 4 (13, 14, 18, 19) |
 | Diferidas por alcance local actual | 2 (22 y 23) |
 
-Orden local restante: terminar el programador (21), llaves (13), MCP (14), nodo n8n (19), imagen y arranque (20), y prueba completa de B3 (18). El plan original de dependencias sigue como referencia; todas las decisiones que habilitan este orden están aceptadas.
+Orden local restante: llaves (13), MCP (14), nodo n8n (19), imagen y arranque (20), y prueba completa de B3 (18). El ADR-0046 fue aceptado por santy401 el 2026-11-16: habilita probar login real sin dar LOGIN al rol global y retirar las credenciales privilegiadas antes de servir tráfico. La implementación continúa en el PR #44.
 
 El responsable indicó completar por ahora desarrollo y pruebas locales. Las claves de Clerk están en `.env`; la conexión de Supabase se guardó localmente sin publicarla. Dokploy y n8n existen en el servidor. La prueba con token real de Clerk (22) y la publicación de staging (23) quedan diferidas; Cloudflare se usará después sin abrir puertos del router. No se anuncian como terminadas ni se despliega mientras se trabaja en el alcance local.
 

@@ -23,9 +23,9 @@ Registrar el trabajo implementado y su validación sin confundirlo con una promo
 | HU-gateway-03 | ADR-0044 registra S-P1 aceptado y enmienda paridad MCP | `chore/HU-gateway-03` | [#40](https://github.com/NexusThrive/nexusthrive/pull/40) | #39 |
 | HU-gateway-05 | ADR-0045 aceptado: llaves y alcances transaccionales | `chore/HU-gateway-05` | [#41](https://github.com/NexusThrive/nexusthrive/pull/41) | #40 |
 
-Los PR #27 a #42 están fusionados en `sprint/S02`, con autorización explícita del responsable el 2026-11-16. Cada uno pasó CI; antes de integrar se comprobó que el árbol candidato coincidía con el head validado y se cambió la base al sprint. `main` no se modificó. ADR-0045 está aceptado. La tabla anterior conserva las dependencias históricas, no PR pendientes. `go.work.sum` continúa fuera de los commits.
+Los PR #27 a #43 están fusionados en `sprint/S02`, con autorización explícita del responsable el 2026-11-16. Cada uno pasó CI; antes de integrar se comprobó que el árbol candidato coincidía con el head validado y se cambió la base al sprint. `main` no se modificó. ADR-0045 está aceptado. La tabla anterior conserva las dependencias históricas, no PR pendientes. `go.work.sum` continúa fuera de los commits.
 
-HU-gateway-05 está integrada en [#41](https://github.com/NexusThrive/nexusthrive/pull/41); reserva 00018 para llaves. HU-gateway-17 está integrada con migración 00017; HU-gateway-21 activa el programador y está en validación. Los PR nuevos se fusionan al pasar CI, según la autorización registrada en `AGENTS.md` y el flujo de Git.
+HU-gateway-05 está integrada en [#41](https://github.com/NexusThrive/nexusthrive/pull/41); reserva 00018 para llaves. HU-gateway-17 está integrada con migración 00017; HU-gateway-21 está integrada en #43. Los PR nuevos se fusionan al pasar CI, según la autorización registrada en `AGENTS.md` y el flujo de Git.
 
 ## Validación
 
@@ -39,7 +39,7 @@ Se utiliza Go 1.24.7, porque el Staticcheck fijado no admite Go 1.27 del servido
 
 ## Lo que todavía falta
 
-M2 sigue abierto: programador (21, en validación), llaves (13), MCP de lectura (14), nodo n8n (19), imagen y arranque (20) y prueba completa del criterio B3 (18). El token real de Clerk (22) y staging (23) están diferidos porque el responsable indicó completar primero desarrollo y pruebas locales. No hay consola ni producto Business implementados por este avance.
+M2 sigue abierto: llaves (13), MCP de lectura (14), nodo n8n (19), imagen y arranque (20) y prueba completa del criterio B3 (18). El token real de Clerk (22) y staging (23) están diferidos porque el responsable indicó completar primero desarrollo y pruebas locales. No hay consola ni producto Business implementados por este avance.
 
 Las migraciones 00015, 00016 y 00017 pertenecen al directorio, webhooks y rotación/reenvío. 00018 queda reservada para llaves. Los métodos de reclamo y marcado siguen fuera de la API pública.
 
@@ -49,3 +49,5 @@ Las claves de Clerk están disponibles en `.env`; la conexión de Supabase está
 
 - [Plan](../../product/plan.md) y [backlog](../../product/backlog/m2-puertas-del-kernel.md).
 - [Hoja de ruta](../../02-arquitectura/hoja-de-ruta.md).
+
+HU-gateway-20 continúa en el [PR #44](https://github.com/NexusThrive/nexusthrive/pull/44). santy401 aceptó el ADR-0046 el 2026-11-16: el rol global sigue NOLOGIN y se implementará un login limitado por despliegue con SCRAM y bootstrap sin secretos privilegiados durante el servicio. La historia sigue en curso hasta completar implementación y pruebas locales.

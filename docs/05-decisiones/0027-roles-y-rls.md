@@ -63,6 +63,10 @@ Esta enmienda no cambia la decisión ni el estado de la ADR; precisa cómo se ap
 
 La clave foránea ignora la RLS, y la política de `INSERT` de `identities` no limita quién crea una identidad. Un espacio que conozca el UUID de una identidad de otro espacio podría crear un participante vinculado a ella y, a partir de ahí, leer su correo y su nombre por la política de visibilidad. Es aceptable en M1 porque solo el actor `system` crea participantes (cualquier otro actor recibe `permission_denied`). Un UUID no es un secreto y no se debe tratar como barrera: lo que sostiene el riesgo es que el `IdentityID` nunca viene de la petición de un cliente, sino que lo resuelve el servidor (invitación verificada o sesión). La prueba `TestIdentityOfAnotherSpaceCanBeLinked` de `kernel/laws` fija el comportamiento aceptado. La fase B3 exigirá una vía acotada para vincular identidades (por ejemplo, invitación verificada) y para buscar o crear una identidad por proveedor al iniciar sesión, cada una con su propia ADR.
 
+## Enmienda de arranque de M2
+
+El responsable exige conservar el rol global `nexusthrive_api` como NOLOGIN. El [ADR-0046 aceptado](0046-arranque-con-login-limitado-y-scram.md) sustituye el mecanismo antiguo de contraseña por un login limitado distinto por despliegue, con SCRAM calculado en Go y reejecución sin credenciales privilegiadas. Aceptado por santy401 el 2026-11-16; su implementación corresponde a HU-gateway-20.
+
 ## Referencias
 
 - `docs/02-arquitectura/modelo-de-datos/kernel.md`
