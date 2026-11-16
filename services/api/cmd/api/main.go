@@ -50,7 +50,11 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("build authorizer: %w", err)
 	}
-	engine, err := execution.NewEngine(pool, auth, gateway.Operations()...)
+	var operations []execution.Operation
+	if dev {
+		operations = gateway.Operations()
+	}
+	engine, err := execution.NewEngine(pool, auth, operations...)
 	if err != nil {
 		return fmt.Errorf("build engine: %w", err)
 	}
@@ -117,7 +121,7 @@ func devServer(engine *execution.Engine, log *slog.Logger) (http.Handler, error)
 	if space == "" || subject == "" {
 		return nil, errors.New("development mode needs DEMO_SPACE_ID and DEMO_SUBJECT: run the seed command first")
 	}
-	return gateway.NewServer(engine, verifier, &gateway.Dev{Issuer: issuer, SpaceID: space, Subject: subject, Name: os.Getenv("DEMO_NAME")}, log), nil
+	return composeGateway(engine, verifier, &gateway.Dev{Issuer: issuer, SpaceID: space, Subject: subject, Name: os.Getenv("DEMO_NAME")}, log)
 }
 
 // clerkServer verifies the tokens of Clerk against its published keys.
@@ -131,5 +135,25 @@ func clerkServer(engine *execution.Engine, log *slog.Logger) (http.Handler, erro
 	if err != nil {
 		return nil, err
 	}
-	return gateway.NewServer(engine, verifier, nil, log), nil
+	return composeGateway(engine, verifier, nil, log)
+}
+
+// composeGateway wires verified slug routes while retaining the development cut.
+func composeGateway(engine *execution.Engine, verifier *gateway.Verifier, dev *gateway.Dev, log *slog.Logger) (http.Handler, error) {
+	auth, err := gateway.NewClerkAuthenticator(engine, verifier)
+	if err != nil {
+		return nil, err
+	}
+	service, err := gateway.NewConnectServer(engine, auth, gateway.ConnectConfig{Log: log})
+	if err != nil {
+		return nil, err
+	}
+	mux := http.NewServeMux()
+	mux.Handle("/{slug}/kernel.v1.KernelService/", service)
+	legacy := gateway.NewServer(engine, verifier, dev, log)
+	mux.Handle("GET /healthz", legacy)
+	if dev != nil {
+		mux.Handle("/", legacy)
+	}
+	return mux, nil
 }

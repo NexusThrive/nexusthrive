@@ -19,7 +19,9 @@ API, MCP, webhooks salientes y entrantes. Todas pasan por el mismo motor de oper
 
 ### API Connect de M2
 
-HU-gateway-10 implementa el servidor generado `kernel.v1.KernelService` mediante `gateway.NewConnectServer`. Recibe solo el motor y un autenticador que entrega identidad de credencial, participante y espacio verificados; no recibe conexiones ni el pool. El cableado de la resolución real por slug en el binario pertenece a HU-gateway-12. Hasta entonces continúa el corte HTTP del ADR-0036.
+HU-gateway-10 implementa el servidor generado `kernel.v1.KernelService` mediante `gateway.NewConnectServer`. Recibe solo el motor y un autenticador que entrega identidad de credencial, participante y espacio verificados; no recibe conexiones ni el pool. HU-gateway-12 conecta el token verificado con el directorio del motor por slug y monta las rutas en el binario. El corte HTTP por UUID del ADR-0036 permanece solo en desarrollo; producción ofrece las operaciones del contrato y salud. Antes de servir la API deben estar aplicadas las migraciones, incluida la 00015 del directorio.
+
+El cliente Go generado debe construirse con `connect.WithProtoJSON()` para la escritura de dinero; el protocolo binario por defecto del generador no está habilitado para esa operación en M2.
 
 | Ruta Connect | Operación |
 |---|---|

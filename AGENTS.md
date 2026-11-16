@@ -96,6 +96,9 @@ Product names (NexusThrive, Thrive Business) are never translated. Full policy: 
 - Commit author: **santy401** (`santy401@users.noreply.github.com`).
 - **Never add `Co-Authored-By` trailers, signatures, links or mentions of tools or assistants** in commits, pull requests or files.
 - One pull request per story, using `.github/pull_request_template.md`, with `docs/` updated in the same change.
+- After validating a story, push its branch and open or update its pull request before starting another story. Keep GitHub and the sprint plan current; do not accumulate unpublished completed work.
+- Dependent stories may use draft PRs against the preceding story branch to keep each diff focused. Link the predecessor and name `sprint/S<nn>` as the final target. Update the base and branch after the predecessor is integrated, then verify the diff and CI again.
+- Keep dependent or failing PRs in draft. Check GitHub CI after every push, address failures, and record PR links in the sprint tracking document. Do not merge without the owner's authorization.
 
 ## Testing
 

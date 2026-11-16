@@ -41,3 +41,11 @@ flowchart LR
 4. **Squash merge:** cada historia queda como un solo commit en `main`.
 5. **Ramas cortas:** se integran en días, no en semanas. Si `main` avanza, se actualiza con `rebase`.
 6. **Sin reescribir `main`.** Nunca `push --force` sobre `main`.
+
+## Publicación y seguimiento por historia
+
+Después de validar una historia se sube su rama y se abre o actualiza su PR con la plantilla, antes de comenzar otra historia. El plan y el seguimiento del sprint incluyen el enlace y distinguen implementación local, revisión e integración. No se acumula trabajo terminado sin publicar.
+
+Si una historia depende de otra todavía abierta, se permite un PR en borrador cuya base temporal sea la rama anterior. La descripción enlaza al PR previo, indica el destino final `sprint/S<nn>` y explica el orden de integración. Así cada diff contiene su historia. Cuando se integra el antecedente, se actualizan la rama y la base hacia el sprint y se verifica de nuevo que el diff no incluya trabajo ajeno.
+
+Después de cada push se consulta el CI de GitHub y se corrigen los fallos en la historia correspondiente. Un PR con dependencias abiertas o comprobaciones fallidas permanece en borrador; no se solicita revisión hasta que el CI esté en verde y la base sea la de integración prevista. Publicar un PR no autoriza su fusión: esa decisión corresponde al responsable.

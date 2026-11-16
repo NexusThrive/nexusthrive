@@ -1,6 +1,6 @@
 // Package state is the kernel's access to persistent state. Every read and
-// write of space data goes through InSpace, so row level security always knows
-// which space it is serving (ADR-0027).
+// write of operation data goes through InSpace (ADR-0027). The fixed read-only
+// actor directory resolves the space before an operation begins (ADR-0038).
 package state
 
 import (
@@ -37,9 +37,8 @@ func InSpace(ctx context.Context, pool *sql.DB, spaceID string, fn func(ctx cont
 
 // inTransaction runs fn in a transaction and commits when fn returns nil. A
 // non-empty spaceID is fixed as the current space first; an empty one runs
-// without a space, for the few operations that precede any space data, such as
-// creating an identity. It is not exported so that every access to space data
-// keeps going through InSpace.
+// without a space for identity bootstrap or the fixed actor directory. It is
+// not exported: ordinary operation data must keep going through InSpace.
 func inTransaction(ctx context.Context, pool *sql.DB, spaceID string, fn func(ctx context.Context, tx *sql.Tx) error) (err error) {
 	tx, err := pool.BeginTx(ctx, nil)
 	if err != nil {

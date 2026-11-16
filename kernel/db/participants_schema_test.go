@@ -73,7 +73,10 @@ func TestIdentitiesTableShape(t *testing.T) {
 	}
 	requireForcedRLS(t, admin, "identities")
 
-	rows, err := admin.Query(`SELECT cmd FROM pg_policies WHERE schemaname = 'kernel' AND tablename = 'identities' ORDER BY cmd`)
+	// The ADR-0038 directory has a separate role policy; API-visible policies
+	// must retain their original shape and never inherit that exception.
+	rows, err := admin.Query(`SELECT cmd FROM pg_policies WHERE schemaname = 'kernel' AND tablename = 'identities'
+        AND ('public' = ANY(roles) OR 'nexusthrive_api' = ANY(roles)) ORDER BY cmd`)
 	if err != nil {
 		t.Fatalf("list policies: %v", err)
 	}

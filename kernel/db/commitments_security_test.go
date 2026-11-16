@@ -521,8 +521,9 @@ func TestCommitmentFunctionsPinSearchPathAndNotSecurityDefiner(t *testing.T) {
 	admin := dbtest.Database(t)
 
 	if got := count(t, admin, `SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-		WHERE n.nspname = 'kernel' AND p.prosecdef`); got != 0 {
-		t.Errorf("%d kernel functions are SECURITY DEFINER, want none", got)
+		WHERE n.nspname = 'kernel' AND p.prosecdef
+        AND p.oid <> 'kernel.resolve_space_actor(text,text,text)'::regprocedure`); got != 0 {
+		t.Errorf("%d unexpected kernel functions are SECURITY DEFINER, want only the ADR-0038 directory", got)
 	}
 	for _, name := range commitmentFunctions {
 		var config string
