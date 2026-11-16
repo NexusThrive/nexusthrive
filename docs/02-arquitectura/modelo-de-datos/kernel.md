@@ -278,6 +278,8 @@ erDiagram
 
 ## 4. Memoria y señales
 
+Los campos de secretos de webhooks del diagrama representan la propuesta del [ADR-0042](../../05-decisiones/0042-secretos-y-firma-de-webhooks.md), pendiente de aceptación e implementación. HMAC necesita recuperar el secreto para firmar: se propone cifrado autenticado, no una huella. El reparto duradero y su historial de intentos se definen en el [ADR-0041](../../05-decisiones/0041-despacho-y-reintentos-de-webhooks.md); todavía no existen las tablas de webhooks.
+
 ```mermaid
 erDiagram
     SPACES ||--o{ EVENTS : "recuerda"
@@ -319,7 +321,13 @@ erDiagram
         uuid id PK
         uuid space_id FK
         text url
-        text secret_hash
+        bytea secret_ciphertext
+        bytea secret_nonce
+        text secret_key_id
+        bytea previous_secret_ciphertext
+        bytea previous_secret_nonce
+        text previous_secret_key_id
+        timestamptz previous_valid_until
         text[] event_types
         text status "active, disabled"
         int consecutive_failures

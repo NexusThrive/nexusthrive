@@ -45,6 +45,8 @@ El código del dominio y su mensaje público viajan en el detalle `OperationErro
 
 ## Reglas e invariantes
 
+La política nueva de reparto y las cifras de intentos se proponen en el [ADR-0041](../05-decisiones/0041-despacho-y-reintentos-de-webhooks.md); el cifrado y la firma se proponen en el [ADR-0042](../05-decisiones/0042-secretos-y-firma-de-webhooks.md). No están implementados. El quinto fallo del outbox y los veinte fallos consecutivos del endpoint son contadores distintos.
+
 - Agregar una puerta no duplica lógica: todas llaman a las mismas operaciones del contrato.
 - Al principio el MCP solo expone operaciones de lectura; las de escritura se habilitan por alcance cuando se aprueben.
 - Un endpoint de webhook se deshabilita solo después de 20 entregas fallidas seguidas y aparece en la consola.

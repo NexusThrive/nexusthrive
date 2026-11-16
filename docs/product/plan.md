@@ -19,6 +19,8 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Backlog:
 
 ## Resumen de estado (S02)
 
+HU-gateway-06 tiene los ADR-0041 y 0042 propuestos en `chore/HU-gateway-06`: reparto duradero, contadores independientes, secretos cifrados y firma. No habilitan todavía código de webhooks; requieren aceptación junto con la decisión del programador. Los números anteriores eran reservas: 0041 pertenece ahora a despacho y 0042 a secretos.
+
 Publicación 2026-11-15: las ocho historias implementadas o decididas están subidas y tienen PR en borrador [#28 a #35](../ingenieria/sprint-02/avance.md), con una historia por diff y dependencias enlazadas. Sus primeras ejecuciones de CI pasaron. Se mantienen bases temporales en cadena hasta integrar los antecedentes; el destino final es `sprint/S02`. La publicación no cambia el conteo de terminadas: ninguna se ha fusionado.
 
 HU-gateway-12 implementa la resolución del actor por slug, la función y el rol acotados del directorio (migración 00015), y el cableado Connect del binario con el token validado. [Avance local y límites de M2](../ingenieria/sprint-02/avance.md). La integración y el criterio completo de B3 con webhook siguen pendientes.
@@ -42,11 +44,11 @@ HU-gateway-04 tiene el [ADR-0040](../05-decisiones/0040-validacion-de-clerk-y-ca
 | Concepto | Cantidad |
 |---|---|
 | Historias | 23 |
-| Listas | 13 |
+| Listas | 12 |
 | Bloqueadas | 2 (HU-gateway-22 por Q1, HU-gateway-23 por Q2) |
-| Terminadas / en curso | 0 / 8 (incluye historias pendientes de revisión o integración) |
+| Terminadas / en curso | 0 / 9 (incluye historias pendientes de revisión o integración) |
 
-De las 13 listas, 03, 07, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
+De las 12 listas, 03, 07, 14, 15, 19 y 21 aparecen en el plan original con un supuesto por confirmar (S-P1, S-P13); el traspaso registra que el responsable ya confirmó ambos. Sus ADR siguen pendientes.
 
 Discrepancias del backlog (se rutean al analista, no se corrigen aquí):
 
@@ -169,7 +171,7 @@ Deben ir en serie (comparten archivos):
 | `docs/02-arquitectura/modelo-de-datos/` | 05, 06, 13, 15 | 05 y 06 en serie; los cambios de 13 y 15 llegan con su migración. |
 | `docs/02-arquitectura/contrato.md` | 01, 08 | 01 lo toca primero (quita Python); 08 después. |
 | `docs/04-integraciones/puertas.md` | 03, 10 (tabla de códigos), 16 (cifras), 17 | Serie por orden de fases. |
-| `docs/02-arquitectura/flujos.md` | 06, 16 | 06 fija la cifra; 16 solo verifica que coincida. |
+| `docs/02-arquitectura/plataforma/flujos.md` | 06, 16 | 06 fija la cifra; 16 solo verifica que coincida. |
 | `contracts/` y `task gen` | 08 (lo crea), 09, 10, 13, 15, 17, 19 | 08 se fusiona antes de cualquier otra; los cambios al contrato después van en el PR de la historia que los necesita y pasan `buf breaking`. |
 | `services/api/cmd/api/main.go` | 09, 10, 12, 13, 14, 15, 20, 21 | Punto de contención principal: cada historia añade una línea de cableado; serie, rebase antes de fusionar. |
 | `kernel/gateway` y `kernel/architecture_test.go` | 10, 12, 13, 14, 15, 17, 21 | Una sola regla de puerta (solo `Engine`, sin `kernel/state`); revisar la prueba en cada PR. |

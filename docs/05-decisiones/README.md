@@ -59,6 +59,8 @@ Todas las decisiones que afectan la arquitectura, los datos, los contratos, los 
 | [0038](0038-resolucion-de-actor-y-espacio.md) | Actor verificado y resolución del espacio por slug (HU-gateway-02) | Aceptada |
 | [0039](0039-identidad-en-el-primer-ingreso.md) | Primer ingreso sin creación automática de identidad (HU-gateway-02) | Aceptada |
 | [0040](0040-validacion-de-clerk-y-cache-jwks.md) | Validación de Clerk y vigencia de la caché JWKS (HU-gateway-04) | Aceptada |
+| [0041](0041-despacho-y-reintentos-de-webhooks.md) | Despacho duradero y reintentos de webhooks (HU-gateway-06) | Aceptada |
+| [0042](0042-secretos-y-firma-de-webhooks.md) | Secretos cifrados y firma de webhooks (HU-gateway-06) | Aceptada |
 
 ## Pendientes
 
