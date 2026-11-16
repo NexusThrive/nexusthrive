@@ -219,7 +219,7 @@ func TestRemoteKeysCachesAndSurvivesOutage(t *testing.T) {
 		_, _ = w.Write(dev.JWKS())
 	}))
 	defer jwks.Close()
-	keys := &gateway.RemoteKeys{URL: jwks.URL}
+	keys := &gateway.RemoteKeys{URL: jwks.URL, AllowInsecureHTTP: true}
 	verifier, _ := gateway.NewVerifier(keys, gateway.VerifierConfig{Issuer: issuer})
 	tok := mustToken(t, dev)
 	for i := 0; i < 3; i++ {

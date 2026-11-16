@@ -251,7 +251,8 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-11 · Validar tokens JWT de Clerk (R4)
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `feature/HU-gateway-11`. **ADR exigidos:** 0040.
+- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** M. **Rama:** `feature/HU-gateway-11`. **ADR exigidos:** 0040 (aceptado).
+- **Avance:** [verificación de tokens y JWKS acotado](../../ingenieria/diseno/HU-gateway-11.md), con pruebas locales de rotación, caída, antigüedad, concurrencia y validación de claims. Sin cuenta real de Clerk ni cambios en la resolución por slug.
 - **Historia:**
   Como desarrollador integrador,
   quiero que la API acepte solo tokens de Clerk válidos,

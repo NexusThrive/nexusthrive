@@ -8,11 +8,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"math/big"
-	"net/http"
+	"math"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -38,6 +35,14 @@ type VerifierConfig struct {
 	// AuthorizedParty, when set, is the exact azp claim (Clerk names the
 	// frontend that asked for the session there).
 	AuthorizedParty string
+	// AuthorizedParties is an exact allowlist of origins, without wildcards.
+	AuthorizedParties []string
+	// RequireAuthorizedParty refuses an empty allowlist outside development.
+	RequireAuthorizedParty bool
+	// Audience, when configured, must occur in the token's aud claim.
+	Audience string
+	// OnReject records a fixed diagnostic category, never token contents.
+	OnReject func(string)
 	// Clock is the time source; nil means the real clock.
 	Clock func() time.Time
 	// Leeway tolerates a small skew in exp and nbf; zero means 5 seconds.
@@ -56,6 +61,22 @@ func NewVerifier(keys KeySource, cfg VerifierConfig) (*Verifier, error) {
 	if keys == nil || cfg.Issuer == "" {
 		return nil, errors.New("a verifier needs a key source and an issuer")
 	}
+	parties := append([]string(nil), cfg.AuthorizedParties...)
+	if cfg.AuthorizedParty != "" {
+		parties = append(parties, cfg.AuthorizedParty)
+	}
+	for _, party := range parties {
+		if strings.TrimSpace(party) == "" || strings.Contains(party, "*") {
+			return nil, errors.New("authorized parties must be exact nonempty origins")
+		}
+	}
+	if cfg.RequireAuthorizedParty && len(parties) == 0 {
+		return nil, errors.New("a production verifier needs authorized parties")
+	}
+	if cfg.Leeway < 0 {
+		return nil, errors.New("token leeway must not be negative")
+	}
+	cfg.AuthorizedParties = parties
 	if cfg.Clock == nil {
 		cfg.Clock = time.Now
 	}
@@ -74,8 +95,8 @@ type tokenClaims struct {
 	Iss string          `json:"iss"`
 	Sub string          `json:"sub"`
 	Azp string          `json:"azp"`
-	Exp *float64        `json:"exp"`
-	Nbf *float64        `json:"nbf"`
+	Exp json.RawMessage `json:"exp"`
+	Nbf json.RawMessage `json:"nbf"`
 	Aud json.RawMessage `json:"aud"`
 }
 
@@ -83,45 +104,98 @@ type tokenClaims struct {
 // refused), the issuer, the authorized party, the expiry and not-before, and
 // returns the claims. Every failure is ErrInvalidToken.
 func (v *Verifier) Verify(ctx context.Context, token string) (Claims, error) {
+	reject := func(reason string) (Claims, error) {
+		if v.cfg.OnReject != nil {
+			v.cfg.OnReject(reason)
+		}
+		return Claims{}, ErrInvalidToken
+	}
+	if ctx.Err() != nil {
+		return reject("context")
+	}
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 || len(token) > 8192 {
-		return Claims{}, ErrInvalidToken
+		return reject("format")
 	}
 	var header tokenHeader
 	if err := decodeSegment(parts[0], &header); err != nil || header.Alg != "RS256" || header.Kid == "" {
-		return Claims{}, ErrInvalidToken
+		return reject("algorithm_or_key_id")
 	}
 	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
 	if err != nil {
-		return Claims{}, ErrInvalidToken
+		return reject("signature_encoding")
 	}
 	key, err := v.keys.Key(ctx, header.Kid)
 	if err != nil || key == nil {
-		return Claims{}, ErrInvalidToken
+		return reject("keys")
 	}
 	digest := sha256.Sum256([]byte(parts[0] + "." + parts[1]))
 	if err := rsa.VerifyPKCS1v15(key, crypto.SHA256, digest[:], signature); err != nil {
-		return Claims{}, ErrInvalidToken
+		return reject("signature")
 	}
 	var claims tokenClaims
 	if err := decodeSegment(parts[1], &claims); err != nil {
-		return Claims{}, ErrInvalidToken
+		return reject("claims")
 	}
-	if claims.Iss != v.cfg.Issuer || claims.Sub == "" || claims.Exp == nil {
-		return Claims{}, ErrInvalidToken
+	if claims.Iss != v.cfg.Issuer || strings.TrimSpace(claims.Sub) == "" {
+		return reject("issuer_or_subject")
 	}
-	if v.cfg.AuthorizedParty != "" && claims.Azp != v.cfg.AuthorizedParty {
-		return Claims{}, ErrInvalidToken
+	if len(v.cfg.AuthorizedParties) > 0 && !containsParty(v.cfg.AuthorizedParties, claims.Azp) {
+		return reject("authorized_party")
+	}
+	if v.cfg.Audience != "" && !matchesAudience(claims.Aud, v.cfg.Audience) {
+		return reject("audience")
 	}
 	now := v.cfg.Clock()
-	expires := time.Unix(int64(*claims.Exp), 0)
-	if !now.Before(expires.Add(v.cfg.Leeway)) {
-		return Claims{}, ErrInvalidToken
+	expires, err := numericDate(claims.Exp)
+	if err != nil {
+		return reject("expiry_format")
 	}
-	if claims.Nbf != nil && now.Add(v.cfg.Leeway).Before(time.Unix(int64(*claims.Nbf), 0)) {
-		return Claims{}, ErrInvalidToken
+	if !now.Before(expires.Add(v.cfg.Leeway)) {
+		return reject("expiry")
+	}
+	if len(claims.Nbf) > 0 {
+		notBefore, err := numericDate(claims.Nbf)
+		if err != nil || now.Add(v.cfg.Leeway).Before(notBefore) {
+			return reject("not_before")
+		}
 	}
 	return Claims{Subject: claims.Sub, Expires: expires}, nil
+}
+
+func containsParty(parties []string, party string) bool {
+	for _, allowed := range parties {
+		if party == allowed {
+			return true
+		}
+	}
+	return false
+}
+
+func matchesAudience(raw json.RawMessage, expected string) bool {
+	var single string
+	if json.Unmarshal(raw, &single) == nil {
+		return single == expected
+	}
+	var multiple []string
+	return json.Unmarshal(raw, &multiple) == nil && containsParty(multiple, expected)
+}
+
+// numericDate rejects missing, null and nonnumeric dates before Unix conversion.
+func numericDate(raw json.RawMessage) (time.Time, error) {
+	if len(raw) == 0 || raw[0] == '"' || string(raw) == "null" {
+		return time.Time{}, ErrInvalidToken
+	}
+	var value *float64
+	if json.Unmarshal(raw, &value) != nil || value == nil {
+		return time.Time{}, ErrInvalidToken
+	}
+	seconds := *value
+	if math.IsNaN(seconds) || math.IsInf(seconds, 0) || seconds < 0 || seconds >= float64(math.MaxInt64) {
+		return time.Time{}, ErrInvalidToken
+	}
+	whole := int64(seconds)
+	return time.Unix(whole, int64((seconds-float64(whole))*1e9)), nil
 }
 
 func decodeSegment(segment string, into any) error {
@@ -142,92 +216,4 @@ func (s StaticKeys) Key(_ context.Context, kid string) (*rsa.PublicKey, error) {
 		return key, nil
 	}
 	return nil, errors.New("unknown key id")
-}
-
-// RemoteKeys fetches a JWKS document (the keys of Clerk) and caches it. A key
-// id it does not know triggers one refresh, at most once per MinRefresh, so a
-// flood of forged kids cannot turn the gateway into a client of the issuer. If
-// the issuer is down the cached keys keep serving.
-type RemoteKeys struct {
-	URL        string
-	Client     *http.Client
-	MinRefresh time.Duration
-	Clock      func() time.Time
-
-	mu        sync.Mutex
-	keys      map[string]*rsa.PublicKey
-	fetchedAt time.Time
-}
-
-// Key returns the key named kid, refreshing the cache when it is unknown.
-func (r *RemoteKeys) Key(ctx context.Context, kid string) (*rsa.PublicKey, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if key, ok := r.keys[kid]; ok {
-		return key, nil
-	}
-	clock := r.Clock
-	if clock == nil {
-		clock = time.Now
-	}
-	minRefresh := r.MinRefresh
-	if minRefresh == 0 {
-		minRefresh = 30 * time.Second
-	}
-	if r.keys != nil && clock().Sub(r.fetchedAt) < minRefresh {
-		return nil, errors.New("unknown key id")
-	}
-	fetched, err := r.fetch(ctx)
-	r.fetchedAt = clock()
-	if err != nil {
-		return nil, err
-	}
-	r.keys = fetched
-	if key, ok := r.keys[kid]; ok {
-		return key, nil
-	}
-	return nil, errors.New("unknown key id")
-}
-
-func (r *RemoteKeys) fetch(ctx context.Context) (map[string]*rsa.PublicKey, error) {
-	client := r.Client
-	if client == nil {
-		client = &http.Client{Timeout: 5 * time.Second}
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, r.URL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("build jwks request: %w", err)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("fetch jwks: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetch jwks: status %d", resp.StatusCode)
-	}
-	var doc struct {
-		Keys []struct {
-			Kty string `json:"kty"`
-			Kid string `json:"kid"`
-			N   string `json:"n"`
-			E   string `json:"e"`
-		} `json:"keys"`
-	}
-	if err := json.NewDecoder(http.MaxBytesReader(nil, resp.Body, 1<<20)).Decode(&doc); err != nil {
-		return nil, fmt.Errorf("decode jwks: %w", err)
-	}
-	keys := map[string]*rsa.PublicKey{}
-	for _, k := range doc.Keys {
-		if k.Kty != "RSA" || k.Kid == "" {
-			continue
-		}
-		n, errN := base64.RawURLEncoding.DecodeString(k.N)
-		e, errE := base64.RawURLEncoding.DecodeString(k.E)
-		if errN != nil || errE != nil || len(n) < 256 {
-			continue
-		}
-		keys[k.Kid] = &rsa.PublicKey{N: new(big.Int).SetBytes(n), E: int(new(big.Int).SetBytes(e).Int64())}
-	}
-	return keys, nil
 }
