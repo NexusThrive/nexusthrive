@@ -155,16 +155,16 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-06 · Decidir despacho, reintentos y secreto de los webhooks
 
-- **Estado:** Lista. **Tamaño:** M. **Rama:** `chore/HU-gateway-06`. **ADR que escribe:** 0042 (despacho del outbox y política de reintentos; cubre P8) y 0043 (secreto de webhooks; cubre P9).
+- **Estado:** En curso, propuestas pendientes de aceptación. **Tamaño:** M. **Rama:** `chore/HU-gateway-06`. **ADR que escribe:** 0041 (despacho del outbox y política de reintentos; cubre P8) y 0042 (secreto de webhooks; cubre P9).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero fijar quién despacha el outbox, con qué política y cómo se guarda el secreto de firma,
   para que la entrega de webhooks sea consistente con ADR-0031.
 - **Criterios de aceptación:**
-  1. Dado el ADR 0042, cuando se revisa, entonces distingue por separado las tres cifras: el outbox pasa a `dead` al quinto fallo (ADR-0031), el endpoint se deshabilita tras 20 fallos seguidos (`puertas.md`) y la cifra de reintentos por entrega de `flujos.md` (hoy "hasta 8") se reemplaza por el valor que fije el ADR, con tabla de esperas crecientes.
-  2. Dado el ADR 0042, cuando se revisa, entonces fija que el despachador corre dentro del binario de la API, rota entre espacios activos y deduplica por `event.id` (seguimientos 13 y 39), y define a qué suscriptores llegan los eventos `kernel.commitment.expired` (seguimiento 64).
-  3. Dado el ADR 0043, cuando se revisa, entonces fija que el secreto se guarda cifrado de forma reversible con una clave de aplicación por entorno (no como hash), se muestra una vez y la rotación tiene una ventana con duración numérica donde valen ambos secretos.
-  4. Dado `docs/02-arquitectura/modelo-de-datos/` y `flujos.md`, cuando se revisan, entonces `secret_hash` se corrige al campo cifrado y las cifras de reintentos de `flujos.md` coinciden con el ADR 0042.
+  1. Dado el ADR 0041, cuando se revisa, entonces distingue por separado las tres cifras: el outbox pasa a `dead` al quinto fallo (ADR-0031), el endpoint se deshabilita tras 20 fallos seguidos (`puertas.md`) y la cifra de reintentos por entrega de `flujos.md` (hoy "hasta 8") se reemplaza por el valor que fije el ADR, con tabla de esperas crecientes.
+  2. Dado el ADR 0041, cuando se revisa, entonces fija que el despachador corre dentro del binario de la API, rota entre espacios activos y deduplica por `event.id` (seguimientos 13 y 39), y define a qué suscriptores llegan los eventos `kernel.commitment.expired` (seguimiento 64).
+  3. Dado el ADR 0042, cuando se revisa, entonces fija que el secreto se guarda cifrado de forma reversible con una clave de aplicación por entorno (no como hash), se muestra una vez y la rotación tiene una ventana con duración numérica donde valen ambos secretos.
+  4. Dado `docs/02-arquitectura/modelo-de-datos/` y `flujos.md`, cuando se revisan, entonces `secret_hash` se corrige al campo cifrado y las cifras de reintentos de `flujos.md` coinciden con el ADR 0041.
 - **Reglas de negocio:** ADR-0031 (quinto fallo a `dead`), `puertas.md` (20 fallos), seguimientos 13, 39, 64; decisión por defecto del Product Owner (P8, P9). Los valores de espera y de ventana son nuevos y los fija el ADR. El alcance del despachador depende de S-P13 (*): si no se acepta, el ADR indica quién lo ejecuta.
 - **Dependencias:** ninguna.
 - **Fuera de alcance:** implementación, `/webhooks/wompi` (B4).
@@ -369,7 +369,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
   3. Dado un endpoint con 20 fallos seguidos, cuando ocurre el vigésimo, entonces queda deshabilitado, no recibe más entregas y se registra el motivo.
   4. Dado un endpoint con 19 fallos seguidos y luego un éxito, cuando se cuenta, entonces el contador de fallos seguidos vuelve a 0.
   5. Dado un endpoint deshabilitado, cuando se consultan sus entregas, entonces siguen visibles con su historial.
-  6. Dados `docs/02-arquitectura/flujos.md` y `docs/04-integraciones/puertas.md`, cuando se revisan, entonces las cifras coinciden con el ADR 0042.
+  6. Dados `docs/02-arquitectura/plataforma/flujos.md` y `docs/04-integraciones/puertas.md`, cuando se revisan, entonces las cifras coinciden con el ADR 0042.
   7. Dada una entrega que reintenta, cuando se envía de nuevo, entonces conserva el mismo `event.id` y recalcula la firma con una marca de tiempo nueva.
 - **Reglas de negocio:** ADR-0031 (`dead` al quinto fallo), `puertas.md` (20 fallos), ADR 0042 (tabla de esperas, nueva).
 - **Dependencias:** HU-gateway-15.
