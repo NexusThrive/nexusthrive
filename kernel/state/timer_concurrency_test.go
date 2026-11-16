@@ -62,8 +62,8 @@ func TestConcurrentFireDueTimersFiresOnce(t *testing.T) {
 		if got := count(t, c.admin, `SELECT count(*) FROM kernel.events WHERE type = 'kernel.commitment.expired' AND subject_ref = $1`, subject); got != 1 {
 			t.Fatalf("round %d: %d events for the commitment, want 1", round, got)
 		}
-		if got := count(t, c.admin, `SELECT count(*) FROM kernel.outbox o JOIN kernel.events e ON e.seq = o.event_seq WHERE e.subject_ref = $1`, subject); got != 1 {
-			t.Fatalf("round %d: %d outbox rows for the commitment, want 1", round, got)
+		if got := count(t, c.admin, `SELECT count(*) FROM kernel.outbox o JOIN kernel.events e ON e.seq = o.event_seq WHERE e.subject_ref = $1`, subject); got != 2 {
+			t.Fatalf("round %d: %d outbox rows for the commitment, want 2", round, got)
 		}
 	}
 }

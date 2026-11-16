@@ -51,10 +51,13 @@ func TestContractExchangeIsAtomicAndIdempotent(t *testing.T) {
 	if response.GetExchangeId() == "" || response.GetCommitmentId() == "" || response.GetEventId() == "" {
 		t.Fatal("response lacks created references")
 	}
-	for table, want := range map[string]int{"exchanges": 1, "entries": 2, "commitments": 1, "events": 1, "outbox": 1, "idempotency_records": 1} {
+	for table, want := range map[string]int{"exchanges": 1, "entries": 2, "commitments": 1, "events": 1, "outbox": 2, "idempotency_records": 1} {
 		if got := w.count("SELECT count(*) FROM kernel." + table); got != want {
 			t.Errorf("%s rows = %d, want %d", table, got, want)
 		}
+	}
+	if got := w.count(`SELECT count(*) FROM kernel.outbox WHERE subscriber IN ('internal','webhooks')`); got != 2 {
+		t.Fatal("missing public or internal subscriber")
 	}
 	if got := w.count(`SELECT count(*) FROM kernel.commitments WHERE origin_ref=$1 AND id=$2`, response.GetExchangeId(), response.GetCommitmentId()); got != 1 {
 		t.Fatal("commitment does not reference its exchange")

@@ -171,7 +171,7 @@ func FireDueTimersTx(ctx context.Context, tx *sql.Tx, clock model.Clock, actor m
 		}
 		event := model.NewCommitmentExpiredEvent(expired, timer.ID)
 		event.Actor = actor
-		if _, err := AppendEventAndEnqueue(ctx, tx, clock, event, model.SubscriberInternal); err != nil {
+		if _, err := AppendEventAndEnqueue(ctx, tx, clock, event, model.SubscriberInternal, model.SubscriberWebhooks); err != nil {
 			return model.TimerRun{}, fmt.Errorf("record the expiry of %s: %w", timer.CommitmentID, err)
 		}
 	}

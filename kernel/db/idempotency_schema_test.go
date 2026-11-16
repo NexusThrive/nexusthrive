@@ -408,8 +408,8 @@ func TestIdempotencyFunctionsPinSearchPathAndNotSecurityDefiner(t *testing.T) {
 
 	if got := count(t, admin, `SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
 		WHERE n.nspname = 'kernel' AND p.prosecdef
-        AND p.oid <> 'kernel.resolve_space_actor(text,text,text)'::regprocedure`); got != 0 {
-		t.Errorf("%d unexpected kernel functions are SECURITY DEFINER, want only the ADR-0038 directory", got)
+        AND p.oid NOT IN ('kernel.resolve_space_actor(text,text,text)'::regprocedure, 'kernel.list_webhook_spaces(uuid,integer)'::regprocedure)`); got != 0 {
+		t.Errorf("%d unexpected kernel functions are SECURITY DEFINER, want only the ADR-0038 and ADR-0041 directories", got)
 	}
 	for _, name := range idempotencyFunctions {
 		var config string

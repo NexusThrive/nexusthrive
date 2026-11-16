@@ -31,6 +31,27 @@ service KernelService {
       idempotent: false
     };
   }
+  // CreateWebhookEndpoint returns a signing secret only on initial creation.
+  rpc CreateWebhookEndpoint(CreateWebhookEndpointRequest) returns (CreateWebhookEndpointResponse) {
+    option (operation) = {
+      name: "kernel.webhook.create"
+      permissions: "kernel.webhook.write"
+      capability: ""
+      risk: RISK_WRITE
+      idempotent: false
+    };
+  }
+  // ListWebhookDeliveries returns metadata without signing credentials.
+  rpc ListWebhookDeliveries(ListWebhookDeliveriesRequest) returns (ListWebhookDeliveriesResponse) {
+    option (operation) = {
+      name: "kernel.webhook.deliveries"
+      permissions: "kernel.webhook.read"
+      capability: ""
+      risk: RISK_READ
+      idempotent: false
+    };
+  }
+
 }
 
 message EntryInput {
@@ -92,4 +113,33 @@ message Event {
   string actor_participant_id = 9;
   string request_id = 10;
   google.protobuf.Timestamp occurred_at = 11;
+}
+
+message CreateWebhookEndpointRequest {
+  string url = 1;
+  repeated string events = 2;
+}
+
+message CreateWebhookEndpointResponse {
+  string id = 1;
+  // Returned once; never cached in the idempotency registry.
+  string secret = 2;
+}
+
+message ListWebhookDeliveriesRequest {
+  string endpoint_id = 1;
+  int32 limit = 2;
+}
+
+message WebhookDelivery {
+  string id = 1;
+  string endpoint_id = 2;
+  string status = 3;
+  int32 attempts = 4;
+  int32 http_status = 5;
+  int64 duration_ms = 6;
+}
+
+message ListWebhookDeliveriesResponse {
+  repeated WebhookDelivery deliveries = 1;
 }

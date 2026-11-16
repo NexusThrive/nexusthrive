@@ -72,8 +72,8 @@ func TestFireDueTimersNeedsTimerProcess(t *testing.T) {
 	if err != nil || len(run.Fired) != 1 || run.Fired[0].CommitmentID != created.ID {
 		t.Fatalf("system round = %+v (%v), want the timer of %s fired", run, err, created.ID)
 	}
-	if changed := w.changed(before); changed["events"] != 1 || changed["outbox"] != 1 {
-		t.Errorf("a round that fired changed %v, want an event and an outbox row", changed)
+	if changed := w.changed(before); changed["events"] != 1 || changed["outbox"] != 2 {
+		t.Errorf("a round that fired changed %v, want an event and both subscriber rows", changed)
 	}
 	var status string
 	if err := w.admin.QueryRow(`SELECT status FROM kernel.commitments WHERE id = $1`, created.ID).Scan(&status); err != nil || status != "expired" {

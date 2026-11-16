@@ -336,7 +336,8 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-15 · Firmar y entregar webhooks desde el outbox (R8a)
 
-- **Estado:** Lista; S-P13 y ADR aceptados. **Tamaño:** L. **Rama:** `feature/HU-gateway-15`. **ADR exigidos:** 0041, 0042 y 0043 (programador, aceptado en HU-gateway-07).
+- **Estado:** Implementación local validada; pendiente de revisión e integración. **Tamaño:** L. **Rama:** `feature/HU-gateway-15`. **ADR exigidos:** 0041, 0042 y 0043 (programador, aceptado en HU-gateway-07).
+- **Avance:** [Diseño, pruebas y límites](../../ingenieria/diseno/HU-gateway-15.md).
 - **Historia:**
   Como sistema receptor de webhooks,
   quiero recibir los eventos del kernel firmados una sola vez por entrega,
@@ -346,7 +347,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
   2. Dado un participante con permiso, cuando registra un endpoint HTTPS, entonces se muestra el secreto una sola vez y en base de datos no hay texto plano.
   3. Dado un endpoint `http://` o que resuelve a una dirección privada o de loopback fuera de `local`, cuando se registra, entonces falla con `invalid_input`.
   4. Dado un evento en el outbox del espacio, cuando el despachador lo reclama (`kernel.outbox.claim`) y lo entrega, entonces el receptor recibe un POST con `event.id` estable, cabecera de firma HMAC con marca de tiempo calculada sobre el cuerpo exacto y el receptor la verifica con el secreto.
-  5. Dada una entrega con respuesta 2xx, cuando termina, entonces el outbox queda marcado como entregado y se registra una fila en `webhook_deliveries` con estado, código y duración.
+  5. Dado el reparto, cuando confirma su transacción, el outbox queda `sent` por aceptación duradera del trabajo. Dada una entrega con respuesta 2xx, se registra su resultado en `webhook_deliveries` y una fila histórica de intento con estado, código y duración (ADR-0041).
   6. Dado el mismo evento entregado dos veces (entrega al menos una vez), cuando llega el segundo POST, entonces lleva el mismo `event.id` para que el receptor deduplique.
   7. Dados varios espacios con eventos pendientes, cuando el despachador trabaja, entonces rota entre los espacios activos y ninguno monopoliza el ciclo.
   8. Dado un evento de un espacio A, cuando se despacha, entonces nunca se entrega a un endpoint del espacio B (aislamiento).

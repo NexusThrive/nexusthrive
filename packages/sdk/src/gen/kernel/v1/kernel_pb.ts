@@ -13,7 +13,7 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file kernel/v1/kernel.proto.
  */
 export const file_kernel_v1_kernel: GenFile = /*@__PURE__*/
-  fileDesc("ChZrZXJuZWwvdjEva2VybmVsLnByb3RvEglrZXJuZWwudjEiRQoKRW50cnlJbnB1dBISCgphY2NvdW50X2lkGAEgASgJEhMKC3Jlc291cmNlX2lkGAIgASgJEg4KBmFtb3VudBgDIAEoCSLRAQoPQ29tbWl0bWVudElucHV0Eh0KFWRlYnRvcl9wYXJ0aWNpcGFudF9pZBgBIAEoCRIfChdjcmVkaXRvcl9wYXJ0aWNpcGFudF9pZBgCIAEoCRITCgtyZXNvdXJjZV9pZBgDIAEoCRIOCgZhbW91bnQYBCABKAkSKgoGZHVlX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglzdGFydHNfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpUBChRXcml0ZUV4Y2hhbmdlUmVxdWVzdBIXCg9pZGVtcG90ZW5jeV9rZXkYASABKAkSJgoHZW50cmllcxgCIAMoCzIVLmtlcm5lbC52MS5FbnRyeUlucHV0EgwKBG1lbW8YAyABKAkSLgoKY29tbWl0bWVudBgEIAEoCzIaLmtlcm5lbC52MS5Db21taXRtZW50SW5wdXQiVQoVV3JpdGVFeGNoYW5nZVJlc3BvbnNlEhMKC2V4Y2hhbmdlX2lkGAEgASgJEhUKDWNvbW1pdG1lbnRfaWQYAiABKAkSEAoIZXZlbnRfaWQYAyABKAkiNAoRUmVhZEV2ZW50c1JlcXVlc3QSEAoIZnJvbV9zZXEYASABKAMSDQoFbGltaXQYAiABKAUiNgoSUmVhZEV2ZW50c1Jlc3BvbnNlEiAKBmV2ZW50cxgBIAMoCzIQLmtlcm5lbC52MS5FdmVudCKHAgoFRXZlbnQSCgoCaWQYASABKAkSCwoDc2VxGAIgASgDEhAKCHNwYWNlX2lkGAMgASgJEgwKBHR5cGUYBCABKAkSDwoHdmVyc2lvbhgFIAEoBRITCgtzdWJqZWN0X3JlZhgGIAEoCRIoCgdwYXlsb2FkGAcgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBISCgphY3Rvcl9raW5kGAggASgJEhwKFGFjdG9yX3BhcnRpY2lwYW50X2lkGAkgASgJEhIKCnJlcXVlc3RfaWQYCiABKAkSLwoLb2NjdXJyZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMq4CCg1LZXJuZWxTZXJ2aWNlEqMBCg1Xcml0ZUV4Y2hhbmdlEh8ua2VybmVsLnYxLldyaXRlRXhjaGFuZ2VSZXF1ZXN0GiAua2VybmVsLnYxLldyaXRlRXhjaGFuZ2VSZXNwb25zZSJPirUYSwoVa2VybmVsLmV4Y2hhbmdlLndyaXRlEhVrZXJuZWwuZXhjaGFuZ2Uud3JpdGUSF2tlcm5lbC5jb21taXRtZW50LndyaXRlIAMoARJ3CgpSZWFkRXZlbnRzEhwua2VybmVsLnYxLlJlYWRFdmVudHNSZXF1ZXN0Gh0ua2VybmVsLnYxLlJlYWRFdmVudHNSZXNwb25zZSIsirUYKAoRa2VybmVsLmV2ZW50LnJlYWQSEWtlcm5lbC5ldmVudC5yZWFkIAFCQlpAZ2l0aHViLmNvbS9uZXh1c3Rocml2ZS9uZXh1c3Rocml2ZS9rZXJuZWwvZ2VuL2tlcm5lbC92MTtrZXJuZWx2MWIGcHJvdG8z", [file_google_protobuf_struct, file_google_protobuf_timestamp, file_kernel_v1_policy]);
+  fileDesc("ChZrZXJuZWwvdjEva2VybmVsLnByb3RvEglrZXJuZWwudjEiRQoKRW50cnlJbnB1dBISCgphY2NvdW50X2lkGAEgASgJEhMKC3Jlc291cmNlX2lkGAIgASgJEg4KBmFtb3VudBgDIAEoCSLRAQoPQ29tbWl0bWVudElucHV0Eh0KFWRlYnRvcl9wYXJ0aWNpcGFudF9pZBgBIAEoCRIfChdjcmVkaXRvcl9wYXJ0aWNpcGFudF9pZBgCIAEoCRITCgtyZXNvdXJjZV9pZBgDIAEoCRIOCgZhbW91bnQYBCABKAkSKgoGZHVlX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglzdGFydHNfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpUBChRXcml0ZUV4Y2hhbmdlUmVxdWVzdBIXCg9pZGVtcG90ZW5jeV9rZXkYASABKAkSJgoHZW50cmllcxgCIAMoCzIVLmtlcm5lbC52MS5FbnRyeUlucHV0EgwKBG1lbW8YAyABKAkSLgoKY29tbWl0bWVudBgEIAEoCzIaLmtlcm5lbC52MS5Db21taXRtZW50SW5wdXQiVQoVV3JpdGVFeGNoYW5nZVJlc3BvbnNlEhMKC2V4Y2hhbmdlX2lkGAEgASgJEhUKDWNvbW1pdG1lbnRfaWQYAiABKAkSEAoIZXZlbnRfaWQYAyABKAkiNAoRUmVhZEV2ZW50c1JlcXVlc3QSEAoIZnJvbV9zZXEYASABKAMSDQoFbGltaXQYAiABKAUiNgoSUmVhZEV2ZW50c1Jlc3BvbnNlEiAKBmV2ZW50cxgBIAMoCzIQLmtlcm5lbC52MS5FdmVudCKHAgoFRXZlbnQSCgoCaWQYASABKAkSCwoDc2VxGAIgASgDEhAKCHNwYWNlX2lkGAMgASgJEgwKBHR5cGUYBCABKAkSDwoHdmVyc2lvbhgFIAEoBRITCgtzdWJqZWN0X3JlZhgGIAEoCRIoCgdwYXlsb2FkGAcgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdBISCgphY3Rvcl9raW5kGAggASgJEhwKFGFjdG9yX3BhcnRpY2lwYW50X2lkGAkgASgJEhIKCnJlcXVlc3RfaWQYCiABKAkSLwoLb2NjdXJyZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjsKHENyZWF0ZVdlYmhvb2tFbmRwb2ludFJlcXVlc3QSCwoDdXJsGAEgASgJEg4KBmV2ZW50cxgCIAMoCSI7Ch1DcmVhdGVXZWJob29rRW5kcG9pbnRSZXNwb25zZRIKCgJpZBgBIAEoCRIOCgZzZWNyZXQYAiABKAkiQgocTGlzdFdlYmhvb2tEZWxpdmVyaWVzUmVxdWVzdBITCgtlbmRwb2ludF9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSJ+Cg9XZWJob29rRGVsaXZlcnkSCgoCaWQYASABKAkSEwoLZW5kcG9pbnRfaWQYAiABKAkSDgoGc3RhdHVzGAMgASgJEhAKCGF0dGVtcHRzGAQgASgFEhMKC2h0dHBfc3RhdHVzGAUgASgFEhMKC2R1cmF0aW9uX21zGAYgASgDIk8KHUxpc3RXZWJob29rRGVsaXZlcmllc1Jlc3BvbnNlEi4KCmRlbGl2ZXJpZXMYASADKAsyGi5rZXJuZWwudjEuV2ViaG9va0RlbGl2ZXJ5MvUECg1LZXJuZWxTZXJ2aWNlEqMBCg1Xcml0ZUV4Y2hhbmdlEh8ua2VybmVsLnYxLldyaXRlRXhjaGFuZ2VSZXF1ZXN0GiAua2VybmVsLnYxLldyaXRlRXhjaGFuZ2VSZXNwb25zZSJPirUYSwoVa2VybmVsLmV4Y2hhbmdlLndyaXRlEhVrZXJuZWwuZXhjaGFuZ2Uud3JpdGUSF2tlcm5lbC5jb21taXRtZW50LndyaXRlIAMoARJ3CgpSZWFkRXZlbnRzEhwua2VybmVsLnYxLlJlYWRFdmVudHNSZXF1ZXN0Gh0ua2VybmVsLnYxLlJlYWRFdmVudHNSZXNwb25zZSIsirUYKAoRa2VybmVsLmV2ZW50LnJlYWQSEWtlcm5lbC5ldmVudC5yZWFkIAESnwEKFUNyZWF0ZVdlYmhvb2tFbmRwb2ludBInLmtlcm5lbC52MS5DcmVhdGVXZWJob29rRW5kcG9pbnRSZXF1ZXN0Gigua2VybmVsLnYxLkNyZWF0ZVdlYmhvb2tFbmRwb2ludFJlc3BvbnNlIjOKtRgvChVrZXJuZWwud2ViaG9vay5jcmVhdGUSFGtlcm5lbC53ZWJob29rLndyaXRlIAISogEKFUxpc3RXZWJob29rRGVsaXZlcmllcxInLmtlcm5lbC52MS5MaXN0V2ViaG9va0RlbGl2ZXJpZXNSZXF1ZXN0Gigua2VybmVsLnYxLkxpc3RXZWJob29rRGVsaXZlcmllc1Jlc3BvbnNlIjaKtRgyChlrZXJuZWwud2ViaG9vay5kZWxpdmVyaWVzEhNrZXJuZWwud2ViaG9vay5yZWFkIAFCQlpAZ2l0aHViLmNvbS9uZXh1c3Rocml2ZS9uZXh1c3Rocml2ZS9rZXJuZWwvZ2VuL2tlcm5lbC92MTtrZXJuZWx2MWIGcHJvdG8z", [file_google_protobuf_struct, file_google_protobuf_timestamp, file_kernel_v1_policy]);
 
 /**
  * @generated from message kernel.v1.EntryInput
@@ -270,6 +270,133 @@ export const EventSchema: GenMessage<Event> = /*@__PURE__*/
   messageDesc(file_kernel_v1_kernel, 6);
 
 /**
+ * @generated from message kernel.v1.CreateWebhookEndpointRequest
+ */
+export type CreateWebhookEndpointRequest = Message<"kernel.v1.CreateWebhookEndpointRequest"> & {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url: string;
+
+  /**
+   * @generated from field: repeated string events = 2;
+   */
+  events: string[];
+};
+
+/**
+ * Describes the message kernel.v1.CreateWebhookEndpointRequest.
+ * Use `create(CreateWebhookEndpointRequestSchema)` to create a new message.
+ */
+export const CreateWebhookEndpointRequestSchema: GenMessage<CreateWebhookEndpointRequest> = /*@__PURE__*/
+  messageDesc(file_kernel_v1_kernel, 7);
+
+/**
+ * @generated from message kernel.v1.CreateWebhookEndpointResponse
+ */
+export type CreateWebhookEndpointResponse = Message<"kernel.v1.CreateWebhookEndpointResponse"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * Returned once; never cached in the idempotency registry.
+   *
+   * @generated from field: string secret = 2;
+   */
+  secret: string;
+};
+
+/**
+ * Describes the message kernel.v1.CreateWebhookEndpointResponse.
+ * Use `create(CreateWebhookEndpointResponseSchema)` to create a new message.
+ */
+export const CreateWebhookEndpointResponseSchema: GenMessage<CreateWebhookEndpointResponse> = /*@__PURE__*/
+  messageDesc(file_kernel_v1_kernel, 8);
+
+/**
+ * @generated from message kernel.v1.ListWebhookDeliveriesRequest
+ */
+export type ListWebhookDeliveriesRequest = Message<"kernel.v1.ListWebhookDeliveriesRequest"> & {
+  /**
+   * @generated from field: string endpoint_id = 1;
+   */
+  endpointId: string;
+
+  /**
+   * @generated from field: int32 limit = 2;
+   */
+  limit: number;
+};
+
+/**
+ * Describes the message kernel.v1.ListWebhookDeliveriesRequest.
+ * Use `create(ListWebhookDeliveriesRequestSchema)` to create a new message.
+ */
+export const ListWebhookDeliveriesRequestSchema: GenMessage<ListWebhookDeliveriesRequest> = /*@__PURE__*/
+  messageDesc(file_kernel_v1_kernel, 9);
+
+/**
+ * @generated from message kernel.v1.WebhookDelivery
+ */
+export type WebhookDelivery = Message<"kernel.v1.WebhookDelivery"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string endpoint_id = 2;
+   */
+  endpointId: string;
+
+  /**
+   * @generated from field: string status = 3;
+   */
+  status: string;
+
+  /**
+   * @generated from field: int32 attempts = 4;
+   */
+  attempts: number;
+
+  /**
+   * @generated from field: int32 http_status = 5;
+   */
+  httpStatus: number;
+
+  /**
+   * @generated from field: int64 duration_ms = 6;
+   */
+  durationMs: bigint;
+};
+
+/**
+ * Describes the message kernel.v1.WebhookDelivery.
+ * Use `create(WebhookDeliverySchema)` to create a new message.
+ */
+export const WebhookDeliverySchema: GenMessage<WebhookDelivery> = /*@__PURE__*/
+  messageDesc(file_kernel_v1_kernel, 10);
+
+/**
+ * @generated from message kernel.v1.ListWebhookDeliveriesResponse
+ */
+export type ListWebhookDeliveriesResponse = Message<"kernel.v1.ListWebhookDeliveriesResponse"> & {
+  /**
+   * @generated from field: repeated kernel.v1.WebhookDelivery deliveries = 1;
+   */
+  deliveries: WebhookDelivery[];
+};
+
+/**
+ * Describes the message kernel.v1.ListWebhookDeliveriesResponse.
+ * Use `create(ListWebhookDeliveriesResponseSchema)` to create a new message.
+ */
+export const ListWebhookDeliveriesResponseSchema: GenMessage<ListWebhookDeliveriesResponse> = /*@__PURE__*/
+  messageDesc(file_kernel_v1_kernel, 11);
+
+/**
  * KernelService exposes only operations whose actor is resolved by the server.
  *
  * @generated from service kernel.v1.KernelService
@@ -294,6 +421,26 @@ export const KernelService: GenService<{
     methodKind: "unary";
     input: typeof ReadEventsRequestSchema;
     output: typeof ReadEventsResponseSchema;
+  },
+  /**
+   * CreateWebhookEndpoint returns a signing secret only on initial creation.
+   *
+   * @generated from rpc kernel.v1.KernelService.CreateWebhookEndpoint
+   */
+  createWebhookEndpoint: {
+    methodKind: "unary";
+    input: typeof CreateWebhookEndpointRequestSchema;
+    output: typeof CreateWebhookEndpointResponseSchema;
+  },
+  /**
+   * ListWebhookDeliveries returns metadata without signing credentials.
+   *
+   * @generated from rpc kernel.v1.KernelService.ListWebhookDeliveries
+   */
+  listWebhookDeliveries: {
+    methodKind: "unary";
+    input: typeof ListWebhookDeliveriesRequestSchema;
+    output: typeof ListWebhookDeliveriesResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_kernel_v1_kernel, 0);

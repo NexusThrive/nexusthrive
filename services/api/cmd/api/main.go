@@ -6,6 +6,8 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -144,7 +146,11 @@ func composeGateway(engine *execution.Engine, verifier *gateway.Verifier, dev *g
 	if err != nil {
 		return nil, err
 	}
-	service, err := gateway.NewConnectServer(engine, auth, gateway.ConnectConfig{Log: log})
+	hooks, err := webhooksFromEnv(engine, dev != nil)
+	if err != nil {
+		return nil, err
+	}
+	service, err := gateway.NewConnectServer(engine, auth, gateway.ConnectConfig{Log: log, Webhooks: hooks})
 	if err != nil {
 		return nil, err
 	}
@@ -156,4 +162,32 @@ func composeGateway(engine *execution.Engine, verifier *gateway.Verifier, dev *g
 		mux.Handle("/", legacy)
 	}
 	return mux, nil
+}
+
+// webhooksFromEnv requires durable keys whenever the explicit feature is enabled.
+func webhooksFromEnv(engine *execution.Engine, local bool) (*gateway.WebhookGateway, error) {
+	enabled := os.Getenv("NEXUSTHRIVE_WEBHOOKS_ENABLED")
+	if enabled == "" || enabled == "0" {
+		return nil, nil
+	}
+	if enabled != "1" {
+		return nil, errors.New("invalid webhook enable flag")
+	}
+	var encoded map[string]string
+	if err := json.Unmarshal([]byte(os.Getenv("WEBHOOK_ENCRYPTION_KEYS")), &encoded); err != nil {
+		return nil, errors.New("WEBHOOK_ENCRYPTION_KEYS must contain a JSON key ring")
+	}
+	keys := make(map[string][]byte, len(encoded))
+	for id, value := range encoded {
+		key, err := base64.StdEncoding.DecodeString(value)
+		if err != nil {
+			return nil, errors.New("invalid webhook encryption key encoding")
+		}
+		keys[id] = key
+	}
+	ring, err := gateway.NewWebhookKeys(os.Getenv("WEBHOOK_ENCRYPTION_ACTIVE_KEY"), keys)
+	if err != nil {
+		return nil, err
+	}
+	return gateway.NewWebhookGateway(engine, ring, local)
 }

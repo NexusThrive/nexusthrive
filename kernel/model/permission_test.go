@@ -26,15 +26,17 @@ var wantCatalog = map[string]struct {
 	"kernel.event.read":        {model.RiskRead, false},
 	"kernel.timer.process":     {model.RiskWrite, false},
 	"kernel.outbox.claim":      {model.RiskWrite, false},
+	"kernel.webhook.read":      {model.RiskRead, false},
+	"kernel.webhook.write":     {model.RiskWrite, false},
 }
 
-// TestKernelCatalogHasThirteenKeysWithRisk pins the approved catalog.
-func TestKernelCatalogHasThirteenKeysWithRisk(t *testing.T) {
+// TestKernelCatalogHasFifteenKeysWithRisk pins the approved catalog.
+func TestKernelCatalogHasFifteenKeysWithRisk(t *testing.T) {
 	t.Parallel()
 	catalog := model.KernelCatalog()
 	keys := catalog.Keys()
-	if len(keys) != len(wantCatalog) || len(keys) != 13 {
-		t.Fatalf("catalog has %d keys, want 13: %v", len(keys), keys)
+	if len(keys) != len(wantCatalog) || len(keys) != 15 {
+		t.Fatalf("catalog has %d keys, want 15: %v", len(keys), keys)
 	}
 	for key, want := range wantCatalog {
 		def, ok := catalog.Lookup(key)
@@ -62,7 +64,7 @@ func TestKernelCatalogConstantsMatchTable(t *testing.T) {
 		model.PermissionGrantWrite, model.PermissionCapabilityWrite, model.PermissionResourceWrite,
 		model.PermissionLedgerRead, model.PermissionExchangeWrite, model.PermissionCommitmentRead,
 		model.PermissionCommitmentWrite, model.PermissionEventRead, model.PermissionTimerProcess,
-		model.PermissionOutboxClaim,
+		model.PermissionOutboxClaim, model.PermissionWebhookRead, model.PermissionWebhookWrite,
 	}
 	slices.Sort(got)
 	want := model.KernelCatalog().Keys()
@@ -182,7 +184,7 @@ func TestCatalogIsImmutable(t *testing.T) {
 	}
 }
 
-// TestOwnerRoleExcludesCapabilityWrite pins the ten keys of the owner role.
+// TestOwnerRoleExcludesCapabilityWrite pins the twelve keys of the owner role.
 func TestOwnerRoleExcludesCapabilityWrite(t *testing.T) {
 	t.Parallel()
 	role := model.OwnerRole()
@@ -192,7 +194,7 @@ func TestOwnerRoleExcludesCapabilityWrite(t *testing.T) {
 	want := []string{
 		"kernel.participant.read", "kernel.participant.write", "kernel.role.write", "kernel.grant.write",
 		"kernel.resource.write", "kernel.ledger.read", "kernel.exchange.write", "kernel.commitment.read",
-		"kernel.commitment.write", "kernel.event.read",
+		"kernel.commitment.write", "kernel.event.read", "kernel.webhook.read", "kernel.webhook.write",
 	}
 	if !slices.Equal(role.Permissions, want) {
 		t.Errorf("owner permissions = %v", role.Permissions)

@@ -39,6 +39,12 @@ const (
 	// KernelServiceReadEventsProcedure is the fully-qualified name of the KernelService's ReadEvents
 	// RPC.
 	KernelServiceReadEventsProcedure = "/kernel.v1.KernelService/ReadEvents"
+	// KernelServiceCreateWebhookEndpointProcedure is the fully-qualified name of the KernelService's
+	// CreateWebhookEndpoint RPC.
+	KernelServiceCreateWebhookEndpointProcedure = "/kernel.v1.KernelService/CreateWebhookEndpoint"
+	// KernelServiceListWebhookDeliveriesProcedure is the fully-qualified name of the KernelService's
+	// ListWebhookDeliveries RPC.
+	KernelServiceListWebhookDeliveriesProcedure = "/kernel.v1.KernelService/ListWebhookDeliveries"
 )
 
 // KernelServiceClient is a client for the kernel.v1.KernelService service.
@@ -47,6 +53,10 @@ type KernelServiceClient interface {
 	WriteExchange(context.Context, *connect.Request[v1.WriteExchangeRequest]) (*connect.Response[v1.WriteExchangeResponse], error)
 	// ReadEvents returns an inclusive cursor page within the authorized space.
 	ReadEvents(context.Context, *connect.Request[v1.ReadEventsRequest]) (*connect.Response[v1.ReadEventsResponse], error)
+	// CreateWebhookEndpoint returns a signing secret only on initial creation.
+	CreateWebhookEndpoint(context.Context, *connect.Request[v1.CreateWebhookEndpointRequest]) (*connect.Response[v1.CreateWebhookEndpointResponse], error)
+	// ListWebhookDeliveries returns metadata without signing credentials.
+	ListWebhookDeliveries(context.Context, *connect.Request[v1.ListWebhookDeliveriesRequest]) (*connect.Response[v1.ListWebhookDeliveriesResponse], error)
 }
 
 // NewKernelServiceClient constructs a client for the kernel.v1.KernelService service. By default,
@@ -72,13 +82,27 @@ func NewKernelServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(kernelServiceMethods.ByName("ReadEvents")),
 			connect.WithClientOptions(opts...),
 		),
+		createWebhookEndpoint: connect.NewClient[v1.CreateWebhookEndpointRequest, v1.CreateWebhookEndpointResponse](
+			httpClient,
+			baseURL+KernelServiceCreateWebhookEndpointProcedure,
+			connect.WithSchema(kernelServiceMethods.ByName("CreateWebhookEndpoint")),
+			connect.WithClientOptions(opts...),
+		),
+		listWebhookDeliveries: connect.NewClient[v1.ListWebhookDeliveriesRequest, v1.ListWebhookDeliveriesResponse](
+			httpClient,
+			baseURL+KernelServiceListWebhookDeliveriesProcedure,
+			connect.WithSchema(kernelServiceMethods.ByName("ListWebhookDeliveries")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // kernelServiceClient implements KernelServiceClient.
 type kernelServiceClient struct {
-	writeExchange *connect.Client[v1.WriteExchangeRequest, v1.WriteExchangeResponse]
-	readEvents    *connect.Client[v1.ReadEventsRequest, v1.ReadEventsResponse]
+	writeExchange         *connect.Client[v1.WriteExchangeRequest, v1.WriteExchangeResponse]
+	readEvents            *connect.Client[v1.ReadEventsRequest, v1.ReadEventsResponse]
+	createWebhookEndpoint *connect.Client[v1.CreateWebhookEndpointRequest, v1.CreateWebhookEndpointResponse]
+	listWebhookDeliveries *connect.Client[v1.ListWebhookDeliveriesRequest, v1.ListWebhookDeliveriesResponse]
 }
 
 // WriteExchange calls kernel.v1.KernelService.WriteExchange.
@@ -91,12 +115,26 @@ func (c *kernelServiceClient) ReadEvents(ctx context.Context, req *connect.Reque
 	return c.readEvents.CallUnary(ctx, req)
 }
 
+// CreateWebhookEndpoint calls kernel.v1.KernelService.CreateWebhookEndpoint.
+func (c *kernelServiceClient) CreateWebhookEndpoint(ctx context.Context, req *connect.Request[v1.CreateWebhookEndpointRequest]) (*connect.Response[v1.CreateWebhookEndpointResponse], error) {
+	return c.createWebhookEndpoint.CallUnary(ctx, req)
+}
+
+// ListWebhookDeliveries calls kernel.v1.KernelService.ListWebhookDeliveries.
+func (c *kernelServiceClient) ListWebhookDeliveries(ctx context.Context, req *connect.Request[v1.ListWebhookDeliveriesRequest]) (*connect.Response[v1.ListWebhookDeliveriesResponse], error) {
+	return c.listWebhookDeliveries.CallUnary(ctx, req)
+}
+
 // KernelServiceHandler is an implementation of the kernel.v1.KernelService service.
 type KernelServiceHandler interface {
 	// WriteExchange records an exchange and an open commitment atomically.
 	WriteExchange(context.Context, *connect.Request[v1.WriteExchangeRequest]) (*connect.Response[v1.WriteExchangeResponse], error)
 	// ReadEvents returns an inclusive cursor page within the authorized space.
 	ReadEvents(context.Context, *connect.Request[v1.ReadEventsRequest]) (*connect.Response[v1.ReadEventsResponse], error)
+	// CreateWebhookEndpoint returns a signing secret only on initial creation.
+	CreateWebhookEndpoint(context.Context, *connect.Request[v1.CreateWebhookEndpointRequest]) (*connect.Response[v1.CreateWebhookEndpointResponse], error)
+	// ListWebhookDeliveries returns metadata without signing credentials.
+	ListWebhookDeliveries(context.Context, *connect.Request[v1.ListWebhookDeliveriesRequest]) (*connect.Response[v1.ListWebhookDeliveriesResponse], error)
 }
 
 // NewKernelServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -118,12 +156,28 @@ func NewKernelServiceHandler(svc KernelServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(kernelServiceMethods.ByName("ReadEvents")),
 		connect.WithHandlerOptions(opts...),
 	)
+	kernelServiceCreateWebhookEndpointHandler := connect.NewUnaryHandler(
+		KernelServiceCreateWebhookEndpointProcedure,
+		svc.CreateWebhookEndpoint,
+		connect.WithSchema(kernelServiceMethods.ByName("CreateWebhookEndpoint")),
+		connect.WithHandlerOptions(opts...),
+	)
+	kernelServiceListWebhookDeliveriesHandler := connect.NewUnaryHandler(
+		KernelServiceListWebhookDeliveriesProcedure,
+		svc.ListWebhookDeliveries,
+		connect.WithSchema(kernelServiceMethods.ByName("ListWebhookDeliveries")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/kernel.v1.KernelService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case KernelServiceWriteExchangeProcedure:
 			kernelServiceWriteExchangeHandler.ServeHTTP(w, r)
 		case KernelServiceReadEventsProcedure:
 			kernelServiceReadEventsHandler.ServeHTTP(w, r)
+		case KernelServiceCreateWebhookEndpointProcedure:
+			kernelServiceCreateWebhookEndpointHandler.ServeHTTP(w, r)
+		case KernelServiceListWebhookDeliveriesProcedure:
+			kernelServiceListWebhookDeliveriesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -139,4 +193,12 @@ func (UnimplementedKernelServiceHandler) WriteExchange(context.Context, *connect
 
 func (UnimplementedKernelServiceHandler) ReadEvents(context.Context, *connect.Request[v1.ReadEventsRequest]) (*connect.Response[v1.ReadEventsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kernel.v1.KernelService.ReadEvents is not implemented"))
+}
+
+func (UnimplementedKernelServiceHandler) CreateWebhookEndpoint(context.Context, *connect.Request[v1.CreateWebhookEndpointRequest]) (*connect.Response[v1.CreateWebhookEndpointResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kernel.v1.KernelService.CreateWebhookEndpoint is not implemented"))
+}
+
+func (UnimplementedKernelServiceHandler) ListWebhookDeliveries(context.Context, *connect.Request[v1.ListWebhookDeliveriesRequest]) (*connect.Response[v1.ListWebhookDeliveriesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kernel.v1.KernelService.ListWebhookDeliveries is not implemented"))
 }

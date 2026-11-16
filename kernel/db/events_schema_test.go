@@ -127,7 +127,29 @@ func TestEventsTruncateTriggerHoldsWithoutForeignKey(t *testing.T) {
 	if _, err := admin.Exec(`ALTER TABLE kernel.outbox DROP CONSTRAINT outbox_event_fkey`); err != nil {
 		t.Fatalf("drop foreign key: %v", err)
 	}
-	_, err := admin.Exec(`TRUNCATE kernel.events`)
+	// Remove every direct event reference so the append-only trigger itself is exercised.
+	rows, err := admin.Query(`SELECT conrelid::regclass::text, conname FROM pg_constraint WHERE contype='f' AND confrelid='kernel.events'::regclass`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var refs [][2]string
+	for rows.Next() {
+		var ref [2]string
+		if err := rows.Scan(&ref[0], &ref[1]); err != nil {
+			t.Fatal(err)
+		}
+		refs = append(refs, ref)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	rows.Close()
+	for _, ref := range refs {
+		if _, err := admin.Exec(`ALTER TABLE ` + ref[0] + ` DROP CONSTRAINT ` + ref[1]); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, err = admin.Exec(`TRUNCATE kernel.events`)
 	if got := pgCode(err); got != "23001" {
 		t.Errorf("TRUNCATE kernel.events: SQLSTATE %q (%v), want 23001 restrict_violation", got, err)
 	}

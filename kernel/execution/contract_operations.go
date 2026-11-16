@@ -80,7 +80,7 @@ func (e *Engine) WriteExchange(ctx context.Context, call Call) (Response, error)
 		if err != nil {
 			return nil, err
 		}
-		event, err := tx.AppendEvent(ctx, EventInput{Type: "kernel.exchange.recorded", Version: 1, SubjectRef: exchange.ID, Payload: payload}, model.SubscriberInternal)
+		event, err := tx.AppendEvent(ctx, EventInput{Type: "kernel.exchange.recorded", Version: 1, SubjectRef: exchange.ID, Payload: payload}, model.SubscriberInternal, model.SubscriberWebhooks)
 		if err != nil {
 			return nil, err
 		}

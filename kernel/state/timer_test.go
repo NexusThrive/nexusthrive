@@ -395,7 +395,7 @@ func TestFireDueTimersFiresExpiresAndWritesEventAndOutbox(t *testing.T) {
 	}
 
 	var subscribers, statuses []string
-	rows, err := c.admin.Query(`SELECT subscriber, status FROM kernel.outbox WHERE event_seq = $1`, event.Seq)
+	rows, err := c.admin.Query(`SELECT subscriber, status FROM kernel.outbox WHERE event_seq = $1 ORDER BY subscriber`, event.Seq)
 	if err != nil {
 		t.Fatalf("read outbox: %v", err)
 	}
@@ -407,16 +407,16 @@ func TestFireDueTimersFiresExpiresAndWritesEventAndOutbox(t *testing.T) {
 		}
 		subscribers, statuses = append(subscribers, subscriber), append(statuses, status)
 	}
-	if len(subscribers) != 1 || subscribers[0] != "internal" || statuses[0] != "pending" {
-		t.Errorf("outbox rows = %v %v, want one pending row for internal", subscribers, statuses)
+	if len(subscribers) != 2 || subscribers[0] != "internal" || subscribers[1] != "webhooks" || statuses[0] != "pending" || statuses[1] != "pending" {
+		t.Errorf("outbox rows = %v %v, want pending rows for internal and webhooks", subscribers, statuses)
 	}
 
 	// Nothing is left to fire: a second round does nothing.
 	if again := c.mustFire(t, realClock, 10); len(again.Fired) != 0 {
 		t.Errorf("second round fired %d timers, want 0", len(again.Fired))
 	}
-	if _, events, outbox := c.counts(t, "fired"); events != 1 || outbox != 1 {
-		t.Errorf("events %d, outbox %d after two rounds, want 1 and 1", events, outbox)
+	if _, events, outbox := c.counts(t, "fired"); events != 1 || outbox != 2 {
+		t.Errorf("events %d, outbox %d after two rounds, want 1 and 2", events, outbox)
 	}
 }
 

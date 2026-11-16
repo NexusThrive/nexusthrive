@@ -51,7 +51,7 @@ func TestCreateStandardRolesCreatesOwner(t *testing.T) {
 	want := slices.Clone(model.OwnerRole().Permissions)
 	slices.Sort(stored)
 	slices.Sort(want)
-	if len(want) != 10 || !slices.Equal(stored, want) {
+	if len(want) != 12 || !slices.Equal(stored, want) {
 		t.Errorf("owner permissions = %v, want %v", stored, want)
 	}
 	if slices.Contains(stored, model.PermissionCapabilityWrite) {

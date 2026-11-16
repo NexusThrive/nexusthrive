@@ -38,3 +38,24 @@ func TestComposedGatewayRoutesConnectBeforeLegacyFallback(t *testing.T) {
 		t.Fatalf("development cut exposed outside development: %d", w.Code)
 	}
 }
+
+func TestWebhookConfigurationRequiresPersistentKeys(t *testing.T) {
+	t.Setenv("NEXUSTHRIVE_WEBHOOKS_ENABLED", "1")
+	t.Setenv("WEBHOOK_ENCRYPTION_ACTIVE_KEY", "key1")
+	t.Setenv("WEBHOOK_ENCRYPTION_KEYS", "")
+	if _, err := webhooksFromEnv(new(execution.Engine), false); err == nil {
+		t.Fatal("enabled webhooks accepted missing keys")
+	}
+	t.Setenv("WEBHOOK_ENCRYPTION_KEYS", `{"key1":"AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="}`)
+	if hooks, err := webhooksFromEnv(new(execution.Engine), false); err != nil || hooks == nil {
+		t.Fatal(hooks, err)
+	}
+	t.Setenv("WEBHOOK_ENCRYPTION_KEYS", `{"key1":"sensitive-invalid-value"}`)
+	if _, err := webhooksFromEnv(new(execution.Engine), false); err == nil || strings.Contains(err.Error(), "sensitive-invalid-value") {
+		t.Fatal("invalid key was accepted or leaked", err)
+	}
+	t.Setenv("NEXUSTHRIVE_WEBHOOKS_ENABLED", "")
+	if hooks, err := webhooksFromEnv(new(execution.Engine), false); err != nil || hooks != nil {
+		t.Fatal("disabled webhooks", hooks, err)
+	}
+}

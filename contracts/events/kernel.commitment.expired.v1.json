@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusthrive.com.co/contracts/events/kernel.commitment.expired.v1.json",
+  "title": "Kernel commitment expired v1",
+  "description": "Payload of the atomic timer expiration event; decimal quantities are exact strings.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "commitment_id",
+    "timer_id",
+    "debtor_participant_id",
+    "creditor_participant_id",
+    "resource_id",
+    "kind",
+    "amount",
+    "fulfilled_amount",
+    "due_at",
+    "expired_at"
+  ],
+  "properties": {
+    "commitment_id": {
+      "$ref": "#/$defs/uuidV7"
+    },
+    "timer_id": {
+      "$ref": "#/$defs/uuidV7"
+    },
+    "debtor_participant_id": {
+      "$ref": "#/$defs/uuidV7"
+    },
+    "creditor_participant_id": {
+      "$ref": "#/$defs/uuidV7"
+    },
+    "resource_id": {
+      "$ref": "#/$defs/uuidV7"
+    },
+    "kind": {
+      "type": "string",
+      "minLength": 1
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    },
+    "fulfilled_amount": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    },
+    "due_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+    },
+    "expired_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+    }
+  },
+  "$defs": {
+    "uuidV7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    }
+  }
+}

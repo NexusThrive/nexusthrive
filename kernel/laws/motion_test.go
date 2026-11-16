@@ -76,17 +76,20 @@ func TestLawMotionDueTimerExpiresCommitment(t *testing.T) {
 		t.Errorf("commitment due in a month = %s, want open: the clock cannot pass the database", got)
 	}
 	changed := diff(before, w.counts())
-	if changed["events"] != 1 || changed["outbox"] != 1 {
-		t.Errorf("the round changed %v, want one event and one outbox row", changed)
+	if changed["events"] != 1 || changed["outbox"] != 2 {
+		t.Errorf("the round changed %v, want one event and two outbox rows", changed)
 	}
 	var eventType, subscriber, outboxStatus string
-	err = w.admin.QueryRow(`SELECT e.type, o.subscriber, o.status FROM kernel.events e JOIN kernel.outbox o ON o.event_seq = e.seq`).
+	err = w.admin.QueryRow(`SELECT e.type, o.subscriber, o.status FROM kernel.events e JOIN kernel.outbox o ON o.event_seq = e.seq WHERE o.subscriber='internal'`).
 		Scan(&eventType, &subscriber, &outboxStatus)
 	if err != nil {
 		t.Fatalf("read the event and its outbox row: %v", err)
 	}
 	if eventType != model.EventTypeCommitmentExpired || subscriber != string(model.SubscriberInternal) || outboxStatus != string(model.OutboxPending) {
 		t.Errorf("event %s with outbox %s %s, want the expiry event queued pending for the internal subscriber", eventType, subscriber, outboxStatus)
+	}
+	if n := countOf(t, w.admin, `SELECT count(*) FROM kernel.outbox WHERE subscriber='webhooks' AND status='pending'`); n != 1 {
+		t.Fatalf("public expiry outbox rows: %d", n)
 	}
 	if run := fire(); len(run.Fired) != 0 {
 		t.Errorf("a second round fired %+v, want nothing: the timer fires once", run.Fired)
