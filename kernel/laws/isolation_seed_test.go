@@ -327,5 +327,5 @@ func seedWebhookFlow(t *testing.T, w *isolationWorld, space string) error {
 	if job == nil {
 		return fmt.Errorf("isolation delivery missing")
 	}
-	return w.engine.FinishWebhookDelivery(ctx, call, *job, 200, 1, true)
+	return w.engine.FinishWebhookDelivery(ctx, call, *job, 200, 1, true, true)
 }

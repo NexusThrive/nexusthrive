@@ -153,11 +153,11 @@ Al reactivar, lo guardado se procesa en orden y los temporizadores vencidos se d
 
 ### 8. Tareas fallidas
 
-La propuesta de M2 en el [ADR-0041](../../05-decisiones/0041-despacho-y-reintentos-de-webhooks.md) distingue cinco fallos del outbox, cinco intentos por entrega y veinte fallos HTTP consecutivos del endpoint. Sus esperas son 30 segundos, 2 minutos, 10 minutos y 1 hora. Está pendiente de aceptación; los avisos de plataforma tendrán la política de su propia fase y no heredan un límite genérico de ocho.
+La política de M2 aceptada en el [ADR-0041](../../05-decisiones/0041-despacho-y-reintentos-de-webhooks.md) distingue cinco fallos del outbox, cinco intentos por entrega y veinte fallos HTTP consecutivos del endpoint. Sus esperas son 30 segundos, 2 minutos, 10 minutos y 1 hora. HU-gateway-16 implementa sus contadores; los avisos de plataforma tendrán la política de su propia fase y no heredan un límite genérico de ocho.
 
 ```mermaid
 flowchart LR
-    A["Outbox, webhook o aviso<br/>falla"] --> B["Reintentos según su política<br/>outbox: 5; entrega: 5<br/>propuesta ADR-0041"]
+    A["Outbox, webhook o aviso<br/>falla"] --> B["Reintentos según su política<br/>outbox: 5; entrega: 5<br/>ADR-0041 aceptado"]
     B --> C{"¿Se entregó?"}
     C -->|"sí"| D["Listo"]
     C -->|"no"| E["Estado dead:<br/>aparece en Operación técnica"]

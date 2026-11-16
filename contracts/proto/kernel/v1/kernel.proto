@@ -138,6 +138,8 @@ message WebhookDelivery {
   int32 attempts = 4;
   int32 http_status = 5;
   int64 duration_ms = 6;
+  // Fixed diagnostic code; never includes response bodies or credentials.
+  string failure_reason = 7;
 }
 
 message ListWebhookDeliveriesResponse {

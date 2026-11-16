@@ -100,6 +100,8 @@ func WebhookSignature(at time.Time, body, secret []byte) string {
 	return "t=" + stamp + ",v1=" + hex.EncodeToString(mac.Sum(nil))
 }
 
+var errWebhookDestination = errors.New("webhook destination cannot be used")
+
 type webhookNetwork struct {
 	local  bool
 	lookup func(context.Context, string) ([]net.IPAddr, error)
@@ -147,11 +149,11 @@ func (n *webhookNetwork) addresses(ctx context.Context, host string) ([]net.IPAd
 		var err error
 		ips, err = n.lookup(ctx, host)
 		if err != nil {
-			return nil, errors.New("webhook destination cannot be resolved")
+			return nil, errWebhookDestination
 		}
 	}
 	if len(ips) == 0 {
-		return nil, errors.New("webhook destination has no addresses")
+		return nil, errWebhookDestination
 	}
 	for _, ip := range ips {
 		// Local mode permits only a literal loopback receiver, not arbitrary private DNS.
@@ -159,7 +161,7 @@ func (n *webhookNetwork) addresses(ctx context.Context, host string) ([]net.IPAd
 			continue
 		}
 		if ip.Zone != "" || !publicWebhookIP(ip.IP) {
-			return nil, errors.New("webhook destination is not public")
+			return nil, errWebhookDestination
 		}
 	}
 	return ips, nil

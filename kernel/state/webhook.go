@@ -98,7 +98,7 @@ func ClaimWebhookDelivery(ctx context.Context, tx *sql.Tx, clock model.Clock) (*
 		return nil, err
 	}
 	for _, job := range expired {
-		if err := finishWebhook(ctx, tx, clock, job, 0, 0, false, "claim_expired"); err != nil {
+		if err := finishWebhook(ctx, tx, clock, job, 0, 0, false, false, "claim_expired"); err != nil {
 			return nil, err
 		}
 	}
@@ -123,15 +123,15 @@ func ClaimWebhookDelivery(ctx context.Context, tx *sql.Tx, clock model.Clock) (*
 }
 
 // FinishWebhookDelivery records one observed result and releases its matching lease.
-func FinishWebhookDelivery(ctx context.Context, tx *sql.Tx, clock model.Clock, job model.WebhookJob, status int, duration int64, success bool) error {
+func FinishWebhookDelivery(ctx context.Context, tx *sql.Tx, clock model.Clock, job model.WebhookJob, status int, duration int64, success, observed bool) error {
 	outcome := "failed"
 	if success {
 		outcome = "sent"
 	}
-	return finishWebhook(ctx, tx, clock, job, status, duration, success, outcome)
+	return finishWebhook(ctx, tx, clock, job, status, duration, success, observed, outcome)
 }
 
-func finishWebhook(ctx context.Context, tx *sql.Tx, clock model.Clock, job model.WebhookJob, status int, duration int64, success bool, outcome string) error {
+func finishWebhook(ctx context.Context, tx *sql.Tx, clock model.Clock, job model.WebhookJob, status int, duration int64, success, observed bool, outcome string) error {
 	var attempt int
 	var token sql.NullString
 	var until sql.NullTime
@@ -167,6 +167,12 @@ func finishWebhook(ctx context.Context, tx *sql.Tx, clock model.Clock, job model
 	if err != nil {
 		return err
 	}
+	if observed {
+		_, err = tx.ExecContext(ctx, `UPDATE kernel.webhook_endpoints SET consecutive_failures=CASE WHEN $2 THEN 0 ELSE consecutive_failures+1 END,status=CASE WHEN NOT $2 AND consecutive_failures+1>=20 THEN 'disabled' ELSE status END,disabled_reason=CASE WHEN NOT $2 AND consecutive_failures+1>=20 THEN '20 consecutive delivery failures' ELSE disabled_reason END WHERE id=(SELECT endpoint_id FROM kernel.webhook_deliveries WHERE id=$1)`, job.ID, success)
+		if err != nil {
+			return err
+		}
+	}
 	_, err = tx.ExecContext(ctx, `UPDATE kernel.webhook_deliveries SET attempts=$2,status=$3,next_attempt_at=$4,http_status=$5,duration_ms=$6,claim_token=NULL,claimed_until=NULL WHERE id=$1`, job.ID, attempt, state, next, code, duration)
 	return err
 }
@@ -181,7 +187,7 @@ func ListWebhookDeliveries(ctx context.Context, tx *sql.Tx, endpoint string, lim
 	if err != nil {
 		return nil, err
 	}
-	rows, err := tx.QueryContext(ctx, `SELECT id::text,endpoint_id::text,status,attempts,COALESCE(http_status,0),COALESCE(duration_ms,0) FROM kernel.webhook_deliveries WHERE endpoint_id=$1 ORDER BY created_at DESC,id DESC LIMIT $2`, endpoint, limit)
+	rows, err := tx.QueryContext(ctx, `SELECT d.id::text,d.endpoint_id::text,d.status,d.attempts,COALESCE(d.http_status,0),COALESCE(d.duration_ms,0),CASE WHEN e.status='disabled' THEN COALESCE(e.disabled_reason,'endpoint disabled') WHEN d.status='dead' THEN 'delivery attempts exhausted' WHEN d.status='failed' THEN 'delivery failed' ELSE '' END FROM kernel.webhook_deliveries d JOIN kernel.webhook_endpoints e ON e.id=d.endpoint_id AND e.space_id=d.space_id WHERE d.endpoint_id=$1 ORDER BY d.created_at DESC,d.id DESC LIMIT $2`, endpoint, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +195,7 @@ func ListWebhookDeliveries(ctx context.Context, tx *sql.Tx, endpoint string, lim
 	result := []model.WebhookDelivery{}
 	for rows.Next() {
 		var row model.WebhookDelivery
-		if err := rows.Scan(&row.ID, &row.EndpointID, &row.Status, &row.Attempts, &row.HTTPStatus, &row.DurationMS); err != nil {
+		if err := rows.Scan(&row.ID, &row.EndpointID, &row.Status, &row.Attempts, &row.HTTPStatus, &row.DurationMS, &row.FailureReason); err != nil {
 			return nil, err
 		}
 		result = append(result, row)

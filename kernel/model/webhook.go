@@ -17,12 +17,13 @@ type NewWebhookEndpoint struct {
 
 // WebhookDelivery is safe to expose in an authorized space; the body and secret stay internal.
 type WebhookDelivery struct {
-	ID         string `json:"id"`
-	EndpointID string `json:"endpointId"`
-	Status     string `json:"status"`
-	Attempts   int    `json:"attempts"`
-	HTTPStatus int    `json:"httpStatus"`
-	DurationMS int64  `json:"durationMs"`
+	ID            string `json:"id"`
+	EndpointID    string `json:"endpointId"`
+	Status        string `json:"status"`
+	Attempts      int    `json:"attempts"`
+	HTTPStatus    int    `json:"httpStatus"`
+	DurationMS    int64  `json:"durationMs"`
+	FailureReason string `json:"failureReason,omitempty"`
 }
 
 // WebhookJob is returned only to the internal worker, never a client or a log.
