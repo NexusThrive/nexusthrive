@@ -19,7 +19,7 @@ Funcionalidad: `docs/product/funcionalidades/m2-puertas-del-kernel.md`. Backlog:
 
 ## Resumen de estado (S02)
 
-HU-gateway-15 implementa registro y consulta Connect, cifrado y firma, migración 00016, reparto duradero y transporte HTTP con validación de destinos. [Diseño y límites](../ingenieria/diseno/HU-gateway-15.md). El ciclo automático, la deshabilitación consecutiva y la rotación siguen separados en HU-gateway-21, 16 y 17.
+HU-gateway-15 está publicada en el [PR #38](https://github.com/NexusThrive/nexusthrive/pull/38), sobre #37, e implementa registro y consulta Connect, cifrado y firma, migración 00016, reparto duradero y transporte HTTP con validación de destinos. [Diseño y límites](../ingenieria/diseno/HU-gateway-15.md). El ciclo automático, la deshabilitación consecutiva y la rotación siguen separados en HU-gateway-21, 16 y 17.
 
 Actualización 2026-11-16: santy401 aceptó ADR-0041, 0042 y 0043 en conversación. Los PR [#36](https://github.com/NexusThrive/nexusthrive/pull/36) y [#37](https://github.com/NexusThrive/nexusthrive/pull/37) registran despacho, cifrado y firma, y ciclo del programador. HU-gateway-15 queda habilitada; se toma antes de reintentos, rotación y arranque del ciclo. La integración de los antecedentes sigue pendiente.
 
