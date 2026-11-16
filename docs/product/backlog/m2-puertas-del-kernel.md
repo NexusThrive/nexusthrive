@@ -155,7 +155,7 @@ Todas son historias docs-only: el PR solo toca `docs/`, el ADR queda con estado 
 
 ## HU-gateway-06 · Decidir despacho, reintentos y secreto de los webhooks
 
-- **Estado:** En curso, propuestas pendientes de aceptación. **Tamaño:** M. **Rama:** `chore/HU-gateway-06`. **ADR que escribe:** 0041 (despacho del outbox y política de reintentos; cubre P8) y 0042 (secreto de webhooks; cubre P9).
+- **Estado:** Decisiones aceptadas; pendiente de integración. **Tamaño:** M. **Rama:** `chore/HU-gateway-06`. **ADR que escribe:** 0041 (despacho del outbox y política de reintentos; cubre P8) y 0042 (secreto de webhooks; cubre P9).
 - **Historia:**
   Como ingeniero de NexusThrive,
   quiero fijar quién despacha el outbox, con qué política y cómo se guarda el secreto de firma,

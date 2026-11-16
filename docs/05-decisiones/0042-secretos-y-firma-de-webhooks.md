@@ -1,14 +1,15 @@
 # ADR-0042 · Secretos cifrados y firma de webhooks
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada
 - **Fecha:** 2026-11-16
 - **Responsables:** santy401
+- **Aceptación:** santy401, 2026-11-16, confirmada en conversación.
 
 ## Contexto
 
 El modelo propuesto guarda `secret_hash`, pero verificar una huella no permite firmar con HMAC. El Product Owner propone cifrado reversible por entorno. HU-gateway-06 debe concretar el formato, la clave de aplicación y la ventana de rotación antes de HU-gateway-15 y 17.
 
-## Decisión propuesta
+## Decisión
 
 Cada endpoint recibe un secreto aleatorio de 32 bytes generado criptográficamente. Su presentación es `whsec_` más base64url sin relleno. Se muestra solo en la respuesta inicial de creación o rotación, sobre el canal autenticado; las consultas posteriores no lo devuelven. Una respuesta perdida se resuelve con una rotación, no recuperando el secreto desde una lectura pública.
 
