@@ -17,8 +17,9 @@ Registrar el trabajo implementado y su validación sin confundirlo con una promo
 | HU-gateway-10 | Servidor Connect, errores públicos, plazos y límites | `feature/HU-gateway-10` | [#34](https://github.com/NexusThrive/nexusthrive/pull/34) | #33 |
 | HU-gateway-12 | Directorio por slug, actor desde token y cableado del binario | `feature/HU-gateway-12` | [#35](https://github.com/NexusThrive/nexusthrive/pull/35) | #34 |
 | HU-gateway-06 | ADR-0041 y 0042 propuestos: despacho y secretos de webhooks | `chore/HU-gateway-06` | [#36](https://github.com/NexusThrive/nexusthrive/pull/36) | #35 |
+| HU-gateway-07 | ADR-0043 propuesto: ciclo, cotas y apagado del programador | `chore/HU-gateway-07` | [#37](https://github.com/NexusThrive/nexusthrive/pull/37) | #36 |
 
-Las nueve ramas están publicadas y sus PR están en borrador, cada uno con la rama precedente como base temporal. El [PR #27](https://github.com/NexusThrive/nexusthrive/pull/27) del primer corte sigue siendo el antecedente de integración. El destino final es `sprint/S02`; después de integrar cada antecedente se actualiza la rama, se cambia la base y se revisan diff y CI. No se ha fusionado ninguna historia. `go.work.sum` estaba sin seguimiento al comenzar y permanece fuera de los commits.
+Las diez ramas están publicadas y sus PR están en borrador, cada uno con la rama precedente como base temporal. El [PR #27](https://github.com/NexusThrive/nexusthrive/pull/27) del primer corte sigue siendo el antecedente de integración. El destino final es `sprint/S02`; después de integrar cada antecedente se actualiza la rama, se cambia la base y se revisan diff y CI. No se ha fusionado ninguna historia. `go.work.sum` estaba sin seguimiento al comenzar y permanece fuera de los commits.
 
 La primera ejecución de CI de los ocho PR #28 a #35 terminó correctamente, comprobada el 2026-11-15 a las 23:48 UTC. Los checks vigentes de cada nueva cabecera se consultan en su PR; cualquier actualización vuelve a comprobarse antes de revisión. El modo de publicación y seguimiento está fijado en [flujo de Git](../../07-ingenieria/git-workflow.md) y `AGENTS.md`.
 
@@ -43,4 +44,4 @@ La migración 00015 pertenece al directorio; las historias de llaves y webhooks 
 - [Plan](../../product/plan.md) y [backlog](../../product/backlog/m2-puertas-del-kernel.md).
 - [Hoja de ruta](../../02-arquitectura/hoja-de-ruta.md).
 
-El PR #36 pasó CI el 2026-11-16. HU-gateway-07 prepara el ADR-0043 del programador. Los ADR-0041, 0042 y 0043 siguen como propuestas; no autorizan todavía su implementación.
+El PR #36 pasó CI el 2026-11-16. HU-gateway-07 publica el ADR-0043 del programador en el PR #37. Los ADR-0041, 0042 y 0043 siguen como propuestas; no autorizan todavía su implementación.
